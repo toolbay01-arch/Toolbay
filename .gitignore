@@ -32,7 +32,6 @@ Thumbs.db
 
 # Misc
 *.tgz
-stripe_*.tar.gz
 
 # Sensitive documentation
 *SetupGuide.md
