@@ -7,12 +7,12 @@ This document summarizes the process to obtain all necessary Stripe keys for dev
 
 ### Publishable Key
 ```
-pk_test_[*****************]
+pk_test_51RSlvhQNXfgJjmVmbxbORXTE4HHf9lBjtnokeXxem6ZaWlTO8Ifhti9MMc2N4wdCEOIGbjNZudVwVp6WdWDOljXE00WIlFINpT
 ```
 
 ### Secret Key
 ```
-sk_test_[****************]]
+sk_test_51RSlvhQNXfgJjmVmcxDVOhMuaDDWalu5oRhb00tNkU4lVwd0ZXG8FhQf51qWrS0gxaSDSSaXcSrk1xsIofQWdr0d00cQUbS90h
 ```
 
 ⚠️ **SECURITY WARNING**: The secret key above was shared publicly and should be regenerated immediately!
