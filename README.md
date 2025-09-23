@@ -136,14 +136,29 @@ https://tenantslug.yourdomain.com
 
 ### Database Setup
 
+#### Recommended Approach (Works with both Bun and Node.js)
 ```bash
-# Using Bun
+# Reset database (drops all collections)
 bun run db:fresh
-bun run db:seed
+# or
+node scripts/reset-db.mjs
 
-# Using npm
+# Seed the database with initial data
+bun run db:seed
+```
+
+#### Using Standard Payload Commands (if compatible)
+```bash
+# Using npm (if available)
 npm run db:fresh
 npm run db:seed
+
+# Using yarn (if available)
+yarn db:fresh
+yarn db:seed
+```
+
+**Note:** The `db:fresh` command uses a custom script that directly resets the MongoDB database, bypassing Payload CLI compatibility issues with Bun.
 
 # Using yarn
 yarn db:fresh
@@ -164,6 +179,32 @@ yarn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Troubleshooting
+
+## Troubleshooting
+
+### Database Migration Issues with Bun
+
+If you encounter errors like "Cannot find module 'tsx://...' " when using Payload CLI commands, this project includes a custom database reset script that bypasses these compatibility issues:
+
+**Solution:**
+```bash
+# Use the working database reset
+bun run db:fresh
+
+# Then seed the database
+bun run db:seed
+```
+
+The `db:fresh` command uses a direct MongoDB connection to reset the database, which is more reliable than the Payload CLI with Bun.
+
+### Common Issues
+
+- **TypeScript/tsx loading errors**: Solved by using the custom database reset script
+- **Undici version conflicts**: Bypassed by avoiding the Payload CLI for database operations
+- **Permission errors during migration**: Make sure the database connection string is correct in your `.env` file
+- **Collections not recreated**: Run `bun run dev` once after database reset to let Payload recreate the collections automatically
 
 
 ## Available Scripts
