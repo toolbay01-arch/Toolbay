@@ -4,6 +4,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app"
 
 import { TRPCReactProvider } from "@/trpc/client";
 import { Toaster } from "@/components/ui/sonner";
+import { PerformanceMonitor } from "@/components/performance-monitor";
 
 import "./globals.css";
 
@@ -30,6 +31,7 @@ export default function RootLayout({
           <TRPCReactProvider>
             {children}
             <Toaster />
+            <PerformanceMonitor />
           </TRPCReactProvider>
         </NuqsAdapter>
       </body>

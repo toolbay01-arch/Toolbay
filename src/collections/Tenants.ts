@@ -5,11 +5,49 @@ import { isSuperAdmin } from '@/lib/access';
 export const Tenants: CollectionConfig = {
   slug: 'tenants',
   access: {
-    create: ({ req }) => isSuperAdmin(req.user),
+    read: ({ req }) => {
+      // Super admin can read all tenants
+      if (isSuperAdmin(req.user)) {
+        return true;
+      }
+      
+      // Regular users can only read their own tenant
+      if (req.user?.tenants) {
+        return {
+          id: {
+            in: req.user.tenants.map((tenantRel) => 
+              typeof tenantRel.tenant === 'string' ? tenantRel.tenant : tenantRel.tenant.id
+            ),
+          },
+        };
+      }
+      
+      return false;
+    },
+    create: () => true, // Allow tenant creation during registration
+    update: ({ req }) => {
+      // Super admin can update all tenants
+      if (isSuperAdmin(req.user)) return true;
+      
+      // Regular users can only update their own tenant
+      if (req.user?.tenants) {
+        return {
+          id: {
+            in: req.user.tenants.map((tenantRel) => 
+              typeof tenantRel.tenant === 'string' ? tenantRel.tenant : tenantRel.tenant.id
+            ),
+          },
+        };
+      }
+      
+      return false;
+    },
     delete: ({ req }) => isSuperAdmin(req.user),
   },
   admin: {
     useAsTitle: 'slug',
+    // Ensure admin can see the collection
+    hidden: false,
   },
   fields: [
     {
@@ -140,6 +178,21 @@ export const Tenants: CollectionConfig = {
       },
       admin: {
         description: "Admin notes about verification process",
+      },
+    },
+    {
+      name: "physicalVerificationRequested",
+      type: "checkbox",
+      defaultValue: false,
+      admin: {
+        description: "Tenant has requested physical verification",
+      },
+    },
+    {
+      name: "physicalVerificationRequestedAt",
+      type: "date",
+      admin: {
+        description: "Date when physical verification was requested",
       },
     },
     // Physical verification fields

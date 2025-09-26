@@ -9,7 +9,24 @@ export const createTRPCContext = cache(async () => {
   /**
    * @see: https://trpc.io/docs/server/context
    */
-  return { userId: 'user_123' };
+  try {
+    const headers = await getHeaders();
+    const payload = await getPayload({ config });
+    const session = await payload.auth({ headers });
+    
+    return { 
+      userId: session.user?.id || null,
+      user: session.user || null,
+      db: payload 
+    };
+  } catch (error) {
+    console.error('Error creating tRPC context:', error);
+    return { 
+      userId: null,
+      user: null,
+      db: await getPayload({ config })
+    };
+  }
 });
 // Avoid exporting the entire t-object
 // since it's not very descriptive.

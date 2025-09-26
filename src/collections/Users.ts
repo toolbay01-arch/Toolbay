@@ -57,9 +57,9 @@ export const Users: CollectionConfig = {
       },
       name: "roles",
       type: "select",
-      defaultValue: ["user"],
+      defaultValue: ["tenant"],
       hasMany: true,
-      options: ["super-admin", "user"],
+      options: ["super-admin", "tenant", "client"],
       access: {
         update: ({ req }) => isSuperAdmin(req.user),
       }

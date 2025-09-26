@@ -92,8 +92,8 @@ export const Navbar = () => {
             asChild
             className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-lg"
           >
-            <Link href="/admin">
-              Dashboard
+            <Link href={session.data.user.roles?.includes('super-admin') ? "/all-tenants" : "/dashboard"}>
+              {session.data.user.roles?.includes('super-admin') ? "Manage Tenants" : "Dashboard"}
             </Link>
           </Button>
         </div>

@@ -217,6 +217,14 @@ export interface Tenant {
    */
   verificationNotes?: string | null;
   /**
+   * Tenant has requested physical verification
+   */
+  physicalVerificationRequested?: boolean | null;
+  /**
+   * Date when physical verification was requested
+   */
+  physicalVerificationRequestedAt?: string | null;
+  /**
    * 3-8 images from physical verification visit
    */
   physicalVerificationImages?:
@@ -584,6 +592,8 @@ export interface TenantsSelect<T extends boolean = true> {
   isVerified?: T;
   verificationStatus?: T;
   verificationNotes?: T;
+  physicalVerificationRequested?: T;
+  physicalVerificationRequestedAt?: T;
   physicalVerificationImages?:
     | T
     | {

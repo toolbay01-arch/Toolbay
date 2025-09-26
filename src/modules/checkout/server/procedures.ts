@@ -40,21 +40,10 @@ export const checkoutRouter = createTRPCRouter({
         });
       }
 
-      const accountLink = await stripe.accountLinks.create({
-        account: tenant.stripeAccountId,
-        refresh_url: `${process.env.NEXT_PUBLIC_APP_URL!}/admin`,
-        return_url: `${process.env.NEXT_PUBLIC_APP_URL!}/admin`,
-        type: "account_onboarding",
-      });
+      // Redirect to Rwanda verification system instead of Stripe
+      const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL!}/dashboard`;
 
-      if (!accountLink.url) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Failed to create verification link",
-        });
-      }
-
-      return { url: accountLink.url };
+      return { url: dashboardUrl };
     }),
   purchase: protectedProcedure
     .input(

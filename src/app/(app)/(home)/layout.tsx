@@ -13,9 +13,18 @@ interface Props {
 
 const Layout = async ({ children }: Props) => {
   const queryClient = getQueryClient();
-  void queryClient.prefetchQuery(
-    trpc.categories.getMany.queryOptions(),
-  );
+  
+  // Prefetch categories with proper error handling
+  try {
+    await queryClient.prefetchQuery({
+      ...trpc.categories.getMany.queryOptions(),
+      staleTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes
+    });
+  } catch (error) {
+    console.error('Failed to prefetch categories:', error);
+    // Don't break the page if prefetching fails
+  }
 
   return ( 
     <div className="flex flex-col min-h-screen">

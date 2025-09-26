@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Upload, FileText, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, FileText, CheckCircle, AlertCircle, MapPin } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,7 @@ interface DocumentUploadProps {
 export const DocumentUpload = ({ tenant, onUploadComplete }: DocumentUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isRequestingPhysical, setIsRequestingPhysical] = useState(false);
 
 
 
@@ -70,6 +71,33 @@ export const DocumentUpload = ({ tenant, onUploadComplete }: DocumentUploadProps
       toast.error("Upload failed. Please try again.");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handlePhysicalVerificationRequest = async () => {
+    setIsRequestingPhysical(true);
+    
+    try {
+      const response = await fetch("/api/tenants/request-physical-verification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success("Physical verification requested successfully!");
+        onUploadComplete?.();
+      } else {
+        toast.error(result.error || "Failed to request physical verification");
+      }
+    } catch (error) {
+      console.error("Physical verification request error:", error);
+      toast.error("Failed to request physical verification. Please try again.");
+    } finally {
+      setIsRequestingPhysical(false);
     }
   };
 
@@ -183,6 +211,54 @@ export const DocumentUpload = ({ tenant, onUploadComplete }: DocumentUploadProps
             <p className="text-sm text-green-700 mt-1">
               Your documents have been submitted and are being reviewed by our admin team.
             </p>
+          </div>
+        )}
+
+        {/* Physical Verification Section */}
+        {tenant.rdbCertificate && tenant.verificationStatus === "document_verified" && (
+          <div className="space-y-4">
+            <h3 className="font-medium">Physical Verification</h3>
+            
+            {!tenant.physicalVerificationRequested ? (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-blue-800 mb-2">Request Physical Verification</h4>
+                    <p className="text-sm text-blue-700 mb-3">
+                      Get fully verified by requesting a physical verification visit. This will enable you to:
+                    </p>
+                    <ul className="text-sm text-blue-700 space-y-1 mb-4">
+                      <li>• Add and manage merchant accounts</li>
+                      <li>• Access advanced store features</li>
+                      <li>• Increase customer trust</li>
+                    </ul>
+                    <Button
+                      onClick={handlePhysicalVerificationRequest}
+                      disabled={isRequestingPhysical}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {isRequestingPhysical ? "Requesting..." : "Request Physical Verification"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-yellow-500" />
+                  <span className="font-medium text-yellow-800">Physical Verification Requested</span>
+                </div>
+                <p className="text-sm text-yellow-700 mt-1">
+                  Your request for physical verification has been submitted. Our team will contact you to schedule a visit.
+                </p>
+                {tenant.physicalVerificationRequestedAt && (
+                  <p className="text-xs text-yellow-600 mt-2">
+                    Requested on: {new Date(tenant.physicalVerificationRequestedAt).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
 

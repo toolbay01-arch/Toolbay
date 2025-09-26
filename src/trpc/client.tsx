@@ -8,6 +8,7 @@ import { createTRPCContext } from '@trpc/tanstack-react-query';
 import { useState } from 'react';
 import { makeQueryClient } from './query-client';
 import type { AppRouter } from './routers/_app';
+import { TRPCErrorBoundary } from '@/components/trpc-error-boundary';
 export const { TRPCProvider, useTRPC } = createTRPCContext<AppRouter>();
 let browserQueryClient: QueryClient;
 function getQueryClient() {
@@ -45,15 +46,30 @@ export function TRPCReactProvider(
         httpBatchLink({
           transformer: superjson,
           url: getUrl(),
+          // Add request headers for authentication
+          headers: () => {
+            const headers: Record<string, string> = {};
+            // Add any auth headers if needed
+            return headers;
+          },
+          // Add better error handling
+          fetch: (input, init) => {
+            return fetch(input, {
+              ...init,
+              credentials: 'include', // Include cookies for auth
+            });
+          },
         }),
       ],
     }),
   );
   return (
-    <QueryClientProvider client={queryClient}>
-      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        {props.children}
-      </TRPCProvider>
-    </QueryClientProvider>
+    <TRPCErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+          {props.children}
+        </TRPCProvider>
+      </QueryClientProvider>
+    </TRPCErrorBoundary>
   );
 }

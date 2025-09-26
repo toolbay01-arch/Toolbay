@@ -85,14 +85,49 @@ export const tenantsRouter = createTRPCRouter({
     const tenants = await ctx.db.find({
       collection: "tenants",
       where: {
-        verificationStatus: {
-          equals: "pending",
-        },
+        or: [
+          {
+            verificationStatus: {
+              equals: "pending",
+            },
+          },
+          {
+            physicalVerificationRequested: {
+              equals: true,
+            },
+          },
+        ],
       },
       limit: 50,
       sort: "-createdAt",
     });
 
     return tenants;
+  }),
+
+  // Request physical verification
+  requestPhysicalVerification: protectedProcedure.mutation(async ({ ctx }) => {
+    const userData = await ctx.db.findByID({
+      collection: "users",
+      id: ctx.session.user.id,
+    });
+
+    if (!userData.tenants?.[0]) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "No tenant found for user",
+      });
+    }
+
+    const tenant = await ctx.db.update({
+      collection: "tenants",
+      id: userData.tenants[0].tenant as string,
+      data: {
+        physicalVerificationRequested: true,
+        physicalVerificationRequestedAt: new Date().toISOString(),
+      },
+    });
+
+    return tenant;
   }),
 });

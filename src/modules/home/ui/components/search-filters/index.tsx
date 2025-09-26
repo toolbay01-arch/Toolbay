@@ -14,7 +14,11 @@ import { DEFAULT_BG_COLOR } from "../../../constants";
 
 export const SearchFilters = () => {
   const trpc = useTRPC();
-  const { data } = useSuspenseQuery(trpc.categories.getMany.queryOptions());
+  const { data } = useSuspenseQuery({
+    ...trpc.categories.getMany.queryOptions(),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
 
     const [filters, setFilters] = useProductFilters();
 

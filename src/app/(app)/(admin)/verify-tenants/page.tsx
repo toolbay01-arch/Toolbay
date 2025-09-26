@@ -58,7 +58,9 @@ const VerifyTenantsPage = async () => {
 
                     {/* Documents & Actions */}
                     <div>
-                      <h4 className="font-medium mb-3">Documents</h4>
+                      <h4 className="font-medium mb-3">Documents & Status</h4>
+                      
+                      {/* RDB Certificate */}
                       {tenant.rdbCertificate ? (
                         <div className="mb-4">
                           <p className="text-sm text-green-600 mb-2">✓ RDB Certificate uploaded</p>
@@ -67,9 +69,9 @@ const VerifyTenantsPage = async () => {
                               href={tenant.rdbCertificate.url} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline text-sm"
+                              className="text-blue-600 hover:underline text-sm block mb-2"
                             >
-                              View Certificate
+                              View Certificate →
                             </a>
                           )}
                         </div>
@@ -77,20 +79,61 @@ const VerifyTenantsPage = async () => {
                         <p className="text-sm text-red-600 mb-4">✗ No RDB Certificate</p>
                       )}
 
-                      {/* Admin Actions - These would need to be implemented with forms */}
-                      <div className="space-y-2">
-                        <p className="text-xs text-gray-500">
-                          Admin actions would be implemented here with forms to verify/reject tenants.
-                          For now, use the admin panel at /admin/collections/tenants
+                      {/* Verification Status */}
+                      <div className="mb-4">
+                        <p className="text-sm mb-1">
+                          <strong>Status:</strong> 
+                          <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                            tenant.verificationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            tenant.verificationStatus === 'document_verified' ? 'bg-green-100 text-green-800' :
+                            tenant.verificationStatus === 'physically_verified' ? 'bg-blue-100 text-blue-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {tenant.verificationStatus?.replace('_', ' ').toUpperCase()}
+                          </span>
                         </p>
+                        
+                        {tenant.physicalVerificationRequested && (
+                          <p className="text-sm text-purple-600 mt-1">
+                            🏠 Physical verification requested
+                            {tenant.physicalVerificationRequestedAt && (
+                              <span className="text-xs text-gray-500 ml-2">
+                                ({new Date(tenant.physicalVerificationRequestedAt).toLocaleDateString()})
+                              </span>
+                            )}
+                          </p>
+                        )}
+                        
+                        {tenant.verificationNotes && (
+                          <p className="text-xs text-gray-600 mt-2 p-2 bg-gray-100 rounded">
+                            <strong>Admin Notes:</strong> {tenant.verificationNotes}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Admin Actions */}
+                      <div className="space-y-2">
                         <a 
                           href={`/admin/collections/tenants/${tenant.id}`}
                           className="inline-block bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          Edit in Admin Panel
+                          Verify in Admin Panel →
                         </a>
+                        
+                        <div className="text-xs text-gray-500 mt-2">
+                          Use the admin panel to:
+                          <ul className="list-disc list-inside mt-1 space-y-1">
+                            <li>Review and verify documents</li>
+                            <li>Set verification status</li>
+                            <li>Add verification notes</li>
+                            <li>Enable merchant capabilities</li>
+                            {tenant.physicalVerificationRequested && (
+                              <li className="text-purple-600">Process physical verification request</li>
+                            )}
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   </div>

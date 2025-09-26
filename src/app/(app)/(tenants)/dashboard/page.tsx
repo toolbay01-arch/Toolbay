@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { caller } from "@/trpc/server";
+import { isSuperAdmin } from "@/lib/access";
 import { DocumentUpload } from "@/modules/tenants/ui/document-upload";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,11 @@ const TenantDashboardPage = async () => {
 
   if (!session.user) {
     redirect("/sign-in");
+  }
+
+  // Check if user is super admin - redirect them to admin dashboard
+  if (isSuperAdmin(session.user)) {
+    redirect("/all-tenants");
   }
 
   try {
@@ -85,7 +91,10 @@ const TenantDashboardPage = async () => {
               <h2 className="text-xl font-semibold mb-4">Store Capabilities</h2>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span>Can Add Products</span>
+                  <div className="flex flex-col">
+                    <span>Can Add Products</span>
+                    <span className="text-xs text-gray-500">Requires document verification</span>
+                  </div>
                   <span className={`px-2 py-1 rounded text-sm ${
                     tenant.isVerified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
@@ -93,7 +102,10 @@ const TenantDashboardPage = async () => {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>Can Add Merchants</span>
+                  <div className="flex flex-col">
+                    <span>Can Add Merchants</span>
+                    <span className="text-xs text-gray-500">Requires document or physical verification</span>
+                  </div>
                   <span className={`px-2 py-1 rounded text-sm ${
                     tenant.canAddMerchants ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
@@ -102,10 +114,41 @@ const TenantDashboardPage = async () => {
                 </div>
               </div>
               
+              {/* Verification Progress */}
+              <div className="mt-6 pt-4 border-t">
+                <h3 className="font-medium mb-3">Verification Progress</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${tenant.rdbCertificate ? 'bg-green-500' : 'bg-gray-300'}`} />
+                    <span className="text-sm">RDB Certificate Upload</span>
+                    {tenant.rdbCertificate && <span className="text-xs text-green-600">✓</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${
+                      tenant.verificationStatus === 'document_verified' || tenant.verificationStatus === 'physically_verified' 
+                        ? 'bg-green-500' : 'bg-gray-300'
+                    }`} />
+                    <span className="text-sm">Document Verification</span>
+                    {(tenant.verificationStatus === 'document_verified' || tenant.verificationStatus === 'physically_verified') && 
+                      <span className="text-xs text-green-600">✓</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${
+                      tenant.verificationStatus === 'physically_verified' ? 'bg-green-500' : 
+                      tenant.physicalVerificationRequested ? 'bg-yellow-500' : 'bg-gray-300'
+                    }`} />
+                    <span className="text-sm">Physical Verification</span>
+                    {tenant.verificationStatus === 'physically_verified' && <span className="text-xs text-green-600">✓</span>}
+                    {tenant.physicalVerificationRequested && tenant.verificationStatus !== 'physically_verified' && 
+                      <span className="text-xs text-yellow-600">Requested</span>}
+                  </div>
+                </div>
+              </div>
+              
               {!tenant.isVerified && (
                 <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
                   <p className="text-sm text-yellow-800">
-                    Complete document verification to enable all store features.
+                    Complete the verification steps above to enable all store features.
                   </p>
                 </div>
               )}

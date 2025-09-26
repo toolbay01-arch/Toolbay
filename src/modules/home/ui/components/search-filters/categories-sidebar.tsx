@@ -24,12 +24,21 @@ export const CategoriesSidebar = ({
   onOpenChange,
 }: Props) => {
   const trpc = useTRPC();
-  const { data } = useQuery(trpc.categories.getMany.queryOptions());
+  const { data, isLoading, error } = useQuery({
+    ...trpc.categories.getMany.queryOptions(),
+    staleTime: 10 * 60 * 1000, // 10 minutes - categories don't change often
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
 
   const router = useRouter();
 
   const [parentCategories, setParentCategories] = useState<CategoriesGetManyOutput | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<CategoriesGetManyOutput[1] | null>(null);
+
+  // Handle loading and error states
+  if (error) {
+    console.error('Categories loading error:', error);
+  }
 
   // If we have parent categories, show those, otherwise show root categories
   const currentCategories = parentCategories ?? data ?? [];

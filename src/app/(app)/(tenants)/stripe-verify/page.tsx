@@ -1,29 +1,22 @@
 "use client";
 
 import { useEffect } from "react";
-import { LoaderIcon } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
-
-import { useTRPC } from "@/trpc/client";
 
 const Page = () => {
-  const trpc = useTRPC();
-  const { mutate: verify } = useMutation(trpc.checkout.verify.mutationOptions({
-    onSuccess: (data) => {
-      window.location.href = data.url;
-    },
-    onError: () => {
-      window.location.href = "/";
-    },
-  }));
-
   useEffect(() => {
-    verify();
-  }, [verify]);
+    // Redirect to tenant dashboard instead of Stripe verification
+    window.location.href = "/dashboard";
+  }, []);
+
+  //   window.location.href = "/verify-tenants";
+  // }, []);
 
   return ( 
     <div className="flex min-h-screen items-center justify-center">
-      <LoaderIcon className="animate-spin text-muted-foreground" />
+      <div className="text-center">
+        <h1 className="text-2xl font-bold mb-4">Redirecting to Rwanda Verification System</h1>
+        <p className="text-gray-600">Please wait while we redirect you to the new verification dashboard...</p>
+      </div>
     </div>
   );
 }
