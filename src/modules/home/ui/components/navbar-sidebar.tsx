@@ -53,7 +53,7 @@ export const NavbarSidebar = ({
             </Link>
             <Link 
               onClick={() => onOpenChange(false)} href="/sign-up" className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium">
-              Start selling
+              Start Supplying
             </Link>
           </div>
         </ScrollArea>

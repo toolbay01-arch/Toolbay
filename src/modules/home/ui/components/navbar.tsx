@@ -64,7 +64,7 @@ export const Navbar = () => {
     <nav className="h-20 flex border-b justify-between font-medium bg-white">
       <Link href="/" className="pl-6 flex items-center">
         <span className={cn("text-5xl font-semibold", poppins.className)}>
-          funroad
+          Toolboxx
         </span>
       </Link>
 
@@ -113,7 +113,7 @@ export const Navbar = () => {
             className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-lg"
           >
             <Link prefetch href="/sign-up">
-              Start selling
+              Start Supplying
             </Link>
           </Button>
         </div>

@@ -22,9 +22,9 @@ export function generateTenantURL(tenantSlug: string) {
 };
 
 export function formatCurrency(value: number | string) {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("rw-RW", {
     style: "currency",
-    currency: "USD",
+    currency: "RWF",
     maximumFractionDigits: 0,
   }).format(Number(value));
 };

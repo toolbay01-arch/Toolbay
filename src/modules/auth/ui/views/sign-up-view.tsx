@@ -82,7 +82,7 @@ export const SignUpView = () => {
             <div className="flex items-center justify-between mb-8">
               <Link href="/">
                 <span className={cn("text-2xl font-semibold", poppins.className)}>
-                  funroad
+                  Toolboxx
                 </span>
               </Link>
               <Button
@@ -97,7 +97,7 @@ export const SignUpView = () => {
               </Button>
             </div>
             <h1 className="text-4xl font-medium">
-              Join over 1,580 creators earning money on Funroad.
+              Join over 1,580 construction suppliers earning money on Toolboxx.
             </h1>
             <FormField
               name="username"
@@ -245,7 +245,7 @@ export const SignUpView = () => {
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mt-6">
               <p className="text-sm text-yellow-800">
-                <strong>Next Steps:</strong> After creating your account, you&apos;ll need to upload your RDB Registration Certificate and other documents for verification. Only verified stores can start selling products.
+                <strong>Next Steps:</strong> After creating your account, you&apos;ll need to upload your RDB Registration Certificate and other documents for verification. Only verified stores can start supplying construction materials.
               </p>
             </div>
 
