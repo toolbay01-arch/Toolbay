@@ -136,7 +136,7 @@ export interface UserAuthOperations {
 export interface User {
   id: string;
   username: string;
-  roles?: ('super-admin' | 'user')[] | null;
+  roles?: ('super-admin' | 'tenant' | 'client')[] | null;
   tenants?:
     | {
         tenant: string | Tenant;
@@ -162,6 +162,8 @@ export interface User {
   password?: string | null;
 }
 /**
+ * 🏪 Tenant Management - Super Admin Guide: (1) Review RDB Certificate, (2) Set Verification Status, (3) Check Is Verified, (4) Add Notes, (5) Enable Merchant Capabilities
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "tenants".
  */
@@ -172,7 +174,7 @@ export interface Tenant {
    */
   name: string;
   /**
-   * This is the subdomain for the store (e.g. [slug].funroad.com)
+   * This is the subdomain for the store (e.g. [slug].toolboxx.com)
    */
   slug: string;
   image?: (string | null) | Media;
@@ -205,15 +207,15 @@ export interface Tenant {
    */
   momoPayCode?: string | null;
   /**
-   * Tenant verification status - can only be set by super admin
+   * ✅ SUPER ADMIN: Check this to enable tenant capabilities (product creation, selling). Only check after verifying documents.
    */
   isVerified?: boolean | null;
   /**
-   * Verification stage - can only be updated by super admin
+   * 🔍 SUPER ADMIN: Set verification stage. 'Document Verified' allows selling. 'Physically Verified' allows merchant management.
    */
   verificationStatus?: ('pending' | 'document_verified' | 'physically_verified' | 'rejected') | null;
   /**
-   * Admin notes about verification process
+   * 📝 SUPER ADMIN: Add notes about verification decision, document quality, or follow-up actions needed.
    */
   verificationNotes?: string | null;
   /**
@@ -242,7 +244,7 @@ export interface Tenant {
    */
   signedConsent?: (string | null) | Media;
   /**
-   * Allow this tenant to add merchants - enabled after document verification
+   * 🏪 SUPER ADMIN: Enable merchant account management. Usually enabled after document or physical verification.
    */
   canAddMerchants?: boolean | null;
   /**
@@ -262,7 +264,6 @@ export interface Tenant {
  */
 export interface Media {
   id: string;
-  tenant?: (string | null) | Tenant;
   alt: string;
   updatedAt: string;
   createdAt: string;
@@ -302,7 +303,6 @@ export interface Category {
  */
 export interface Product {
   id: string;
-  tenant?: (string | null) | Tenant;
   name: string;
   description?: {
     root: {
@@ -320,7 +320,7 @@ export interface Product {
     [k: string]: unknown;
   } | null;
   /**
-   * Price in USD
+   * Price in Rwandan Francs (RWF)
    */
   price: number;
   category?: (string | null) | Category;
@@ -378,13 +378,29 @@ export interface Order {
   user: string | User;
   product: string | Product;
   /**
-   * Stripe checkout session associated with the order
+   * Transaction ID from mobile money or bank transfer
    */
-  stripeCheckoutSessionId: string;
+  transactionId: string;
   /**
-   * Stripe account associated with the order
+   * Payment method used for this transaction
    */
-  stripeAccountId?: string | null;
+  paymentMethod: 'mobile_money' | 'bank_transfer';
+  /**
+   * Bank name or mobile money provider (MTN, Airtel, etc.)
+   */
+  bankName?: string | null;
+  /**
+   * Bank account number or mobile money number
+   */
+  accountNumber?: string | null;
+  /**
+   * Transaction amount in Rwandan Francs (RWF)
+   */
+  amount: number;
+  /**
+   * Currency (Rwandan Francs)
+   */
+  currency?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -517,7 +533,6 @@ export interface UsersSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
-  tenant?: T;
   alt?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -549,7 +564,6 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "products_select".
  */
 export interface ProductsSelect<T extends boolean = true> {
-  tenant?: T;
   name?: T;
   description?: T;
   price?: T;
@@ -616,8 +630,12 @@ export interface OrdersSelect<T extends boolean = true> {
   name?: T;
   user?: T;
   product?: T;
-  stripeCheckoutSessionId?: T;
-  stripeAccountId?: T;
+  transactionId?: T;
+  paymentMethod?: T;
+  bankName?: T;
+  accountNumber?: T;
+  amount?: T;
+  currency?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "generate:types": "PAYLOAD_DISABLE_TELEMETRY=true node ./node_modules/payload/bin.js --disable-transpile generate:types",
+    "generate:importmap": "PAYLOAD_DISABLE_TELEMETRY=true node ./node_modules/payload/bin.js --disable-transpile generate:importmap",
     "db:fresh": "node scripts/reset-db.mjs",
     "db:seed": "bun run src/seed.ts"
   },

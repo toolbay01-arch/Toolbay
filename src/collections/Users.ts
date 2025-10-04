@@ -65,13 +65,31 @@ export const Users: CollectionConfig = {
         update: ({ req }) => isSuperAdmin(req.user),
       }
     },
-    // Temporarily disable tenant array field
-    // {
-    //   ...defaultTenantArrayField,
-    //   admin: {
-    //     ...(defaultTenantArrayField?.admin || {}),
-    //     position: "sidebar",
-    //   },
-    // },
+    // Tenant relationship field (replacing multi-tenant plugin)
+    {
+      name: "tenants",
+      type: "array",
+      admin: {
+        position: "sidebar",
+      },
+      access: {
+        read: () => true,
+        create: ({ req }) => isSuperAdmin(req.user),
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
+      fields: [
+        {
+          name: "tenant",
+          type: "relationship",
+          relationTo: "tenants",
+          required: true,
+          access: {
+            read: () => true,
+            create: ({ req }) => isSuperAdmin(req.user),
+            update: ({ req }) => isSuperAdmin(req.user),
+          },
+        },
+      ],
+    },
   ],
 };

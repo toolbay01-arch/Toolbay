@@ -2,9 +2,9 @@ import { Button, Link } from "@payloadcms/ui";
 
 export const StripeVerify = () => {
   return (
-    <Link href="/verify-tenants">
+    <Link href="/admin/collections/tenants">
       <Button>
-        Verify Tenants
+        Manage Tenants
       </Button>
     </Link>
   );

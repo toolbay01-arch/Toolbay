@@ -38,7 +38,7 @@ export const checkoutRouter = createTRPCRouter({
       }
 
       // Check if tenant is verified for Rwanda business requirements
-      if (!tenant.verificationStatus || tenant.verificationStatus !== "physically_verified") {
+      if (!tenant.isVerified || (tenant.verificationStatus !== "document_verified" && tenant.verificationStatus !== "physically_verified")) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Tenant verification required. Please complete Rwanda business verification.",
@@ -108,7 +108,7 @@ export const checkoutRouter = createTRPCRouter({
         })
       }
 
-      if (!tenant.verificationStatus || tenant.verificationStatus !== "physically_verified") {
+      if (!tenant.isVerified || (tenant.verificationStatus !== "document_verified" && tenant.verificationStatus !== "physically_verified")) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Tenant not verified to sell products",

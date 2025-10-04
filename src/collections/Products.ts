@@ -11,7 +11,7 @@ export const Products: CollectionConfig = {
 
       const tenant = req.user?.tenants?.[0]?.tenant as Tenant
 
-      return Boolean(tenant?.stripeDetailsSubmitted);
+      return Boolean(tenant?.isVerified);
     },
     delete: ({ req }) => isSuperAdmin(req.user),
   },

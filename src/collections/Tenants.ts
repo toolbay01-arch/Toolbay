@@ -62,6 +62,7 @@ export const Tenants: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'slug',
+    description: '🏪 Tenant Management - Super Admin Guide: (1) Review RDB Certificate, (2) Set Verification Status, (3) Check Is Verified, (4) Add Notes, (5) Enable Merchant Capabilities',
     // Ensure admin can see the collection
     hidden: false,
     // Optimize admin panel performance
@@ -70,19 +71,6 @@ export const Tenants: CollectionConfig = {
     },
   },
   fields: [
-    // Add verification actions as a UI field for super admins
-    {
-      name: 'verificationActions',
-      type: 'ui',
-      admin: {
-        components: {
-          Field: '/src/components/admin/TenantVerificationUI#TenantVerificationUI',
-        },
-        condition: (data, siblingData, { user }) => {
-          return Boolean(user?.roles?.includes('super-admin'));
-        },
-      },
-    },
     {
       name: "name",
       required: true,
@@ -184,7 +172,7 @@ export const Tenants: CollectionConfig = {
         update: ({ req }) => isSuperAdmin(req.user),
       },
       admin: {
-        description: "Tenant verification status - can only be set by super admin",
+        description: "✅ SUPER ADMIN: Check this to enable tenant capabilities (product creation, selling). Only check after verifying documents.",
       },
     },
     {
@@ -202,7 +190,7 @@ export const Tenants: CollectionConfig = {
         update: ({ req }) => isSuperAdmin(req.user),
       },
       admin: {
-        description: "Verification stage - can only be updated by super admin",
+        description: "🔍 SUPER ADMIN: Set verification stage. 'Document Verified' allows selling. 'Physically Verified' allows merchant management.",
       },
     },
     {
@@ -212,7 +200,7 @@ export const Tenants: CollectionConfig = {
         update: ({ req }) => isSuperAdmin(req.user),
       },
       admin: {
-        description: "Admin notes about verification process",
+        description: "📝 SUPER ADMIN: Add notes about verification decision, document quality, or follow-up actions needed.",
       },
     },
     {
@@ -280,7 +268,7 @@ export const Tenants: CollectionConfig = {
         update: ({ req }) => isSuperAdmin(req.user),
       },
       admin: {
-        description: "Allow this tenant to add merchants - enabled after document verification",
+        description: "🏪 SUPER ADMIN: Enable merchant account management. Usually enabled after document or physical verification.",
       },
     },
     {
