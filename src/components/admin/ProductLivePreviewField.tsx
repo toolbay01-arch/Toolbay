@@ -4,21 +4,38 @@ import React from 'react';
 import { useFormFields } from '@payloadcms/ui';
 import { ProductLivePreview } from './ProductLivePreview';
 
-export default function ProductLivePreviewField() {
-  const [fields] = useFormFields(([fields, dispatch]) => {
-    return fields;
-  });
+interface FormFields {
+  image?: unknown;
+  name?: string;
+  description?: unknown;
+  price?: number;
+  category?: unknown;
+  tags?: unknown[];
+  [key: string]: unknown;
+}
 
-  // Debug logging to understand what data we're getting from Payload form fields
-  console.log('[ProductLivePreviewField] Raw form fields:', fields);
-  console.log('[ProductLivePreviewField] Image field specifically:', fields?.image);
-  console.log('[ProductLivePreviewField] Image field type:', typeof fields?.image);
+export default function ProductLivePreviewField() {
+  // Simple approach - let the hook handle its own errors
+  let fields: FormFields = {};
   
-  // Check if image field has the problematic ObjectId structure
-  if (fields?.image && typeof fields.image === 'object') {
-    console.log('[ProductLivePreviewField] Image object keys:', Object.keys(fields.image));
-    console.log('[ProductLivePreviewField] Image object values:', Object.values(fields.image));
+  try {
+    const formData = useFormFields(([fields]) => fields);
+    fields = formData || {};
+  } catch (error) {
+    console.error('[ProductLivePreviewField] Error using useFormFields:', error);
+    // Return a basic component if the hook fails
+    return (
+      <div className="product-live-preview-field">
+        <div style={{ padding: '1rem', border: '1px solid #ccc', borderRadius: '4px' }}>
+          <p>Live preview temporarily unavailable</p>
+        </div>
+      </div>
+    );
   }
+
+  // Debug logging
+  console.log('[ProductLivePreviewField] Fields:', fields);
+  console.log('[ProductLivePreviewField] Image field:', fields?.image);
 
   return (
     <div className="product-live-preview-field">

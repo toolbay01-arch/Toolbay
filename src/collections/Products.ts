@@ -55,10 +55,20 @@ export const Products: CollectionConfig = {
   hooks: {
     beforeChange: [
       ({ req, data }) => {
+        console.log('[Products beforeChange] User:', req.user);
+        console.log('[Products beforeChange] User tenants:', req.user?.tenants);
+        console.log('[Products beforeChange] Data before:', data);
+        
         // Auto-assign tenant for non-super-admin users
         if (!isSuperAdmin(req.user) && req.user?.tenants?.[0]?.tenant) {
-          data.tenant = req.user.tenants[0].tenant;
+          const userTenant = req.user.tenants[0].tenant;
+          // Handle both string ID and object cases
+          const tenantId = typeof userTenant === 'string' ? userTenant : userTenant.id;
+          data.tenant = tenantId;
+          console.log('[Products beforeChange] Assigned tenant ID:', tenantId);
         }
+        
+        console.log('[Products beforeChange] Data after:', data);
         return data;
       },
     ],
@@ -130,6 +140,11 @@ export const Products: CollectionConfig = {
       type: "relationship",
       relationTo: "tenants",
       required: true,
+      access: {
+        // Only super admins can read/update tenant field directly
+        read: ({ req }) => isSuperAdmin(req.user),
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
       admin: {
         condition: (data, siblingData, { user }) => {
           // Only show tenant field to super admins
@@ -170,14 +185,15 @@ export const Products: CollectionConfig = {
         description: "If checked, this product will be archived"
       },
     },
-    {
-      name: "livePreview",
-      type: "ui",
-      admin: {
-        components: {
-          Field: '@/components/admin/ProductLivePreviewField',
-        },
-      },
-    },
+    // Live preview temporarily disabled due to useFormFields compatibility issue
+    // {
+    //   name: "livePreview",
+    //   type: "ui",
+    //   admin: {
+    //     components: {
+    //       Field: '@/components/admin/ProductLivePreviewField',
+    //     },
+    //   },
+    // },
   ],
 };
