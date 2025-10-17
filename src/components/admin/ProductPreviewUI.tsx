@@ -107,32 +107,28 @@ const ProductPreviewUI: React.FC<ProductPreviewUIProps> = () => {
   useEffect(() => {
     const style = document.createElement('style')
     style.textContent = `
-      .render-fields {
-        display: flex !important;
-        gap: 2rem !important;
-        align-items: flex-start !important;
-      }
-      
-      .render-fields > div:first-child {
-        flex: 1 !important;
-        max-width: 60% !important;
-      }
-      
+      /* Fixed preview panel on the right - non-invasive */
       .product-preview-panel {
-        flex: 0 0 35% !important;
+        position: fixed !important;
+        right: 24px !important;
+        top: 80px !important;
+        width: 360px !important;
+        max-height: calc(100vh - 120px) !important;
+        overflow: auto !important;
         background: #ffffff !important;
         border: 2px solid #3b82f6 !important;
         border-radius: 12px !important;
-        padding: 1.5rem !important;
-        height: fit-content !important;
-        position: sticky !important;
-        top: 2rem !important;
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15) !important;
-        min-height: 400px !important;
+        padding: 1.25rem !important;
+        box-shadow: 0 6px 24px rgba(59, 130, 246, 0.15) !important;
+        z-index: 9999 !important;
+      }
+      /* Keep preview internals isolated */
+      .product-preview-panel * {
+        box-sizing: border-box !important;
       }
     `
     document.head.appendChild(style)
-    
+
     return () => {
       if (document.head.contains(style)) {
         document.head.removeChild(style)
