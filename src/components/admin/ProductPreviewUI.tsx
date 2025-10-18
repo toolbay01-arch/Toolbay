@@ -102,7 +102,7 @@ const ProductPreviewUI: React.FC<ProductPreviewUIProps> = () => {
     if (!price && price !== 0) return 'Price not set'
     return `RWF ${price.toLocaleString()}`
   }
-
+// testing the coment
   // Add CSS to create a two-column layout when this component is rendered
   useEffect(() => {
     const style = document.createElement('style')
