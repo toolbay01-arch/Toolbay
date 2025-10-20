@@ -185,14 +185,5 @@ export const Products: CollectionConfig = {
         description: "If checked, this product will be archived"
       },
     },
-    {
-      name: "previewUI",
-      type: "ui",
-      admin: {
-        components: {
-          Field: '@/components/admin/ProductPreviewUI',
-        },
-      },
-    },
   ],
 };
