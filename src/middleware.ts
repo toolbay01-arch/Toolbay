@@ -15,6 +15,19 @@ export const config = {
 
 export default async function middleware(req: NextRequest) {
   const url = req.nextUrl;
+  
+  // Early return for API routes, static files, and Next.js internals
+  // This avoids unnecessary processing for these paths
+  if (
+    url.pathname.startsWith('/api') || 
+    url.pathname.startsWith('/_next') ||
+    url.pathname.startsWith('/_static') ||
+    url.pathname.startsWith('/_vercel') ||
+    url.pathname.startsWith('/media/')
+  ) {
+    return NextResponse.next();
+  }
+  
   // Extract the hostname (e.g., "antonio.toolboxx.com" or "john.localhost:3000")
   const hostname = req.headers.get("host") || "";
 
@@ -22,7 +35,12 @@ export default async function middleware(req: NextRequest) {
 
   if (hostname.endsWith(`.${rootDomain}`)) {
     const tenantSlug = hostname.replace(`.${rootDomain}`, "");
-    return NextResponse.rewrite(new URL(`/tenants/${tenantSlug}${url.pathname}`, req.url));
+    const response = NextResponse.rewrite(
+      new URL(`/tenants/${tenantSlug}${url.pathname}`, req.url)
+    );
+    // Add tenant slug to response headers for potential caching/debugging
+    response.headers.set('x-tenant-slug', tenantSlug);
+    return response;
   }
 
   return NextResponse.next();

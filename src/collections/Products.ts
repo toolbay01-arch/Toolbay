@@ -111,6 +111,7 @@ export const Products: CollectionConfig = {
       name: "price",
       type: "number",
       required: true,
+      index: true, // Index for faster price filtering and sorting
       admin: {
         description: "Price in Rwandan Francs (RWF)",
         step: 100,
@@ -140,6 +141,7 @@ export const Products: CollectionConfig = {
       type: "relationship",
       relationTo: "tenants",
       required: true,
+      index: true, // Index for faster tenant-based filtering
       access: {
         // Only super admins can read/update tenant field directly
         read: ({ req }) => isSuperAdmin(req.user),
@@ -172,6 +174,7 @@ export const Products: CollectionConfig = {
       label: "Private",
       defaultValue: false,
       type: "checkbox",
+      index: true, // Index for faster public/private filtering
       admin: {
         description: "If checked, this product will not be shown on the public storefront"
       },
@@ -181,6 +184,7 @@ export const Products: CollectionConfig = {
       label: "Archive",
       defaultValue: false,
       type: "checkbox",
+      index: true, // Index for faster archived/active product filtering
       admin: {
         description: "If checked, this product will be archived"
       },

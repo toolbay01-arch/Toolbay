@@ -41,6 +41,13 @@ export default buildConfig({
   },
   db: mongooseAdapter({
     url: process.env.DATABASE_URI || '',
+    connectOptions: {
+      maxPoolSize: 10,  // Maximum number of connections in the pool
+      minPoolSize: 2,   // Minimum number of connections to maintain
+      socketTimeoutMS: 45000,  // Close sockets after 45 seconds of inactivity
+      serverSelectionTimeoutMS: 5000,  // Timeout for server selection
+      maxIdleTimeMS: 30000,  // Close idle connections after 30 seconds
+    },
   }),
   sharp,
   plugins: [

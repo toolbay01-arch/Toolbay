@@ -29,7 +29,7 @@ export const productsRouter = createTRPCRouter({
       const product = await ctx.db.findByID({
         collection: "products",
         id: input.id,
-        depth: 2, // Load the "product.image", "product.tenant", and "product.tenant.image"
+        depth: 1, // Reduced from 2 to 1 - loads product.image and product.tenant (without tenant.image)
         select: {
           content: false,
         },
@@ -232,7 +232,7 @@ export const productsRouter = createTRPCRouter({
 
       const data = await ctx.db.find({
         collection: "products",
-        depth: 2, // Populate "category", "image", "tenant" & "tenant.image"
+        depth: 1, // Reduced from 2 to 1 - loads category, image, tenant (without nested relationships)
         where,
         sort,
         page: input.cursor,

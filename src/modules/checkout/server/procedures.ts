@@ -62,7 +62,7 @@ export const checkoutRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const products = await ctx.db.find({
         collection: "products",
-        depth: 2,
+        depth: 1, // Reduced from 2 to 1 for better performance
         where: {
           and: [
             {
@@ -156,7 +156,7 @@ export const checkoutRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const data = await ctx.db.find({
         collection: "products",
-        depth: 2, // Populate "category", "image", "tenant" & "tenant.image"
+        depth: 1, // Reduced from 2 to 1 for better performance
         where: {
           and: [
             {
