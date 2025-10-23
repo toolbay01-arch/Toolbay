@@ -27,11 +27,21 @@ const dirname = path.dirname(filename)
 export default buildConfig({
   admin: {
     user: Users.slug,
+    meta: {
+      titleSuffix: '- Toolboxx',
+      openGraph: {
+        title: 'Toolboxx',
+      },
+    },
     importMap: {
       baseDir: path.resolve(dirname),
     },
     components: {
       afterNavLinks: ['@/components/admin/UserVerificationBadge'],
+      graphics: {
+        Logo: '@/components/admin/ToolboxxLogo',
+        Icon: '@/components/admin/ToolboxxIcon',
+      },
     },
   },
   collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews],

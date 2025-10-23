@@ -1,0 +1,41 @@
+/* Replace "Payload" text with "Toolboxx" everywhere */
+
+/* Sidebar navigation brand */
+.nav__brand span {
+  visibility: hidden;
+  position: relative;
+}
+
+.nav__brand span::after {
+  content: 'Toolboxx';
+  visibility: visible;
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+/* Login page logo - target all possible selectors */
+svg + span,
+.logo-text,
+[class*="logo"] span,
+[class*="brand"] span {
+  visibility: hidden !important;
+  position: relative !important;
+}
+
+svg + span::after,
+.logo-text::after,
+[class*="logo"] span::after,
+[class*="brand"] span::after {
+  content: 'Toolboxx' !important;
+  visibility: visible !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.025em !important;
+}
