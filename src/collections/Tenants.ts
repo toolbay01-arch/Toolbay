@@ -168,6 +168,36 @@ export const Tenants: CollectionConfig = {
         description: "Mobile Money (MOMO) Pay Code",
       },
     },
+    {
+      name: "momoCode",
+      type: "number",
+      unique: true,
+      index: true,
+      admin: {
+        condition: (data) => data.paymentMethod === 'momo_pay',
+        description: "⚠️ REQUIRED: Mobile Money Code (integer) for receiving payments - Used in dial code *182*8*1*CODE*Amount#",
+        placeholder: "e.g., 828822, 123456",
+      },
+    },
+    {
+      name: "momoAccountName",
+      type: "text",
+      admin: {
+        condition: (data) => data.paymentMethod === 'momo_pay',
+        description: "Business name for MoMo account (shown to customers)",
+        placeholder: "Business Name",
+      },
+    },
+    {
+      name: "totalRevenue",
+      type: "number",
+      defaultValue: 0,
+      min: 0,
+      admin: {
+        description: "Total revenue after platform fees (RWF) - Updated automatically after payment verification",
+        readOnly: true,
+      },
+    },
     // Verification fields
     {
       name: "isVerified",

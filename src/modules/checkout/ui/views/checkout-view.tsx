@@ -7,11 +7,9 @@ import { InboxIcon, LoaderIcon } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useTRPC } from "@/trpc/client";
-import { generateTenantURL } from "@/lib/utils";
 
 import { useCart } from "../../hooks/use-cart";
-import { CheckoutItem } from "../components/checkout-item";
-import { CheckoutSidebar } from "../components/checkout-sidebar";
+import { CheckoutForm, CheckoutFormData } from "../components/checkout-form";
 import { useCheckoutStates } from "../../hooks/use-checkout-states";
 
 interface CheckoutViewProps {
@@ -29,12 +27,13 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
     ids: productIds,
   }));
 
-  const purchase = useMutation(trpc.checkout.purchase.mutationOptions({
+  const purchase = useMutation(trpc.checkout.initiatePayment.mutationOptions({
     onMutate: () => {
       setStates({ success: false, cancel: false });
     },
     onSuccess: (data) => {
-      window.location.href = data.url;
+      // Redirect to payment instructions page
+      router.push(`/payment/instructions?transactionId=${data.transactionId}`);
     },
     onError: (error) => {
       if (error.data?.code === "UNAUTHORIZED") {
@@ -45,6 +44,21 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
       toast.error(error.message);
     },
   }));
+
+  const handleCheckoutSubmit = (formData: CheckoutFormData) => {
+    purchase.mutate({
+      tenantSlug,
+      productIds,
+      customerEmail: formData.email,
+      customerPhone: formData.phone,
+      customerName: formData.name,
+      shippingAddress: {
+        line1: formData.addressLine1,
+        city: formData.city,
+        country: formData.country,
+      },
+    });
+  };
 
   useEffect(() => {
     if (states.success) {
@@ -91,37 +105,31 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
   }
 
   return (
-    <div className="lg:pt-16 pt-4 px-4 lg:px-12">
-      <div className="grid grid-cols-1 lg:grid-cols-7 gap-4 lg:gap-16">
-
-        <div className="lg:col-span-4">
-          <div className="border rounded-md overflow-hidden bg-white">
-            {data?.docs.map((product, index) => (
-              <CheckoutItem
-                key={product.id}
-                isLast={index === data.docs.length - 1}
-                imageUrl={product.image?.url}
-                name={product.name}
-                productUrl={`${generateTenantURL(product.tenant.slug)}/products/${product.id}`}
-                tenantUrl={generateTenantURL(product.tenant.slug)}
-                tenantName={product.tenant.name}
-                price={product.price}
-                onRemove={() => removeProduct(product.id)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="lg:col-span-3">
-          <CheckoutSidebar
-            total={data?.totalPrice || 0}
-            onPurchase={() => purchase.mutate({ tenantSlug, productIds })}
-            isCanceled={states.cancel}
-            disabled={purchase.isPending}
-          />
-        </div>
-
+    <div className="lg:pt-16 pt-4 px-4 lg:px-12 max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Checkout</h1>
+        <p className="text-muted-foreground">
+          Complete your order information below
+        </p>
       </div>
+
+      <CheckoutForm
+        cartItems={data?.docs.map(product => ({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          quantity: 1,
+        })) || []}
+        totalAmount={data?.totalPrice || 0}
+        onSubmitAction={handleCheckoutSubmit}
+        isSubmitting={purchase.isPending}
+      />
+
+      {states.cancel && (
+        <div className="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p className="font-medium">Checkout failed. Please try again.</p>
+        </div>
+      )}
     </div>
   );
 };

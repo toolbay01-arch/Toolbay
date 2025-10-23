@@ -73,6 +73,7 @@ export interface Config {
     products: Product;
     tags: Tag;
     tenants: Tenant;
+    transactions: Transaction;
     orders: Order;
     reviews: Review;
     'payload-locked-documents': PayloadLockedDocument;
@@ -91,6 +92,7 @@ export interface Config {
     products: ProductsSelect<false> | ProductsSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     tenants: TenantsSelect<false> | TenantsSelect<true>;
+    transactions: TransactionsSelect<false> | TransactionsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     reviews: ReviewsSelect<false> | ReviewsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -207,6 +209,18 @@ export interface Tenant {
    */
   momoPayCode?: string | null;
   /**
+   * ⚠️ REQUIRED: Mobile Money Code (integer) for receiving payments - Used in dial code *182*8*1*CODE*Amount#
+   */
+  momoCode?: number | null;
+  /**
+   * Business name for MoMo account (shown to customers)
+   */
+  momoAccountName?: string | null;
+  /**
+   * Total revenue after platform fees (RWF) - Updated automatically after payment verification
+   */
+  totalRevenue?: number | null;
+  /**
    * ✅ SUPER ADMIN: Check this to enable tenant capabilities (product creation, selling). Only check after verifying documents.
    */
   isVerified?: boolean | null;
@@ -218,6 +232,14 @@ export interface Tenant {
    * 📝 SUPER ADMIN: Add notes about verification decision, document quality, or follow-up actions needed.
    */
   verificationNotes?: string | null;
+  /**
+   * 📋 Tenant has requested verification review
+   */
+  verificationRequested?: boolean | null;
+  /**
+   * 📅 When verification was requested
+   */
+  verificationRequestedAt?: string | null;
   /**
    * Tenant has requested physical verification
    */
@@ -303,7 +325,18 @@ export interface Category {
  */
 export interface Product {
   id: string;
+  /**
+   * Main product image - this will be the first thing customers see
+   */
+  image: string | Media;
+  /**
+   * Additional product image (optional)
+   */
+  cover?: (string | null) | Media;
   name: string;
+  /**
+   * Describe your product's key features and condition
+   */
   description?: {
     root: {
       type: string;
@@ -323,10 +356,18 @@ export interface Product {
    * Price in Rwandan Francs (RWF)
    */
   price: number;
-  category?: (string | null) | Category;
+  /**
+   * Select the most appropriate category for your product
+   */
+  category: string | Category;
+  /**
+   * Add tags to help customers find your product
+   */
   tags?: (string | Tag)[] | null;
-  image?: (string | null) | Media;
-  cover?: (string | null) | Media;
+  /**
+   * Tenant who owns this product
+   */
+  tenant?: (string | null) | Tenant;
   refundPolicy?: ('30-day' | '14-day' | '7-day' | '3-day' | '1-day' | 'no-refunds') | null;
   /**
    * Protected content only visible to customers after purchase. Add product documentation, downloadable files, getting started guides, and bonus materials. Supports Markdown formatting
@@ -369,14 +410,161 @@ export interface Tag {
   createdAt: string;
 }
 /**
+ * Payment transactions pending verification - Transactions are created automatically through checkout
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactions".
+ */
+export interface Transaction {
+  id: string;
+  /**
+   * Auto-generated payment reference (e.g., PAY1AB2C3D4E)
+   */
+  paymentReference: string;
+  /**
+   * Current status of the transaction
+   */
+  status: 'pending' | 'awaiting_verification' | 'verified' | 'rejected' | 'expired';
+  /**
+   * Customer who made the purchase
+   */
+  customer: string | User;
+  /**
+   * Customer name for quick reference
+   */
+  customerName: string;
+  /**
+   * Customer email for notifications
+   */
+  customerEmail: string;
+  /**
+   * Phone number used for MoMo payment
+   */
+  customerPhone?: string | null;
+  /**
+   * Customer shipping address
+   */
+  shippingAddress?: {
+    /**
+     * Address line 1
+     */
+    line1?: string | null;
+    /**
+     * City
+     */
+    city?: string | null;
+    /**
+     * Country
+     */
+    country?: string | null;
+  };
+  /**
+   * Store receiving the payment
+   */
+  tenant: string | Tenant;
+  /**
+   * Products in this transaction
+   */
+  products: {
+    product: string | Product;
+    price: number;
+    id?: string | null;
+  }[];
+  /**
+   * Total amount in RWF
+   */
+  totalAmount: number;
+  /**
+   * Platform fee (10% of total)
+   */
+  platformFee: number;
+  /**
+   * Amount for tenant after platform fee
+   */
+  tenantAmount: number;
+  /**
+   * MTN Mobile Money Transaction ID (from customer SMS)
+   */
+  mtnTransactionId?: string | null;
+  /**
+   * Transaction expires after 48 hours
+   */
+  expiresAt: string;
+  /**
+   * When the payment was verified
+   */
+  verifiedAt?: string | null;
+  /**
+   * Admin/Tenant who verified the payment
+   */
+  verifiedBy?: (string | null) | User;
+  /**
+   * Reason for rejection
+   */
+  rejectionReason?: string | null;
+  /**
+   * Internal notes about this transaction
+   */
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "orders".
  */
 export interface Order {
   id: string;
+  /**
+   * Unique order reference number
+   */
+  orderNumber: string;
   name: string;
+  /**
+   * Customer who placed the order
+   */
   user: string | User;
+  products: {
+    product: string | Product;
+    quantity: number;
+    /**
+     * Price of the product at time of purchase
+     */
+    priceAtPurchase: number;
+    id?: string | null;
+  }[];
+  /**
+   * Main product (for backwards compatibility)
+   */
   product: string | Product;
+  /**
+   * Total order amount in RWF
+   */
+  totalAmount: number;
+  /**
+   * Related verified transaction
+   */
+  transaction?: (string | null) | Transaction;
+  /**
+   * Order fulfillment status. Orders start as 'pending' after payment verification, then move through shipped → delivered → completed when customer confirms receipt.
+   */
+  status: 'pending' | 'shipped' | 'delivered' | 'completed' | 'cancelled';
+  /**
+   * Date when customer confirmed receipt of item
+   */
+  confirmedAt?: string | null;
+  /**
+   * Date when item was shipped
+   */
+  shippedAt?: string | null;
+  /**
+   * Date when item was delivered
+   */
+  deliveredAt?: string | null;
+  /**
+   * Customer confirmed receipt of order
+   */
+  received?: boolean | null;
   /**
    * Transaction ID from mobile money or bank transfer
    */
@@ -447,6 +635,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'tenants';
         value: string | Tenant;
+      } | null)
+    | ({
+        relationTo: 'transactions';
+        value: string | Transaction;
       } | null)
     | ({
         relationTo: 'orders';
@@ -564,13 +756,14 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "products_select".
  */
 export interface ProductsSelect<T extends boolean = true> {
+  image?: T;
+  cover?: T;
   name?: T;
   description?: T;
   price?: T;
   category?: T;
   tags?: T;
-  image?: T;
-  cover?: T;
+  tenant?: T;
   refundPolicy?: T;
   content?: T;
   isPrivate?: T;
@@ -603,9 +796,14 @@ export interface TenantsSelect<T extends boolean = true> {
   bankName?: T;
   bankAccountNumber?: T;
   momoPayCode?: T;
+  momoCode?: T;
+  momoAccountName?: T;
+  totalRevenue?: T;
   isVerified?: T;
   verificationStatus?: T;
   verificationNotes?: T;
+  verificationRequested?: T;
+  verificationRequestedAt?: T;
   physicalVerificationRequested?: T;
   physicalVerificationRequestedAt?: T;
   physicalVerificationImages?:
@@ -624,12 +822,66 @@ export interface TenantsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactions_select".
+ */
+export interface TransactionsSelect<T extends boolean = true> {
+  paymentReference?: T;
+  status?: T;
+  customer?: T;
+  customerName?: T;
+  customerEmail?: T;
+  customerPhone?: T;
+  shippingAddress?:
+    | T
+    | {
+        line1?: T;
+        city?: T;
+        country?: T;
+      };
+  tenant?: T;
+  products?:
+    | T
+    | {
+        product?: T;
+        price?: T;
+        id?: T;
+      };
+  totalAmount?: T;
+  platformFee?: T;
+  tenantAmount?: T;
+  mtnTransactionId?: T;
+  expiresAt?: T;
+  verifiedAt?: T;
+  verifiedBy?: T;
+  rejectionReason?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "orders_select".
  */
 export interface OrdersSelect<T extends boolean = true> {
+  orderNumber?: T;
   name?: T;
   user?: T;
+  products?:
+    | T
+    | {
+        product?: T;
+        quantity?: T;
+        priceAtPurchase?: T;
+        id?: T;
+      };
   product?: T;
+  totalAmount?: T;
+  transaction?: T;
+  status?: T;
+  confirmedAt?: T;
+  shippedAt?: T;
+  deliveredAt?: T;
+  received?: T;
   transactionId?: T;
   paymentMethod?: T;
   bankName?: T;

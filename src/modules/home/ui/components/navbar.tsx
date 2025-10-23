@@ -45,11 +45,19 @@ const NavbarItem = ({
   );
 };
 
-const navbarItems = [
+const publicNavbarItems = [
   { href: "/", children: "Home" },
   { href: "/about", children: "About" },
   { href: "/features", children: "Features" },
   { href: "/pricing", children: "Pricing" },
+  { href: "/contact", children: "Contact" },
+];
+
+const customerNavbarItems = [
+  { href: "/", children: "Home" },
+  { href: "/my-account", children: "My Account" },
+  { href: "/orders", children: "My Orders" },
+  { href: "/about", children: "About" },
   { href: "/contact", children: "Contact" },
 ];
 
@@ -59,6 +67,9 @@ export const Navbar = () => {
 
   const trpc = useTRPC();
   const session = useQuery(trpc.auth.session.queryOptions());
+  
+  // Show customer items if logged in, otherwise show public items
+  const navbarItems = session.data?.user ? customerNavbarItems : publicNavbarItems;
 
   return (
     <nav className="h-20 flex border-b justify-between font-medium bg-white">
@@ -92,8 +103,8 @@ export const Navbar = () => {
             asChild
             className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-lg"
           >
-            <Link href={session.data.user.roles?.includes('super-admin') ? "/admin" : "/dashboard"}>
-              {session.data.user.roles?.includes('super-admin') ? "Admin Panel" : "Dashboard"}
+            <Link href={session.data.user.roles?.includes('super-admin') ? "/admin" : session.data.user.roles?.includes('tenant') ? "/dashboard" : "/my-account"}>
+              {session.data.user.roles?.includes('super-admin') ? "Admin Panel" : session.data.user.roles?.includes('tenant') ? "Dashboard" : "My Account"}
             </Link>
           </Button>
         </div>

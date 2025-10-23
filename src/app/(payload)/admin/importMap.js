@@ -26,6 +26,8 @@ import { default as default_a5a9f5d9a6f11e5ce71498f67210f9e2 } from '@/component
 import { default as default_17417a7d6db9be315dc2dbedf16f7fbc } from '@/components/admin/VerificationRequestedCell'
 import { default as default_f402e65b9a853a1a95660bc4eb1bd787 } from '@/components/admin/TenantVerificationUI'
 import { default as default_2408a2fd7e20ebb9496e085c702455c4 } from '@/components/admin/TenantVerificationListView'
+import { TransactionActionCell as TransactionActionCell_4f9f4e61fa661cf2d6fe687b7fe68946 } from '@/components/admin/TransactionActionCell'
+import { OrderStatusCell as OrderStatusCell_a62e47b57797e0bb7a9458ad5341f335 } from '@/components/admin/OrderStatusCell'
 import { default as default_2837fafbe816b12f64987280154e7abd } from '@/components/admin/UserVerificationBadge'
 import { VercelBlobClientUploadHandler as VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e } from '@payloadcms/storage-vercel-blob/client'
 
@@ -58,6 +60,8 @@ export const importMap = {
   "@/components/admin/VerificationRequestedCell#default": default_17417a7d6db9be315dc2dbedf16f7fbc,
   "@/components/admin/TenantVerificationUI#default": default_f402e65b9a853a1a95660bc4eb1bd787,
   "@/components/admin/TenantVerificationListView#default": default_2408a2fd7e20ebb9496e085c702455c4,
+  "@/components/admin/TransactionActionCell#TransactionActionCell": TransactionActionCell_4f9f4e61fa661cf2d6fe687b7fe68946,
+  "@/components/admin/OrderStatusCell#OrderStatusCell": OrderStatusCell_a62e47b57797e0bb7a9458ad5341f335,
   "@/components/admin/UserVerificationBadge#default": default_2837fafbe816b12f64987280154e7abd,
   "@payloadcms/storage-vercel-blob/client#VercelBlobClientUploadHandler": VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e
 }
