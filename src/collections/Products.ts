@@ -93,6 +93,22 @@ export const Products: CollectionConfig = {
       },
     },
     {
+      name: "gallery",
+      type: "array",
+      maxRows: 24,
+      admin: {
+        description: "Product gallery - up to 24 photos and videos",
+      },
+      fields: [
+        {
+          name: "media",
+          type: "upload",
+          relationTo: "media",
+          required: true,
+        },
+      ],
+    },
+    {
       name: "name",
       type: "text",
       required: true,

@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ImageUpload } from "./image-upload";
 
 interface ProductFormData {
   name: string;
@@ -35,6 +36,7 @@ interface ProductFormData {
   category: string;
   image: string;
   cover?: string;
+  gallery?: string[];
   refundPolicy: "30-day" | "14-day" | "7-day" | "3-day" | "1-day" | "no-refunds";
   isPrivate: boolean;
 }
@@ -92,6 +94,19 @@ export const ProductFormDialog = ({
         const coverId = typeof productData.cover === "string" ? productData.cover : productData.cover.id;
         setValue("cover", coverId);
       }
+
+      // Handle gallery field (type assertion needed until payload-types regenerated)
+      const productDataWithGallery = productData as any;
+      if (productDataWithGallery.gallery && Array.isArray(productDataWithGallery.gallery)) {
+        const galleryIds = productDataWithGallery.gallery.map((item: any) => {
+          if (typeof item === "string") return item;
+          if (item.media) {
+            return typeof item.media === "string" ? item.media : item.media.id;
+          }
+          return null;
+        }).filter(Boolean);
+        setValue("gallery", galleryIds);
+      }
     }
   }, [productData, mode, setValue]);
 
@@ -121,6 +136,18 @@ export const ProductFormDialog = ({
   }));
 
   const onSubmit = (data: ProductFormData) => {
+    // Automatically set the first gallery image as the main product image
+    if (data.gallery && data.gallery.length > 0) {
+      data.image = data.gallery[0]!;
+      // Optionally set second image as cover
+      if (data.gallery.length > 1) {
+        data.cover = data.gallery[1];
+      }
+    } else if (!data.image) {
+      toast.error("Please upload at least one product image");
+      return;
+    }
+
     if (mode === "create") {
       createMutation.mutate(data);
     } else if (mode === "edit" && productId) {
@@ -218,31 +245,15 @@ export const ProductFormDialog = ({
             </div>
 
             <div>
-              <Label htmlFor="image">Image ID *</Label>
-              <Input
-                id="image"
-                {...register("image", { required: "Image is required" })}
-                placeholder="Upload image in Media Library and paste ID here"
+              <Label>Product Photos & Videos</Label>
+              <ImageUpload
+                value={watch("gallery") || []}
+                onChange={(value) => setValue("gallery", value)}
+                maxImages={24}
               />
-              <p className="text-sm text-gray-500 mt-1">
-                Upload images in the{" "}
-                <a href="/admin/collections/media/create" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                  Media Library
-                </a>{" "}
-                first, then copy the ID
-              </p>
-              {errors.image && (
-                <p className="text-sm text-red-600 mt-1">{errors.image.message}</p>
+              {errors.gallery && (
+                <p className="text-sm text-red-600 mt-1">{errors.gallery.message as string}</p>
               )}
-            </div>
-
-            <div>
-              <Label htmlFor="cover">Cover Image ID (Optional)</Label>
-              <Input
-                id="cover"
-                {...register("cover")}
-                placeholder="Optional cover image ID"
-              />
             </div>
 
             <div>

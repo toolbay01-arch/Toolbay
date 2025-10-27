@@ -24,6 +24,7 @@ const createProductSchema = z.object({
   tags: z.array(z.string()).optional(),
   image: z.string().min(1, "Product image is required"),
   cover: z.string().optional(),
+  gallery: z.array(z.string()).optional(), // Array of media IDs
   refundPolicy: z.enum(["30-day", "14-day", "7-day", "3-day", "1-day", "no-refunds"]).default("30-day"),
   content: z.any().optional(), // Rich text
   isPrivate: z.boolean().default(false),
@@ -38,6 +39,7 @@ const updateProductSchema = z.object({
   tags: z.array(z.string()).optional(),
   image: z.string().optional(),
   cover: z.string().optional(),
+  gallery: z.array(z.string()).optional(), // Array of media IDs
   refundPolicy: z.enum(["30-day", "14-day", "7-day", "3-day", "1-day", "no-refunds"]).optional(),
   content: z.any().optional(),
   isPrivate: z.boolean().optional(),
@@ -453,13 +455,22 @@ export const productsRouter = createTRPCRouter({
         });
       }
 
+      // Transform gallery array to Payload format
+      const productData: any = {
+        ...input,
+        tenant: tenantId,
+      };
+
+      if (input.gallery && input.gallery.length > 0) {
+        productData.gallery = input.gallery.map((mediaId) => ({
+          media: mediaId,
+        }));
+      }
+
       // Create the product
       const product = await ctx.db.create({
         collection: "products",
-        data: {
-          ...input,
-          tenant: tenantId,
-        },
+        data: productData,
       });
 
       return product;
@@ -505,11 +516,19 @@ export const productsRouter = createTRPCRouter({
         });
       }
 
+      // Transform gallery array to Payload format if provided
+      const finalUpdateData: any = { ...updateData };
+      if (updateData.gallery && Array.isArray(updateData.gallery)) {
+        finalUpdateData.gallery = updateData.gallery.map((mediaId: string) => ({
+          media: mediaId,
+        }));
+      }
+
       // Update the product
       const product = await ctx.db.update({
         collection: "products",
         id,
-        data: updateData,
+        data: finalUpdateData,
       });
 
       return product;
