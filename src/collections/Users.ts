@@ -38,10 +38,10 @@ export const Users: CollectionConfig = {
   },
   auth: {
     cookies: {
-      ...(process.env.NODE_ENV !== "development" && {
-        sameSite: "None",
+      sameSite: "Lax",
+      secure: process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_APP_URL?.includes('localhost'),
+      ...(process.env.NEXT_PUBLIC_ROOT_DOMAIN && !process.env.NEXT_PUBLIC_APP_URL?.includes('localhost') && {
         domain: process.env.NEXT_PUBLIC_ROOT_DOMAIN,
-        secure: true,
       }),
     }
   },

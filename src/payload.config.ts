@@ -25,23 +25,15 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
+  serverURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   admin: {
     user: Users.slug,
-    meta: {
-      titleSuffix: '- Toolboxx',
-      openGraph: {
-        title: 'Toolboxx',
-      },
-    },
+    autoLogin: false,
     importMap: {
       baseDir: path.resolve(dirname),
     },
     components: {
       afterNavLinks: ['@/components/admin/UserVerificationBadge'],
-      graphics: {
-        Logo: '@/components/admin/ToolboxxLogo',
-        Icon: '@/components/admin/ToolboxxIcon',
-      },
     },
   },
   collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews],
