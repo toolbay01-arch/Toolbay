@@ -46,17 +46,23 @@ export const ImageCarousel = ({
     if (touch) setTouchEnd(touch.clientX);
   };
 
-  const onTouchEnd = () => {
+  const onTouchEnd = (e: React.TouchEvent) => {
     if (!touchStart || !touchEnd) return;
 
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
 
-    if (isLeftSwipe) {
-      goToNext();
-    } else if (isRightSwipe) {
-      goToPrevious();
+    if (isLeftSwipe || isRightSwipe) {
+      // Only prevent navigation if user actually swiped
+      e.preventDefault();
+      e.stopPropagation();
+      
+      if (isLeftSwipe) {
+        goToNext();
+      } else if (isRightSwipe) {
+        goToPrevious();
+      }
     }
   };
 
