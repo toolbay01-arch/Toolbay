@@ -331,9 +331,9 @@ export const ImageUpload = ({
         }
       }
 
-      // Update the value with new media IDs
+      // Update the value with new media IDs (prepend to show newest first)
       if (newMediaIds.length > 0) {
-        const updatedValue = [...value, ...newMediaIds];
+        const updatedValue = [...newMediaIds, ...value];
         onChange(updatedValue);
       }
 
