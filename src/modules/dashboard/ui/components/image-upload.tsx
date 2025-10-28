@@ -19,6 +19,13 @@ interface UploadedFile {
   fileType: "image" | "video";
 }
 
+interface UploadProgress {
+  fileName: string;
+  progress: number;
+  status: 'uploading' | 'processing' | 'complete' | 'error';
+  error?: string;
+}
+
 export const ImageUpload = ({
   value = [],
   onChange,
@@ -28,6 +35,7 @@ export const ImageUpload = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
@@ -58,6 +66,7 @@ export const ImageUpload = ({
   }, [value]);
 
   // Resize image to max dimensions while maintaining aspect ratio
+  // Only optimizes if image is large enough to benefit from it
   const resizeImage = async (file: File, maxWidth = 1920, maxHeight = 1920, quality = 0.9): Promise<File> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -66,11 +75,17 @@ export const ImageUpload = ({
         const img = new window.Image();
         
         img.onload = () => {
+          // Get original dimensions
+          const originalWidth = img.width;
+          const originalHeight = img.height;
+          
           // Calculate new dimensions
-          let width = img.width;
-          let height = img.height;
+          let width = originalWidth;
+          let height = originalHeight;
+          let needsResize = false;
           
           if (width > maxWidth || height > maxHeight) {
+            needsResize = true;
             const aspectRatio = width / height;
             
             if (width > height) {
@@ -80,6 +95,13 @@ export const ImageUpload = ({
               height = maxHeight;
               width = height * aspectRatio;
             }
+          }
+
+          // If image doesn't need resizing and file is already small, return original
+          if (!needsResize && file.size < 500 * 1024) {
+            console.log(`Image is already optimized (${(file.size / 1024).toFixed(0)}KB, ${originalWidth}x${originalHeight}), skipping compression`);
+            resolve(file);
+            return;
           }
           
           // Create canvas and resize
@@ -95,6 +117,24 @@ export const ImageUpload = ({
           
           ctx.drawImage(img, 0, 0, width, height);
           
+          // Determine quality based on file size
+          let finalQuality = quality;
+          const fileSizeKB = file.size / 1024;
+          
+          if (fileSizeKB < 200) {
+            // Small files: use high quality to preserve detail
+            finalQuality = 0.95;
+          } else if (fileSizeKB < 500) {
+            // Medium files: use good quality
+            finalQuality = 0.9;
+          } else if (fileSizeKB < 2000) {
+            // Large files: balance quality and size
+            finalQuality = 0.85;
+          } else {
+            // Very large files: prioritize size reduction
+            finalQuality = 0.8;
+          }
+          
           // Convert to blob
           canvas.toBlob(
             (blob) => {
@@ -109,11 +149,11 @@ export const ImageUpload = ({
                 lastModified: Date.now(),
               });
               
-              console.log(`Image resized: ${(file.size / 1024).toFixed(0)}KB → ${(resizedFile.size / 1024).toFixed(0)}KB`);
+              console.log(`Image optimized: ${(file.size / 1024).toFixed(0)}KB → ${(resizedFile.size / 1024).toFixed(0)}KB (${originalWidth}x${originalHeight} → ${Math.round(width)}x${Math.round(height)})`);
               resolve(resizedFile);
             },
             file.type,
-            quality
+            finalQuality
           );
         };
         
@@ -123,6 +163,116 @@ export const ImageUpload = ({
       
       reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsDataURL(file);
+    });
+  };
+
+  // Upload a single file with progress tracking using XHR
+  const uploadSingleFile = (file: File, fileName: string): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("alt", fileName.replace(/\.[^/.]+$/, "")); // Remove extension
+
+      const xhr = new XMLHttpRequest();
+
+      // Track upload progress
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = (e.loaded / e.total) * 100;
+          setUploadProgress(prev => 
+            prev.map(p => 
+              p.fileName === fileName 
+                ? { ...p, progress: percentComplete, status: 'uploading' }
+                : p
+            )
+          );
+        }
+      });
+
+      // Handle completion
+      xhr.addEventListener("load", async () => {
+        if (xhr.status === 200) {
+          try {
+            const contentType = xhr.getResponseHeader("content-type");
+            
+            if (contentType && contentType.includes("application/json")) {
+              const data = JSON.parse(xhr.responseText);
+              
+              // Mark as processing (server-side processing complete)
+              setUploadProgress(prev => 
+                prev.map(p => 
+                  p.fileName === fileName 
+                    ? { ...p, progress: 100, status: 'complete' }
+                    : p
+                )
+              );
+
+              toast.success(`${fileName} uploaded successfully`);
+              resolve(data.doc.id);
+            } else {
+              console.error("Non-JSON response from /api/media:", xhr.responseText);
+              setUploadProgress(prev => 
+                prev.map(p => 
+                  p.fileName === fileName 
+                    ? { ...p, status: 'error', error: `Upload failed: ${xhr.status}` }
+                    : p
+                )
+              );
+              toast.error(`Upload failed: ${xhr.status} ${xhr.statusText}`);
+              resolve(null);
+            }
+          } catch (error) {
+            console.error("Upload parse error:", error);
+            setUploadProgress(prev => 
+              prev.map(p => 
+                p.fileName === fileName 
+                  ? { ...p, status: 'error', error: 'Failed to parse response' }
+                  : p
+              )
+            );
+            toast.error(`Failed to upload ${fileName}`);
+            resolve(null);
+          }
+        } else {
+          setUploadProgress(prev => 
+            prev.map(p => 
+              p.fileName === fileName 
+                ? { ...p, status: 'error', error: `HTTP ${xhr.status}` }
+                : p
+            )
+          );
+          toast.error(`Failed to upload ${fileName}: ${xhr.status}`);
+          resolve(null);
+        }
+      });
+
+      // Handle errors
+      xhr.addEventListener("error", () => {
+        setUploadProgress(prev => 
+          prev.map(p => 
+            p.fileName === fileName 
+              ? { ...p, status: 'error', error: 'Network error' }
+              : p
+          )
+        );
+        toast.error(`Network error uploading ${fileName}`);
+        resolve(null);
+      });
+
+      xhr.addEventListener("abort", () => {
+        setUploadProgress(prev => 
+          prev.map(p => 
+            p.fileName === fileName 
+              ? { ...p, status: 'error', error: 'Upload cancelled' }
+              : p
+          )
+        );
+        resolve(null);
+      });
+
+      // Send the request
+      xhr.open("POST", "/api/media");
+      xhr.send(formData);
     });
   };
 
@@ -156,64 +306,88 @@ export const ImageUpload = ({
           break;
         }
 
-        // Resize image before uploading (skip videos)
+        let processedFile = file;
+        const originalFileName = file.name;
+
+        // Optimize image before uploading (skip videos and small images)
         if (isImage) {
-          try {
-            const originalSize = file.size;
-            file = await resizeImage(file, 1920, 1920, 0.9);
-            
-            if (originalSize > file.size) {
-              toast.info(`${file.name} optimized: ${(originalSize / 1024).toFixed(0)}KB → ${(file.size / 1024).toFixed(0)}KB`);
+          const fileSizeKB = file.size / 1024;
+          const shouldOptimize = fileSizeKB > 200; // Only optimize files larger than 200KB
+          
+          if (shouldOptimize) {
+            try {
+              // Add processing status
+              setUploadProgress(prev => [...prev, {
+                fileName: originalFileName,
+                progress: 0,
+                status: 'processing'
+              }]);
+
+              const originalSize = file.size;
+              processedFile = await resizeImage(file, 1920, 1920, 0.9);
+              
+              // Only show toast if there was significant reduction
+              const reductionPercent = ((originalSize - processedFile.size) / originalSize) * 100;
+              if (reductionPercent > 10) {
+                toast.info(`${originalFileName} optimized: ${(originalSize / 1024).toFixed(0)}KB → ${(processedFile.size / 1024).toFixed(0)}KB (${reductionPercent.toFixed(0)}% smaller)`);
+              }
+
+              // Update to uploading status
+              setUploadProgress(prev => 
+                prev.map(p => 
+                  p.fileName === originalFileName 
+                    ? { ...p, status: 'uploading' }
+                    : p
+                )
+              );
+            } catch (error) {
+              console.error('Image optimization error:', error);
+              // If optimization fails, continue with original file
+              toast.warning(`Could not optimize ${originalFileName}, uploading original`);
+              
+              // Add to progress with uploading status
+              setUploadProgress(prev => [...prev, {
+                fileName: originalFileName,
+                progress: 0,
+                status: 'uploading'
+              }]);
             }
-          } catch (error) {
-            console.error('Image resize error:', error);
-            // If resize fails, continue with original file
-            toast.warning(`Could not optimize ${file.name}, uploading original`);
+          } else {
+            // Small image - skip optimization, upload directly
+            console.log(`Skipping optimization for ${originalFileName} (${fileSizeKB.toFixed(0)}KB - already small)`);
+            setUploadProgress(prev => [...prev, {
+              fileName: originalFileName,
+              progress: 0,
+              status: 'uploading'
+            }]);
           }
-        }
-
-        // Create form data
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("alt", file.name.replace(/\.[^/.]+$/, "")); // Remove extension
-
-        // Upload to Payload CMS
-        const response = await fetch("/api/media", {
-          method: "POST",
-          body: formData,
-        });
-
-        // Handle non-JSON responses (e.g., error pages from Vercel)
-        let data;
-        const contentType = response.headers.get("content-type");
-        
-        if (contentType && contentType.includes("application/json")) {
-          data = await response.json();
         } else {
-          // Not JSON - likely an error page or text response
-          const text = await response.text();
-          console.error("Non-JSON response from /api/media:", text);
-          toast.error(`Upload failed: ${response.status} ${response.statusText}`);
-          continue;
+          // Video - add to progress directly (no client-side compression for videos)
+          setUploadProgress(prev => [...prev, {
+            fileName: originalFileName,
+            progress: 0,
+            status: 'uploading'
+          }]);
         }
 
-        if (!response.ok) {
-          const errorMsg = data.error || `Failed to upload ${file.name}`;
-          console.error("Upload error:", errorMsg, data);
-          toast.error(errorMsg);
-          continue;
-        }
-
-        newMediaIds.push(data.doc.id);
+        // Upload with progress tracking
+        const mediaId = await uploadSingleFile(processedFile, originalFileName);
         
-        toast.success(`${file.name} uploaded successfully`);
+        if (mediaId) {
+          newMediaIds.push(mediaId);
+        }
       }
 
-      // Update the value with new media IDs
+      // Update the value with new media IDs (prepend to show newest first)
       if (newMediaIds.length > 0) {
-        const updatedValue = [...value, ...newMediaIds];
+        const updatedValue = [...newMediaIds, ...value];
         onChange(updatedValue);
       }
+
+      // Clear progress after 2 seconds
+      setTimeout(() => {
+        setUploadProgress([]);
+      }, 2000);
       
     } catch (error: any) {
       console.error("Upload error:", error);
@@ -303,7 +477,7 @@ export const ImageUpload = ({
       <div>
         <h3 className="text-xl font-semibold mb-2">Photos & Video</h3>
         <p className="text-sm text-gray-600 mb-1">
-          You can add up to 24 photos and a 1-minute video. Buyers want to see all details and angles.
+          You can add up to 24 photos and a 1-minute video. <strong>The first photo will be your cover image.</strong> Buyers want to see all details and angles.
         </p>
         <a href="#" className="text-sm text-blue-600 hover:underline">
           Tips for taking pro photos
@@ -344,6 +518,7 @@ export const ImageUpload = ({
             
             <div className="space-y-2">
               <p className="font-medium text-lg">Drag and drop files</p>
+              <p className="text-sm text-gray-500">First image will be your cover photo</p>
               {isUploading && <p className="text-sm text-gray-500">Uploading...</p>}
             </div>
 
@@ -400,8 +575,8 @@ export const ImageUpload = ({
                   {/* Main badge for first image */}
                   {index === 0 && (
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
-                      <span className="px-3 py-1 bg-gray-700 text-white text-xs font-medium rounded-full">
-                        Main
+                      <span className="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full shadow-lg">
+                        Cover Photo
                       </span>
                     </div>
                   )}
@@ -474,6 +649,63 @@ export const ImageUpload = ({
         onChange={handleFileSelect}
         className="hidden"
       />
+
+      {/* Upload Progress Indicators */}
+      {uploadProgress.length > 0 && (
+        <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm">
+          {uploadProgress.map((progress, index) => (
+            <div
+              key={`${progress.fileName}-${index}`}
+              className="bg-white rounded-lg shadow-lg border border-gray-200 p-4"
+            >
+              <div className="flex items-start gap-3">
+                {/* Icon based on status */}
+                <div className="flex-shrink-0 mt-1">
+                  {progress.status === 'processing' && (
+                    <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {progress.status === 'uploading' && (
+                    <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {progress.status === 'complete' && (
+                    <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  {progress.status === 'error' && (
+                    <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+
+                {/* Progress info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {progress.fileName}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {progress.status === 'processing' && 'Optimizing...'}
+                    {progress.status === 'uploading' && `Uploading ${Math.round(progress.progress)}%`}
+                    {progress.status === 'complete' && 'Upload complete'}
+                    {progress.status === 'error' && (progress.error || 'Upload failed')}
+                  </p>
+
+                  {/* Progress bar for uploading */}
+                  {progress.status === 'uploading' && (
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+                      <div
+                        className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${progress.progress}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

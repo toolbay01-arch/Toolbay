@@ -14,7 +14,10 @@ export const Media: CollectionConfig = {
     {
       name: 'alt',
       type: 'text',
-      required: true,
+      required: false, // Not required - we'll set defaults in the API
+      admin: {
+        description: 'Alternative text for accessibility (auto-generated if not provided)',
+      },
     },
   ],
   upload: true,
