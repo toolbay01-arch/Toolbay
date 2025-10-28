@@ -98,10 +98,23 @@ export const ImageUpload = ({
           body: formData,
         });
 
-        const data = await response.json();
+        // Handle non-JSON responses (e.g., error pages from Vercel)
+        let data;
+        const contentType = response.headers.get("content-type");
+        
+        if (contentType && contentType.includes("application/json")) {
+          data = await response.json();
+        } else {
+          // Not JSON - likely an error page or text response
+          const text = await response.text();
+          console.error("Non-JSON response from /api/media:", text);
+          toast.error(`Upload failed: ${response.status} ${response.statusText}`);
+          continue;
+        }
 
         if (!response.ok) {
           const errorMsg = data.error || `Failed to upload ${file.name}`;
+          console.error("Upload error:", errorMsg, data);
           toast.error(errorMsg);
           continue;
         }
@@ -128,12 +141,17 @@ export const ImageUpload = ({
   // Handle file selection
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    console.log("Files selected:", files.length, files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+    
     if (files.length > 0) {
       uploadFiles(files);
     }
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+    if (mobileInputRef.current) {
+      mobileInputRef.current.value = "";
     }
   };
 

@@ -16,6 +16,18 @@ const nextConfig = {
       },
     ],
   },
+  // Allow larger request body sizes for file uploads (default is 4MB)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '100mb',
+    },
+  },
+  // Increase API route body size limit
+  api: {
+    bodyParser: {
+      sizeLimit: '100mb',
+    },
+  },
 };
 
 export default nextConfig;
