@@ -66,6 +66,7 @@ export const ImageUpload = ({
   }, [value]);
 
   // Resize image to max dimensions while maintaining aspect ratio
+  // Only optimizes if image is large enough to benefit from it
   const resizeImage = async (file: File, maxWidth = 1920, maxHeight = 1920, quality = 0.9): Promise<File> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -74,11 +75,17 @@ export const ImageUpload = ({
         const img = new window.Image();
         
         img.onload = () => {
+          // Get original dimensions
+          const originalWidth = img.width;
+          const originalHeight = img.height;
+          
           // Calculate new dimensions
-          let width = img.width;
-          let height = img.height;
+          let width = originalWidth;
+          let height = originalHeight;
+          let needsResize = false;
           
           if (width > maxWidth || height > maxHeight) {
+            needsResize = true;
             const aspectRatio = width / height;
             
             if (width > height) {
@@ -88,6 +95,13 @@ export const ImageUpload = ({
               height = maxHeight;
               width = height * aspectRatio;
             }
+          }
+
+          // If image doesn't need resizing and file is already small, return original
+          if (!needsResize && file.size < 500 * 1024) {
+            console.log(`Image is already optimized (${(file.size / 1024).toFixed(0)}KB, ${originalWidth}x${originalHeight}), skipping compression`);
+            resolve(file);
+            return;
           }
           
           // Create canvas and resize
@@ -103,6 +117,24 @@ export const ImageUpload = ({
           
           ctx.drawImage(img, 0, 0, width, height);
           
+          // Determine quality based on file size
+          let finalQuality = quality;
+          const fileSizeKB = file.size / 1024;
+          
+          if (fileSizeKB < 200) {
+            // Small files: use high quality to preserve detail
+            finalQuality = 0.95;
+          } else if (fileSizeKB < 500) {
+            // Medium files: use good quality
+            finalQuality = 0.9;
+          } else if (fileSizeKB < 2000) {
+            // Large files: balance quality and size
+            finalQuality = 0.85;
+          } else {
+            // Very large files: prioritize size reduction
+            finalQuality = 0.8;
+          }
+          
           // Convert to blob
           canvas.toBlob(
             (blob) => {
@@ -117,11 +149,11 @@ export const ImageUpload = ({
                 lastModified: Date.now(),
               });
               
-              console.log(`Image resized: ${(file.size / 1024).toFixed(0)}KB → ${(resizedFile.size / 1024).toFixed(0)}KB`);
+              console.log(`Image optimized: ${(file.size / 1024).toFixed(0)}KB → ${(resizedFile.size / 1024).toFixed(0)}KB (${originalWidth}x${originalHeight} → ${Math.round(width)}x${Math.round(height)})`);
               resolve(resizedFile);
             },
             file.type,
-            quality
+            finalQuality
           );
         };
         
@@ -277,37 +309,52 @@ export const ImageUpload = ({
         let processedFile = file;
         const originalFileName = file.name;
 
-        // Resize image before uploading (skip videos)
+        // Optimize image before uploading (skip videos and small images)
         if (isImage) {
-          try {
-            // Add processing status
-            setUploadProgress(prev => [...prev, {
-              fileName: originalFileName,
-              progress: 0,
-              status: 'processing'
-            }]);
+          const fileSizeKB = file.size / 1024;
+          const shouldOptimize = fileSizeKB > 200; // Only optimize files larger than 200KB
+          
+          if (shouldOptimize) {
+            try {
+              // Add processing status
+              setUploadProgress(prev => [...prev, {
+                fileName: originalFileName,
+                progress: 0,
+                status: 'processing'
+              }]);
 
-            const originalSize = file.size;
-            processedFile = await resizeImage(file, 1920, 1920, 0.9);
-            
-            if (originalSize > processedFile.size) {
-              toast.info(`${originalFileName} optimized: ${(originalSize / 1024).toFixed(0)}KB → ${(processedFile.size / 1024).toFixed(0)}KB`);
+              const originalSize = file.size;
+              processedFile = await resizeImage(file, 1920, 1920, 0.9);
+              
+              // Only show toast if there was significant reduction
+              const reductionPercent = ((originalSize - processedFile.size) / originalSize) * 100;
+              if (reductionPercent > 10) {
+                toast.info(`${originalFileName} optimized: ${(originalSize / 1024).toFixed(0)}KB → ${(processedFile.size / 1024).toFixed(0)}KB (${reductionPercent.toFixed(0)}% smaller)`);
+              }
+
+              // Update to uploading status
+              setUploadProgress(prev => 
+                prev.map(p => 
+                  p.fileName === originalFileName 
+                    ? { ...p, status: 'uploading' }
+                    : p
+                )
+              );
+            } catch (error) {
+              console.error('Image optimization error:', error);
+              // If optimization fails, continue with original file
+              toast.warning(`Could not optimize ${originalFileName}, uploading original`);
+              
+              // Add to progress with uploading status
+              setUploadProgress(prev => [...prev, {
+                fileName: originalFileName,
+                progress: 0,
+                status: 'uploading'
+              }]);
             }
-
-            // Update to uploading status
-            setUploadProgress(prev => 
-              prev.map(p => 
-                p.fileName === originalFileName 
-                  ? { ...p, status: 'uploading' }
-                  : p
-              )
-            );
-          } catch (error) {
-            console.error('Image resize error:', error);
-            // If resize fails, continue with original file
-            toast.warning(`Could not optimize ${originalFileName}, uploading original`);
-            
-            // Add to progress with uploading status
+          } else {
+            // Small image - skip optimization, upload directly
+            console.log(`Skipping optimization for ${originalFileName} (${fileSizeKB.toFixed(0)}KB - already small)`);
             setUploadProgress(prev => [...prev, {
               fileName: originalFileName,
               progress: 0,
@@ -315,7 +362,7 @@ export const ImageUpload = ({
             }]);
           }
         } else {
-          // Video - add to progress directly
+          // Video - add to progress directly (no client-side compression for videos)
           setUploadProgress(prev => [...prev, {
             fileName: originalFileName,
             progress: 0,
