@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -56,6 +56,8 @@ export const ProductFormDialog = ({
 }: ProductFormDialogProps) => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const initialGalleryRef = useRef<string[]>([]);
+  const hasSubmittedRef = useRef(false);
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<ProductFormData>({
     defaultValues: {
@@ -106,15 +108,54 @@ export const ProductFormDialog = ({
           return null;
         }).filter(Boolean);
         setValue("gallery", galleryIds);
+        // Store initial gallery state for cleanup comparison
+        initialGalleryRef.current = [...galleryIds];
       }
+    } else if (mode === "create") {
+      // Reset initial gallery for new product
+      initialGalleryRef.current = [];
     }
   }, [productData, mode, setValue]);
+
+  // Cleanup orphaned images when dialog closes without submitting
+  useEffect(() => {
+    if (!open && !hasSubmittedRef.current) {
+      const currentGallery = watch("gallery") || [];
+      const initialGallery = initialGalleryRef.current;
+      
+      // Find images that were added but not saved (orphaned)
+      const orphanedImages = currentGallery.filter(id => !initialGallery.includes(id));
+      
+      if (orphanedImages.length > 0) {
+        console.log('[ProductFormDialog] Cleaning up orphaned images:', orphanedImages);
+        
+        // Delete orphaned images from server
+        orphanedImages.forEach(async (id) => {
+          try {
+            await fetch(`/api/media?id=${id}`, { method: 'DELETE' });
+            console.log('[ProductFormDialog] Deleted orphaned image:', id);
+          } catch (error) {
+            console.error('[ProductFormDialog] Failed to delete orphaned image:', id, error);
+          }
+        });
+      }
+      
+      // Reset form when dialog closes
+      reset();
+    }
+    
+    // Reset submit flag when dialog opens
+    if (open) {
+      hasSubmittedRef.current = false;
+    }
+  }, [open, watch, reset]);
 
   // Create mutation
   const createMutation = useMutation(trpc.products.createProduct.mutationOptions({
     onSuccess: () => {
       toast.success("Product created successfully!");
       queryClient.invalidateQueries({ queryKey: [["products"]] });
+      hasSubmittedRef.current = true; // Mark as submitted to prevent cleanup
       onClose();
       reset();
     },
@@ -128,6 +169,7 @@ export const ProductFormDialog = ({
     onSuccess: () => {
       toast.success("Product updated successfully!");
       queryClient.invalidateQueries({ queryKey: [["products"]] });
+      hasSubmittedRef.current = true; // Mark as submitted to prevent cleanup
       onClose();
     },
     onError: (error) => {

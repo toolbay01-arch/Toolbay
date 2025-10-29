@@ -445,10 +445,35 @@ export const ImageUpload = ({
     [uploadFiles]
   );
 
-  // Remove file
-  const handleRemove = (idToRemove: string) => {
-    const updatedValue = value.filter((id) => id !== idToRemove);
-    onChange(updatedValue);
+  // Remove file - deletes from server and updates state
+  const handleRemove = async (idToRemove: string) => {
+    try {
+      console.log('[ImageUpload] Removing media ID:', idToRemove);
+      
+      // Show loading toast
+      const loadingToast = toast.loading('Deleting image...');
+      
+      // Delete from server
+      const response = await fetch(`/api/media?id=${idToRemove}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete media from server');
+      }
+
+      console.log('[ImageUpload] Successfully deleted from server:', idToRemove);
+      
+      // Remove from local state
+      const updatedValue = value.filter((id) => id !== idToRemove);
+      onChange(updatedValue);
+      
+      // Update toast
+      toast.success('Image deleted successfully', { id: loadingToast });
+    } catch (error) {
+      console.error('Failed to delete media:', error);
+      toast.error('Failed to delete image. Please try again.');
+    }
   };
 
   // Load files when value changes
