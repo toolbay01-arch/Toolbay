@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { StarIcon } from "lucide-react";
@@ -38,6 +37,16 @@ export const ProductCard = ({
   const productUrl = `/tenants/${tenantSlug}/products/${id}`;
   const tenantUrl = `/tenants/${tenantSlug}`;
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Only navigate if not clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) {
+      return; // Let button handle its own click
+    }
+    e.preventDefault();
+    router.push(productUrl);
+  };
+
   const handleTenantClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -52,10 +61,9 @@ export const ProductCard = ({
     : [{ url: "/placeholder.png", alt: name }];
 
   return (
-    <Link 
-      href={productUrl} 
+    <div 
+      onClick={handleCardClick}
       className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow border rounded-md bg-white overflow-hidden h-full flex flex-col cursor-pointer" 
-      prefetch={false}
     >
       <div className="relative aspect-square">
         {images.length > 1 ? (
@@ -118,7 +126,7 @@ export const ProductCard = ({
           </p>
         </div>
       </div>
-    </Link>
+    </div>
   )
 };
 
