@@ -5,7 +5,20 @@ export const Media: CollectionConfig = {
   slug: 'media',
   access: {
     read: () => true,
-    delete: ({ req }) => isSuperAdmin(req.user),
+    // Allow super admins and tenants to delete media
+    delete: ({ req }) => {
+      // Super admins can delete anything
+      if (isSuperAdmin(req.user)) {
+        return true;
+      }
+      
+      // Tenants can delete media (they need it for product management)
+      if (req.user?.roles?.includes('tenant')) {
+        return true;
+      }
+      
+      return false;
+    },
   },
   admin: {
     hidden: ({ user }) => !isSuperAdmin(user),
