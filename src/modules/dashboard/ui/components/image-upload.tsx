@@ -73,19 +73,21 @@ export const ImageUpload = ({
           fileType: doc.mimeType?.startsWith("video/") ? "video" : "image",
         }));
         
-        // Only update if IDs match current value (prevent stale data)
-        setUploadedFiles(prevFiles => {
-          const currentIds = value.sort().join(',');
-          const fetchedIds = files.map((f: any) => f.id).sort().join(',');
-          
-          if (currentIds === fetchedIds) {
-            console.log('[ImageUpload] Loaded files:', files.map((f: any) => ({ id: f.id, url: f.url })));
-            return files;
-          } else {
-            console.warn('[ImageUpload] Stale fetch detected, ignoring. Expected:', currentIds, 'Got:', fetchedIds);
-            return prevFiles; // Keep previous state
-          }
-        });
+        // Update state - sort files to match the order of value array
+        const sortedFiles = value
+          .map(id => files.find((f: any) => f.id === id))
+          .filter(Boolean); // Remove any undefined (shouldn't happen)
+        
+        console.log('[ImageUpload] Loaded files:', sortedFiles.map((f: any) => ({ id: f.id, url: f.url })));
+        
+        // Verify we got all expected files
+        if (sortedFiles.length === value.length) {
+          setUploadedFiles(sortedFiles as UploadedFile[]);
+        } else {
+          console.warn('[ImageUpload] Missing files in response. Expected:', value.length, 'Got:', sortedFiles.length);
+          // Still update with what we got - better than showing nothing
+          setUploadedFiles(sortedFiles as UploadedFile[]);
+        }
       }
     } catch (error) {
       console.error("Failed to load uploaded files:", error);
