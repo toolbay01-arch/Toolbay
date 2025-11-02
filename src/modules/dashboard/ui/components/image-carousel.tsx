@@ -9,6 +9,7 @@ interface ImageCarouselProps {
   className?: string;
   sizes?: string;
   loading?: "lazy" | "eager";
+  priority?: boolean;
   quality?: number;
 }
 
@@ -17,6 +18,7 @@ export const ImageCarousel = ({
   className = "",
   sizes = "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw",
   loading = "lazy",
+  priority = false,
   quality = 75,
 }: ImageCarouselProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);

@@ -18,6 +18,7 @@ interface ProductCardProps {
   reviewRating: number;
   reviewCount: number;
   price: number;
+  priority?: boolean; // For above-the-fold images
 };
 
 export const ProductCard = ({
@@ -30,58 +31,31 @@ export const ProductCard = ({
   reviewRating,
   reviewCount,
   price,
+  priority = false,
 }: ProductCardProps) => {
   const router = useRouter();
-  
-  console.log('[ProductCard] Rendering card:', { id, name, tenantSlug });
   
   // Generate URLs consistently for server/client
   const productUrl = `/tenants/${tenantSlug}/products/${id}`;
   const tenantUrl = `/tenants/${tenantSlug}`;
-  
-  console.log('[ProductCard] Generated URLs:', { productUrl, tenantUrl });
 
   const handleCardClick = (e: React.MouseEvent) => {
-    console.log('[ProductCard] Card clicked');
-    console.log('[ProductCard] Product ID:', id);
-    console.log('[ProductCard] Product URL:', productUrl);
-    console.log('[ProductCard] Event target:', e.target);
-    console.log('[ProductCard] Current target:', e.currentTarget);
-    
     // Only navigate if not clicking on interactive elements
     const target = e.target as HTMLElement;
     const closestButton = target.closest('button');
     
-    console.log('[ProductCard] Closest button:', closestButton);
-    
     if (closestButton) {
-      console.log('[ProductCard] Click on button detected - skipping navigation');
       return; // Let button handle its own click
     }
     
-    console.log('[ProductCard] Navigating to:', productUrl);
-    e.preventDefault();
-    
-    try {
-      router.push(productUrl);
-      console.log('[ProductCard] router.push() called successfully');
-    } catch (error) {
-      console.error('[ProductCard] router.push() error:', error);
-    }
+    // Don't prevent default - let browser handle navigation normally
+    // This provides visual feedback (loading bar, URL change)
+    router.push(productUrl);
   };
 
   const handleTenantClick = (e: React.MouseEvent) => {
-    console.log('[ProductCard] Tenant button clicked');
-    console.log('[ProductCard] Tenant URL:', tenantUrl);
-    e.preventDefault();
-    e.stopPropagation();
-    
-    try {
-      router.push(tenantUrl);
-      console.log('[ProductCard] router.push() called for tenant');
-    } catch (error) {
-      console.error('[ProductCard] Tenant router.push() error:', error);
-    }
+    e.stopPropagation(); // Prevent card click
+    router.push(tenantUrl);
   };
 
   // Prepare images for carousel
@@ -102,7 +76,8 @@ export const ProductCard = ({
             images={images}
             className="aspect-square"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            priority={priority}
             quality={75}
           />
         ) : (
@@ -112,7 +87,8 @@ export const ProductCard = ({
             src={images[0]?.url || "/placeholder.png"}
             className="object-cover"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            priority={priority}
             quality={75}
           />
         )}
