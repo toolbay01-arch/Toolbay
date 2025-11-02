@@ -543,7 +543,7 @@ export const ImageUpload = ({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-1.5">
       {/* Header section */}
       <div>
         <h3 className="text-xl font-semibold mb-2">Photos & Video</h3>
@@ -620,9 +620,9 @@ export const ImageUpload = ({
         </div>
       ) : (
         /* Grid layout when images exist - Show all 24 slots with scroll */
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-white">
-          <div className="max-h-[200px] md:max-h-[400px] overflow-y-auto pr-2">
-            <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-1.5 bg-white">
+          <div className="max-h-[200px] md:max-h-[400px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-4 md:grid-cols-6 gap-1">
               {slots.map((file, index) => (
               <div 
                 key={file?.id || `empty-${index}`} 
