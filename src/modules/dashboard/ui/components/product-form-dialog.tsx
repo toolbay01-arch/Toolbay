@@ -138,7 +138,10 @@ export const ProductFormDialog = ({
         // Delete orphaned images from server
         orphanedImages.forEach(async (id) => {
           try {
-            await fetch(`/api/media?id=${id}`, { method: 'DELETE' });
+            await fetch(`/api/media?id=${id}&t=${Date.now()}`, { 
+              method: 'DELETE',
+              cache: 'no-store',
+            });
             console.log('[ProductFormDialog] Deleted orphaned image:', id);
           } catch (error) {
             console.error('[ProductFormDialog] Failed to delete orphaned image:', id, error);
@@ -146,15 +149,29 @@ export const ProductFormDialog = ({
         });
       }
       
-      // Reset form when dialog closes
-      reset();
+      // Reset form when dialog closes with clean state
+      reset({
+        refundPolicy: "30-day",
+        isPrivate: false,
+        gallery: [], // Clear gallery
+      });
     }
     
     // Reset submit flag when dialog opens
     if (open) {
       hasSubmittedRef.current = false;
+      
+      // Ensure clean state for new products
+      if (mode === "create") {
+        reset({
+          refundPolicy: "30-day",
+          isPrivate: false,
+          gallery: [],
+        });
+        initialGalleryRef.current = [];
+      }
     }
-  }, [open, watch, reset]);
+  }, [open, watch, reset, mode]);
 
   // Create mutation
   const createMutation = useMutation(trpc.products.createProduct.mutationOptions({

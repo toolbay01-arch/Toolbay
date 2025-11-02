@@ -53,7 +53,16 @@ export const ImageUpload = ({
     console.log('[ImageUpload] Loading files for IDs:', value);
 
     try {
-      const response = await fetch(`/api/media?ids=${value.join(",")}`);
+      // Add cache busting and proper cache control headers
+      const response = await fetch(
+        `/api/media?ids=${value.join(",")}&t=${Date.now()}`, // Cache buster
+        {
+          cache: 'no-store', // Disable browser cache
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+          },
+        }
+      );
       const data = await response.json();
       
       if (data.docs) {
@@ -63,8 +72,20 @@ export const ImageUpload = ({
           alt: doc.alt || "",
           fileType: doc.mimeType?.startsWith("video/") ? "video" : "image",
         }));
-        console.log('[ImageUpload] Loaded files:', files.map((f: any) => ({ id: f.id, url: f.url })));
-        setUploadedFiles(files);
+        
+        // Only update if IDs match current value (prevent stale data)
+        setUploadedFiles(prevFiles => {
+          const currentIds = value.sort().join(',');
+          const fetchedIds = files.map((f: any) => f.id).sort().join(',');
+          
+          if (currentIds === fetchedIds) {
+            console.log('[ImageUpload] Loaded files:', files.map((f: any) => ({ id: f.id, url: f.url })));
+            return files;
+          } else {
+            console.warn('[ImageUpload] Stale fetch detected, ignoring. Expected:', currentIds, 'Got:', fetchedIds);
+            return prevFiles; // Keep previous state
+          }
+        });
       }
     } catch (error) {
       console.error("Failed to load uploaded files:", error);
@@ -453,23 +474,36 @@ export const ImageUpload = ({
     try {
       console.log('[ImageUpload] Removing media ID:', idToRemove);
       
+      // Optimistic update (immediate visual feedback)
+      const previousFiles = uploadedFiles;
+      const previousValue = value;
+      
+      setUploadedFiles(prev => prev.filter(file => file.id !== idToRemove));
+      
+      // Update parent state immediately
+      const updatedValue = value.filter((id) => id !== idToRemove);
+      onChange(updatedValue);
+      
       // Show loading toast
       const loadingToast = toast.loading('Deleting image...');
       
-      // Delete from server
-      const response = await fetch(`/api/media?id=${idToRemove}`, {
-        method: 'DELETE',
-      });
+      // Delete from server with cache busting
+      const response = await fetch(
+        `/api/media?id=${idToRemove}&t=${Date.now()}`, // Cache buster
+        {
+          method: 'DELETE',
+          cache: 'no-store',
+        }
+      );
 
       if (!response.ok) {
+        // Rollback on error
+        setUploadedFiles(previousFiles);
+        onChange(previousValue);
         throw new Error('Failed to delete media from server');
       }
 
       console.log('[ImageUpload] Successfully deleted from server:', idToRemove);
-      
-      // Remove from local state
-      const updatedValue = value.filter((id) => id !== idToRemove);
-      onChange(updatedValue);
       
       // Update toast
       toast.success('Image deleted successfully', { id: loadingToast });
