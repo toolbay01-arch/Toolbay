@@ -489,16 +489,12 @@ export const ImageUpload = ({
       // Show loading toast
       const loadingToast = toast.loading('Deleting image...');
       
-      // Delete from server - send ID in both query param and body for compatibility
+      // Delete from server - use query param only (DELETE requests shouldn't have bodies)
       const response = await fetch(
-        `/api/media?id=${idToRemove}`,
+        `/api/media?id=${encodeURIComponent(idToRemove)}`,
         {
           method: 'DELETE',
           cache: 'no-store',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ id: idToRemove }),
         }
       );
 
