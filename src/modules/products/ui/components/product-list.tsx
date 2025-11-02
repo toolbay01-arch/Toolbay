@@ -56,7 +56,7 @@ export const ProductList = ({ category, tenantSlug, narrowView }: Props) => {
         "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4",
         narrowView && "lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3"
       )}>
-        {data?.pages.flatMap((page) => page.docs).map((product) => {
+        {data?.pages.flatMap((page) => page.docs).map((product, index) => {
           // Build gallery array from product data
           const gallery: Array<{ url: string; alt: string }> = [];
           
@@ -85,6 +85,7 @@ export const ProductList = ({ category, tenantSlug, narrowView }: Props) => {
               reviewRating={product.reviewRating}
               reviewCount={product.reviewCount}
               price={product.price}
+              priority={index < 4} // Prioritize first 4 images
             />
           );
         })}

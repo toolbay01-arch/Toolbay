@@ -28,9 +28,16 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
   
+  // Check if subdomain routing is enabled
+  const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
+  
+  // Skip subdomain routing if disabled (e.g., in development)
+  if (!isSubdomainRoutingEnabled) {
+    return NextResponse.next();
+  }
+  
   // Extract the hostname (e.g., "antonio.toolboxx.com" or "john.localhost:3000")
   const hostname = req.headers.get("host") || "";
-
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
 
   if (hostname.endsWith(`.${rootDomain}`)) {

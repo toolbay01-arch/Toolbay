@@ -116,7 +116,10 @@ export const Navbar = () => {
             asChild
             className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-lg"
           >
-            <Link href={session.data.user.roles?.includes('super-admin') ? "/admin" : session.data.user.roles?.includes('tenant') ? "/dashboard" : "/my-account"}>
+            <Link 
+              href={session.data.user.roles?.includes('super-admin') ? "/admin" : session.data.user.roles?.includes('tenant') ? "/dashboard" : "/my-account"}
+              prefetch={true}
+            >
               {session.data.user.roles?.includes('super-admin') ? "Admin Panel" : session.data.user.roles?.includes('tenant') ? "Dashboard" : "My Account"}
             </Link>
           </Button>
@@ -128,7 +131,7 @@ export const Navbar = () => {
             variant="secondary"
             className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-white hover:bg-pink-400 transition-colors text-lg"
           >
-            <Link prefetch href="/sign-in">
+            <Link prefetch={true} href="/sign-in">
               Log in
             </Link>
           </Button>
@@ -136,7 +139,7 @@ export const Navbar = () => {
             asChild
             className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-lg"
           >
-            <Link prefetch href="/sign-up">
+            <Link prefetch={true} href="/sign-up">
               Start Supplying
             </Link>
           </Button>
