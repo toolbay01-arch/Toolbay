@@ -489,9 +489,9 @@ export const ImageUpload = ({
       // Show loading toast
       const loadingToast = toast.loading('Deleting image...');
       
-      // Delete from server with cache busting
+      // Delete from server - use query param only (DELETE requests shouldn't have bodies)
       const response = await fetch(
-        `/api/media?id=${idToRemove}&t=${Date.now()}`, // Cache buster
+        `/api/media?id=${encodeURIComponent(idToRemove)}`,
         {
           method: 'DELETE',
           cache: 'no-store',
