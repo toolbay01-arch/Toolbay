@@ -20,6 +20,12 @@ const createProductSchema = z.object({
   name: z.string().min(1, "Product name is required"),
   description: z.any().optional(), // Rich text
   price: z.number().min(0, "Price must be positive"),
+  quantity: z.number().min(0, "Quantity cannot be negative").default(0),
+  unit: z.enum(["unit", "piece", "box", "pack", "bag", "kg", "gram", "meter", "cm", "liter", "sqm", "cbm", "set", "pair", "roll", "sheet", "carton", "pallet"]).default("unit"),
+  minOrderQuantity: z.number().min(1, "Minimum order quantity must be at least 1").default(1),
+  maxOrderQuantity: z.number().min(1).optional(),
+  lowStockThreshold: z.number().min(0).default(10),
+  allowBackorder: z.boolean().default(false),
   category: z.string().min(1, "Category is required"),
   tags: z.array(z.string()).optional(),
   image: z.string().min(1, "Product image is required"),
@@ -35,6 +41,12 @@ const updateProductSchema = z.object({
   name: z.string().min(1).optional(),
   description: z.any().optional(),
   price: z.number().min(0).optional(),
+  quantity: z.number().min(0).optional(),
+  unit: z.enum(["unit", "piece", "box", "pack", "bag", "kg", "gram", "meter", "cm", "liter", "sqm", "cbm", "set", "pair", "roll", "sheet", "carton", "pallet"]).optional(),
+  minOrderQuantity: z.number().min(1).optional(),
+  maxOrderQuantity: z.number().min(1).optional(),
+  lowStockThreshold: z.number().min(0).optional(),
+  allowBackorder: z.boolean().optional(),
   category: z.string().optional(),
   tags: z.array(z.string()).optional(),
   image: z.string().optional(),
@@ -592,5 +604,110 @@ export const productsRouter = createTRPCRouter({
       });
 
       return product;
+    }),
+
+  // Check stock availability for a product
+  checkStock: baseProcedure
+    .input(
+      z.object({
+        productId: z.string(),
+        quantity: z.number().min(1),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const product = await ctx.db.findByID({
+        collection: "products",
+        id: input.productId,
+        depth: 0,
+      });
+
+      if (!product) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Product not found",
+        });
+      }
+
+      const available = product.quantity >= input.quantity;
+      const maxAvailable = product.quantity;
+      const minOrder = product.minOrderQuantity || 1;
+      const maxOrder = product.maxOrderQuantity || product.quantity;
+
+      return {
+        available,
+        currentStock: product.quantity,
+        requestedQuantity: input.quantity,
+        maxAvailable,
+        minOrderQuantity: minOrder,
+        maxOrderQuantity: maxOrder,
+        unit: product.unit || "unit",
+        stockStatus: product.stockStatus,
+        allowBackorder: product.allowBackorder || false,
+        canPurchase: available || product.allowBackorder,
+      };
+    }),
+
+  // Bulk update product quantities (for inventory management)
+  updateQuantity: protectedProcedure
+    .input(
+      z.object({
+        productId: z.string(),
+        quantityChange: z.number(), // Positive to add, negative to subtract
+        reason: z.enum(["restock", "damage", "sold", "correction", "return"]).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Get current user's tenant
+      const userData = await ctx.db.findByID({
+        collection: "users",
+        id: ctx.session.user.id,
+      });
+
+      if (!userData.tenants?.[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No tenant found for user",
+        });
+      }
+
+      const tenantId = typeof userData.tenants[0].tenant === 'string' 
+        ? userData.tenants[0].tenant 
+        : userData.tenants[0].tenant.id;
+
+      // Verify the product belongs to this tenant
+      const existingProduct = await ctx.db.findByID({
+        collection: "products",
+        id: input.productId,
+      });
+
+      const productTenantId = typeof existingProduct.tenant === 'string'
+        ? existingProduct.tenant
+        : existingProduct.tenant?.id;
+
+      if (productTenantId !== tenantId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only update your own products",
+        });
+      }
+
+      // Calculate new quantity
+      const newQuantity = Math.max(0, existingProduct.quantity + input.quantityChange);
+
+      // Update product
+      const product = await ctx.db.update({
+        collection: "products",
+        id: input.productId,
+        data: {
+          quantity: newQuantity,
+        },
+      });
+
+      return {
+        success: true,
+        previousQuantity: existingProduct.quantity,
+        newQuantity: product.quantity,
+        change: input.quantityChange,
+      };
     }),
 });

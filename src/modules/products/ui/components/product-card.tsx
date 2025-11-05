@@ -7,6 +7,7 @@ import { StarIcon } from "lucide-react";
 
 import { formatCurrency } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
+import { StockStatusBadge } from "@/components/quantity-selector";
 
 interface ProductCardProps {
   id: string;
@@ -18,6 +19,9 @@ interface ProductCardProps {
   reviewRating: number;
   reviewCount: number;
   price: number;
+  quantity?: number;
+  unit?: string;
+  stockStatus?: "in_stock" | "low_stock" | "out_of_stock" | "pre_order";
   priority?: boolean; // For above-the-fold images
 };
 
@@ -31,6 +35,9 @@ export const ProductCard = ({
   reviewRating,
   reviewCount,
   price,
+  quantity = 0,
+  unit = "unit",
+  stockStatus = "in_stock",
   priority = false,
 }: ProductCardProps) => {
   const router = useRouter();
@@ -124,14 +131,31 @@ export const ProductCard = ({
             </p>
           </div>
         )}
+        
+        {/* Stock Status Badge */}
+        <div className="flex items-center gap-2">
+          <StockStatusBadge stockStatus={stockStatus} quantity={stockStatus === "low_stock" ? quantity : undefined} />
+        </div>
       </div>
       
       <div className="p-4">
-        <div className="relative px-2 py-1 border bg-pink-400 w-fit">
-          <p className="text-sm font-medium">
-            {formatCurrency(price)}
-          </p>
+        <div className="flex items-end justify-between">
+          <div className="relative px-2 py-1 border bg-pink-400 w-fit">
+            <p className="text-sm font-medium">
+              {formatCurrency(price)}
+            </p>
+          </div>
+          {unit && unit !== "unit" && (
+            <p className="text-xs text-muted-foreground">
+              per {unit}
+            </p>
+          )}
         </div>
+        {quantity > 0 && (
+          <p className="text-xs text-muted-foreground mt-1">
+            {quantity} {unit}{quantity !== 1 ? "s" : ""} available
+          </p>
+        )}
       </div>
     </div>
   )

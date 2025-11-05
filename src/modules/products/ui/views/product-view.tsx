@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { StarRating } from "@/components/star-rating";
 import { formatCurrency, generateTenantURL } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
+import { StockStatusBadge } from "@/components/quantity-selector";
 
 const CartButton = dynamic(
   () => import("../components/cart-button").then(
@@ -75,8 +76,15 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
             
             <div className="border-y flex flex-wrap">
               <div className="px-6 py-4 flex items-center justify-center border-r">
-                <div className="px-2 py-1 border bg-pink-400 w-fit">
-                  <p className="text-base font-medium">{formatCurrency(data.price)}</p>
+                <div className="flex flex-col gap-2">
+                  <div className="px-2 py-1 border bg-pink-400 w-fit">
+                    <p className="text-base font-medium">{formatCurrency(data.price)}</p>
+                  </div>
+                  {data.unit && data.unit !== "unit" && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      per {data.unit}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -97,7 +105,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                 </Link>
               </div>
 
-              <div className="px-6 py-4 flex items-center justify-center">
+              <div className="px-6 py-4 flex items-center justify-center border-r">
                 <div className="flex items-center gap-2">
                   <StarRating
                     rating={data.reviewRating}
@@ -107,6 +115,13 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                     {data.reviewCount} ratings
                   </p>
                 </div>
+              </div>
+              
+              <div className="px-6 py-4 flex items-center justify-center">
+                <StockStatusBadge 
+                  stockStatus={data.stockStatus || "in_stock"} 
+                  quantity={data.stockStatus === "low_stock" ? data.quantity : undefined}
+                />
               </div>
             </div>
 
@@ -122,14 +137,20 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
             {/* Action Buttons */}
             <div className="flex flex-col gap-4 p-6 border-b">
-              <div className="flex flex-row items-center gap-2">
+              <div className="flex flex-col gap-2">
                 <CartButton
                   isPurchased={data.isPurchased}
                   productId={productId}
                   tenantSlug={tenantSlug}
+                  quantity={data.quantity || 0}
+                  minOrderQuantity={data.minOrderQuantity || 1}
+                  maxOrderQuantity={data.maxOrderQuantity || undefined}
+                  unit={data.unit || "unit"}
+                  stockStatus={data.stockStatus || "in_stock"}
+                  allowBackorder={data.allowBackorder || false}
                 />
                 <Button
-                  className="size-12"
+                  className="w-full"
                   variant="elevated"
                   onClick={() => {
                     setIsCopied(true);
@@ -142,7 +163,15 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                   }}
                   disabled={isCopied}
                 >
-                  {isCopied ? <CheckIcon /> : <LinkIcon />}
+                  {isCopied ? (
+                    <>
+                      <CheckIcon className="mr-2 h-4 w-4" /> Copied
+                    </>
+                  ) : (
+                    <>
+                      <LinkIcon className="mr-2 h-4 w-4" /> Share Product
+                    </>
+                  )}
                 </Button>
               </div>
 

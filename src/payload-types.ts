@@ -286,7 +286,10 @@ export interface Tenant {
  */
 export interface Media {
   id: string;
-  alt: string;
+  /**
+   * Alternative text for accessibility (auto-generated if not provided)
+   */
+  alt?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -333,6 +336,15 @@ export interface Product {
    * Additional product image (optional)
    */
   cover?: (string | null) | Media;
+  /**
+   * Product gallery - up to 24 photos and videos
+   */
+  gallery?:
+    | {
+        media: string | Media;
+        id?: string | null;
+      }[]
+    | null;
   name: string;
   /**
    * Describe your product's key features and condition
@@ -356,6 +368,52 @@ export interface Product {
    * Price in Rwandan Francs (RWF)
    */
   price: number;
+  /**
+   * Available quantity in stock
+   */
+  quantity: number;
+  /**
+   * Unit of measurement for this product
+   */
+  unit:
+    | 'unit'
+    | 'piece'
+    | 'box'
+    | 'pack'
+    | 'bag'
+    | 'kg'
+    | 'gram'
+    | 'meter'
+    | 'cm'
+    | 'liter'
+    | 'sqm'
+    | 'cbm'
+    | 'set'
+    | 'pair'
+    | 'roll'
+    | 'sheet'
+    | 'carton'
+    | 'pallet';
+  /**
+   * Minimum quantity that can be ordered at once
+   */
+  minOrderQuantity?: number | null;
+  /**
+   * Maximum quantity per order (leave empty for no limit)
+   */
+  maxOrderQuantity?: number | null;
+  /**
+   * Current stock availability status
+   */
+  stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock' | 'pre_order';
+  /**
+   * Alert when stock falls below this number
+   */
+  lowStockThreshold?: number | null;
+  /**
+   * Allow customers to order even when out of stock
+   */
+  allowBackorder?: boolean | null;
   /**
    * Select the most appropriate category for your product
    */
@@ -758,9 +816,22 @@ export interface CategoriesSelect<T extends boolean = true> {
 export interface ProductsSelect<T extends boolean = true> {
   image?: T;
   cover?: T;
+  gallery?:
+    | T
+    | {
+        media?: T;
+        id?: T;
+      };
   name?: T;
   description?: T;
   price?: T;
+  quantity?: T;
+  unit?: T;
+  minOrderQuantity?: T;
+  maxOrderQuantity?: T;
+  stockStatus?: T;
+  lowStockThreshold?: T;
+  allowBackorder?: T;
   category?: T;
   tags?: T;
   tenant?: T;

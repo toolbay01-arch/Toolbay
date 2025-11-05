@@ -85,6 +85,9 @@ export const ProductList = ({ category, tenantSlug, narrowView }: Props) => {
               reviewRating={product.reviewRating}
               reviewCount={product.reviewCount}
               price={product.price}
+              quantity={product.quantity}
+              unit={product.unit}
+              stockStatus={product.stockStatus}
               priority={index < 4} // Prioritize first 4 images
             />
           );

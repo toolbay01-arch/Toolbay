@@ -68,6 +68,20 @@ export const Products: CollectionConfig = {
           console.log('[Products beforeChange] Assigned tenant ID:', tenantId);
         }
         
+        // Auto-calculate stock status based on quantity
+        const quantity = data.quantity ?? 0;
+        const lowStockThreshold = data.lowStockThreshold ?? 10;
+        const allowBackorder = data.allowBackorder ?? false;
+        
+        if (quantity === 0) {
+          data.stockStatus = allowBackorder ? 'pre_order' : 'out_of_stock';
+        } else if (quantity <= lowStockThreshold) {
+          data.stockStatus = 'low_stock';
+        } else {
+          data.stockStatus = 'in_stock';
+        }
+        
+        console.log('[Products beforeChange] Stock status:', data.stockStatus, 'Quantity:', quantity);
         console.log('[Products beforeChange] Data after:', data);
         return data;
       },
@@ -131,6 +145,109 @@ export const Products: CollectionConfig = {
       admin: {
         description: "Price in Rwandan Francs (RWF)",
         step: 100,
+      }
+    },
+    {
+      name: "quantity",
+      type: "number",
+      required: true,
+      defaultValue: 0,
+      min: 0,
+      index: true, // Index for stock queries
+      admin: {
+        description: "Available quantity in stock",
+        step: 1,
+        position: "sidebar",
+      }
+    },
+    {
+      name: "unit",
+      type: "select",
+      required: true,
+      defaultValue: "unit",
+      options: [
+        { label: "Unit(s)", value: "unit" },
+        { label: "Piece(s)", value: "piece" },
+        { label: "Box(es)", value: "box" },
+        { label: "Pack(s)", value: "pack" },
+        { label: "Bag(s)", value: "bag" },
+        { label: "Kilogram(s)", value: "kg" },
+        { label: "Gram(s)", value: "gram" },
+        { label: "Meter(s)", value: "meter" },
+        { label: "Centimeter(s)", value: "cm" },
+        { label: "Liter(s)", value: "liter" },
+        { label: "Square Meter(s)", value: "sqm" },
+        { label: "Cubic Meter(s)", value: "cbm" },
+        { label: "Set(s)", value: "set" },
+        { label: "Pair(s)", value: "pair" },
+        { label: "Roll(s)", value: "roll" },
+        { label: "Sheet(s)", value: "sheet" },
+        { label: "Carton(s)", value: "carton" },
+        { label: "Pallet(s)", value: "pallet" },
+      ],
+      admin: {
+        description: "Unit of measurement for this product",
+        position: "sidebar",
+      }
+    },
+    {
+      name: "minOrderQuantity",
+      type: "number",
+      defaultValue: 1,
+      min: 1,
+      admin: {
+        description: "Minimum quantity that can be ordered at once",
+        step: 1,
+        position: "sidebar",
+      }
+    },
+    {
+      name: "maxOrderQuantity",
+      type: "number",
+      min: 1,
+      admin: {
+        description: "Maximum quantity per order (leave empty for no limit)",
+        step: 1,
+        position: "sidebar",
+        condition: (data) => data.quantity > 0,
+      }
+    },
+    {
+      name: "stockStatus",
+      type: "select",
+      required: true,
+      defaultValue: "in_stock",
+      options: [
+        { label: "In Stock", value: "in_stock" },
+        { label: "Low Stock", value: "low_stock" },
+        { label: "Out of Stock", value: "out_of_stock" },
+        { label: "Pre-Order", value: "pre_order" },
+      ],
+      index: true,
+      admin: {
+        description: "Current stock availability status",
+        position: "sidebar",
+        readOnly: true, // Auto-calculated based on quantity
+      }
+    },
+    {
+      name: "lowStockThreshold",
+      type: "number",
+      defaultValue: 10,
+      min: 0,
+      admin: {
+        description: "Alert when stock falls below this number",
+        step: 1,
+        position: "sidebar",
+      }
+    },
+    {
+      name: "allowBackorder",
+      type: "checkbox",
+      defaultValue: false,
+      admin: {
+        description: "Allow customers to order even when out of stock",
+        position: "sidebar",
       }
     },
     {

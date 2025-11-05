@@ -210,9 +210,19 @@ export const Transactions: CollectionConfig = {
           required: true,
           min: 0,
         },
+        {
+          name: 'quantity',
+          type: 'number',
+          required: true,
+          defaultValue: 1,
+          min: 1,
+          admin: {
+            description: 'Quantity purchased',
+          },
+        },
       ],
       admin: {
-        description: 'Products in this transaction',
+        description: 'Products in this transaction with quantities',
       },
     },
     {

@@ -39,6 +39,12 @@ interface ProductFormData {
   name: string;
   description?: string;
   price: number;
+  quantity: number;
+  unit: "unit" | "piece" | "box" | "pack" | "bag" | "kg" | "gram" | "meter" | "cm" | "liter" | "sqm" | "cbm" | "set" | "pair" | "roll" | "sheet" | "carton" | "pallet";
+  minOrderQuantity: number;
+  maxOrderQuantity?: number;
+  lowStockThreshold: number;
+  allowBackorder: boolean;
   category: string;
   image: string;
   cover?: string;
@@ -67,6 +73,11 @@ export const ProductFormDialog = ({
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<ProductFormData>({
     defaultValues: {
+      quantity: 0,
+      unit: "unit",
+      minOrderQuantity: 1,
+      lowStockThreshold: 10,
+      allowBackorder: false,
       refundPolicy: "30-day",
       isPrivate: false,
     },
@@ -89,6 +100,12 @@ export const ProductFormDialog = ({
       setValue("name", productData.name);
       setValue("description", JSON.stringify(productData.description) || "");
       setValue("price", productData.price);
+      setValue("quantity", productData.quantity || 0);
+      setValue("unit", (productData.unit as ProductFormData["unit"]) || "unit");
+      setValue("minOrderQuantity", productData.minOrderQuantity || 1);
+      setValue("maxOrderQuantity", productData.maxOrderQuantity || undefined);
+      setValue("lowStockThreshold", productData.lowStockThreshold || 10);
+      setValue("allowBackorder", productData.allowBackorder || false);
       setValue("category", typeof productData.category === "string" ? productData.category : productData.category?.id || "");
       setValue("refundPolicy", (productData.refundPolicy as ProductFormData["refundPolicy"]) || "30-day");
       setValue("isPrivate", productData.isPrivate || false);
@@ -151,6 +168,11 @@ export const ProductFormDialog = ({
       
       // Reset form when dialog closes with clean state
       reset({
+        quantity: 0,
+        unit: "unit",
+        minOrderQuantity: 1,
+        lowStockThreshold: 10,
+        allowBackorder: false,
         refundPolicy: "30-day",
         isPrivate: false,
         gallery: [], // Clear gallery
@@ -164,6 +186,11 @@ export const ProductFormDialog = ({
       // Ensure clean state for new products
       if (mode === "create") {
         reset({
+          quantity: 0,
+          unit: "unit",
+          minOrderQuantity: 1,
+          lowStockThreshold: 10,
+          allowBackorder: false,
           refundPolicy: "30-day",
           isPrivate: false,
           gallery: [],
@@ -290,6 +317,123 @@ export const ProductFormDialog = ({
               {errors.price && (
                 <p className="text-sm text-red-600 mt-1">{errors.price.message}</p>
               )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="quantity">Quantity Available *</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  {...register("quantity", { 
+                    required: "Quantity is required",
+                    valueAsNumber: true,
+                    min: { value: 0, message: "Quantity cannot be negative" }
+                  })}
+                  placeholder="0"
+                />
+                {errors.quantity && (
+                  <p className="text-sm text-red-600 mt-1">{errors.quantity.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="unit">Unit of Measurement *</Label>
+                <Select
+                  value={watch("unit")}
+                  onValueChange={(value) => setValue("unit", value as ProductFormData["unit"])}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unit">Unit(s)</SelectItem>
+                    <SelectItem value="piece">Piece(s)</SelectItem>
+                    <SelectItem value="box">Box(es)</SelectItem>
+                    <SelectItem value="pack">Pack(s)</SelectItem>
+                    <SelectItem value="bag">Bag(s)</SelectItem>
+                    <SelectItem value="kg">Kilogram(s)</SelectItem>
+                    <SelectItem value="gram">Gram(s)</SelectItem>
+                    <SelectItem value="meter">Meter(s)</SelectItem>
+                    <SelectItem value="cm">Centimeter(s)</SelectItem>
+                    <SelectItem value="liter">Liter(s)</SelectItem>
+                    <SelectItem value="sqm">Square Meter(s)</SelectItem>
+                    <SelectItem value="cbm">Cubic Meter(s)</SelectItem>
+                    <SelectItem value="set">Set(s)</SelectItem>
+                    <SelectItem value="pair">Pair(s)</SelectItem>
+                    <SelectItem value="roll">Roll(s)</SelectItem>
+                    <SelectItem value="sheet">Sheet(s)</SelectItem>
+                    <SelectItem value="carton">Carton(s)</SelectItem>
+                    <SelectItem value="pallet">Pallet(s)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="minOrderQuantity">Minimum Order Quantity</Label>
+                <Input
+                  id="minOrderQuantity"
+                  type="number"
+                  {...register("minOrderQuantity", { 
+                    valueAsNumber: true,
+                    min: { value: 1, message: "Must be at least 1" }
+                  })}
+                  placeholder="1"
+                />
+                {errors.minOrderQuantity && (
+                  <p className="text-sm text-red-600 mt-1">{errors.minOrderQuantity.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="maxOrderQuantity">Maximum Order Quantity</Label>
+                <Input
+                  id="maxOrderQuantity"
+                  type="number"
+                  {...register("maxOrderQuantity", { 
+                    valueAsNumber: true,
+                    min: { value: 1, message: "Must be at least 1" }
+                  })}
+                  placeholder="No limit"
+                />
+                {errors.maxOrderQuantity && (
+                  <p className="text-sm text-red-600 mt-1">{errors.maxOrderQuantity.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="lowStockThreshold">Low Stock Alert Threshold</Label>
+                <Input
+                  id="lowStockThreshold"
+                  type="number"
+                  {...register("lowStockThreshold", { 
+                    valueAsNumber: true,
+                    min: { value: 0, message: "Cannot be negative" }
+                  })}
+                  placeholder="10"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Alert when stock falls below this number
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="allowBackorder" className="block mb-2">Pre-Order Settings</Label>
+                <div className="flex items-center space-x-2 h-10">
+                  <Checkbox
+                    id="allowBackorder"
+                    checked={watch("allowBackorder")}
+                    onCheckedChange={(checked) => setValue("allowBackorder", checked as boolean)}
+                  />
+                  <Label htmlFor="allowBackorder" className="cursor-pointer">
+                    Allow pre-orders when out of stock
+                  </Label>
+                </div>
+              </div>
             </div>
 
             <div>

@@ -147,6 +147,7 @@ export const adminRouter = createTRPCRouter({
       const orders = await Promise.all(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         transaction.products.map(async (item: any) => {
+          const quantity = item.quantity || 1;
           return await ctx.db.create({
             collection: "orders",
             data: {
@@ -156,7 +157,7 @@ export const adminRouter = createTRPCRouter({
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               products: transaction.products.map((p: any) => ({
                 product: typeof p.product === 'string' ? p.product : p.product.id,
-                quantity: 1,
+                quantity: p.quantity || 1,
                 priceAtPurchase: p.price,
               })),
               totalAmount: transaction.totalAmount,
@@ -164,12 +165,40 @@ export const adminRouter = createTRPCRouter({
               paymentMethod: "mobile_money",
               bankName: "MTN Mobile Money",
               accountNumber: transaction.customerPhone || "N/A",
-              amount: item.price,
+              amount: item.price * quantity,
               currency: "RWF",
               transaction: transaction.id,
               status: "pending", // Orders start as pending after payment verification
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any,
+          });
+        })
+      );
+
+      // 1.5. Deduct quantities from product inventory
+      await Promise.all(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        transaction.products.map(async (item: any) => {
+          const productId = typeof item.product === 'string' ? item.product : item.product.id;
+          const quantity = item.quantity || 1;
+          
+          // Get current product
+          const product = await ctx.db.findByID({
+            collection: "products",
+            id: productId,
+          });
+          
+          // Calculate new quantity (don't go below 0)
+          const newQuantity = Math.max(0, (product.quantity || 0) - quantity);
+          
+          // Update product quantity
+          await ctx.db.update({
+            collection: "products",
+            id: productId,
+            data: {
+              quantity: newQuantity,
+              // Stock status will be auto-calculated by beforeChange hook
+            },
           });
         })
       );

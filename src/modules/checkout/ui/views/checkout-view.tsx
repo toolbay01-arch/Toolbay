@@ -19,7 +19,7 @@ interface CheckoutViewProps {
 export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
   const router = useRouter();
   const [states, setStates] = useCheckoutStates();
-  const { productIds, clearCart } = useCart(tenantSlug);
+  const { cartItems, productIds, clearCart } = useCart(tenantSlug);
   
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -46,9 +46,15 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
   }));
 
   const handleCheckoutSubmit = (formData: CheckoutFormData) => {
+    // Map cart items with quantities
+    const items = cartItems.map(item => ({
+      productId: item.productId,
+      quantity: item.quantity,
+    }));
+    
     purchase.mutate({
       tenantSlug,
-      productIds,
+      items,
       customerEmail: formData.email,
       customerPhone: formData.phone,
       customerName: formData.name,
@@ -114,13 +120,19 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
       </div>
 
       <CheckoutForm
-        cartItems={data?.docs.map(product => ({
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          quantity: 1,
-        })) || []}
-        totalAmount={data?.totalPrice || 0}
+        cartItems={cartItems.map(item => {
+          const product = data?.docs.find(p => p.id === item.productId);
+          return {
+            id: item.productId,
+            name: product?.name || "Unknown Product",
+            price: product?.price || 0,
+            quantity: item.quantity,
+          };
+        })}
+        totalAmount={cartItems.reduce((total, item) => {
+          const product = data?.docs.find(p => p.id === item.productId);
+          return total + ((product?.price || 0) * item.quantity);
+        }, 0)}
         onSubmitAction={handleCheckoutSubmit}
         isSubmitting={purchase.isPending}
       />

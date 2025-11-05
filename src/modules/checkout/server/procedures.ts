@@ -12,7 +12,10 @@ export const checkoutRouter = createTRPCRouter({
   initiatePayment: protectedProcedure
     .input(
       z.object({
-        productIds: z.array(z.string()).min(1),
+        items: z.array(z.object({
+          productId: z.string(),
+          quantity: z.number().min(1),
+        })).min(1),
         tenantSlug: z.string().min(1),
         customerEmail: z.string().email().optional(),
         customerPhone: z.string().min(1, "Phone number is required"),
@@ -25,24 +28,67 @@ export const checkoutRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // 1. Validate products
+      // 1. Extract product IDs from items
+      const productIds = input.items.map(item => item.productId);
+      
+      // 2. Validate products exist and belong to tenant
       const products = await ctx.db.find({
         collection: "products",
         depth: 1,
         where: {
           and: [
-            { id: { in: input.productIds } },
+            { id: { in: productIds } },
             { "tenant.slug": { equals: input.tenantSlug } },
             { isArchived: { not_equals: true } },
           ]
         }
       });
 
-      if (products.totalDocs !== input.productIds.length) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Products not found" });
+      if (products.totalDocs !== productIds.length) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Some products not found" });
       }
 
-      // 2. Get tenant
+      // 3. Validate stock availability for each item
+      const stockValidationErrors: string[] = [];
+      const itemsMap = new Map(input.items.map(item => [item.productId, item]));
+      
+      for (const product of products.docs) {
+        const requestedQuantity = itemsMap.get(product.id)?.quantity || 0;
+        const availableQuantity = product.quantity || 0;
+        const minOrder = product.minOrderQuantity || 1;
+        const maxOrder = product.maxOrderQuantity;
+        const allowBackorder = product.allowBackorder || false;
+        
+        // Check minimum order quantity
+        if (requestedQuantity < minOrder) {
+          stockValidationErrors.push(
+            `${product.name}: Minimum order is ${minOrder} ${product.unit || "unit"}${minOrder > 1 ? "s" : ""}`
+          );
+        }
+        
+        // Check maximum order quantity
+        if (maxOrder && requestedQuantity > maxOrder) {
+          stockValidationErrors.push(
+            `${product.name}: Maximum order is ${maxOrder} ${product.unit || "unit"}${maxOrder > 1 ? "s" : ""}`
+          );
+        }
+        
+        // Check stock availability
+        if (!allowBackorder && requestedQuantity > availableQuantity) {
+          stockValidationErrors.push(
+            `${product.name}: Only ${availableQuantity} ${product.unit || "unit"}${availableQuantity !== 1 ? "s" : ""} available`
+          );
+        }
+      }
+      
+      if (stockValidationErrors.length > 0) {
+        throw new TRPCError({ 
+          code: "BAD_REQUEST", 
+          message: `Stock validation failed:\n${stockValidationErrors.join("\n")}` 
+        });
+      }
+
+      // 4. Get tenant
       const tenantsData = await ctx.db.find({
         collection: "tenants",
         limit: 1,
@@ -70,12 +116,15 @@ export const checkoutRouter = createTRPCRouter({
         });
       }
 
-      // 3. Calculate totals
-      const totalAmount = products.docs.reduce((acc, p) => acc + p.price, 0);
+      // 5. Calculate totals
+      const totalAmount = products.docs.reduce((acc, p) => {
+        const quantity = itemsMap.get(p.id)?.quantity || 1;
+        return acc + (p.price * quantity);
+      }, 0);
       const platformFee = Math.round(totalAmount * 0.1);
       const tenantAmount = totalAmount - platformFee;
 
-      // 4. Create transaction
+      // 6. Create transaction with quantities
       const expiryDate = new Date();
       expiryDate.setHours(expiryDate.getHours() + 48);
       
@@ -95,6 +144,7 @@ export const checkoutRouter = createTRPCRouter({
           products: products.docs.map((p) => ({
             product: p.id,
             price: p.price,
+            quantity: itemsMap.get(p.id)?.quantity || 1,
           })),
           totalAmount,
           platformFee,
@@ -105,13 +155,13 @@ export const checkoutRouter = createTRPCRouter({
         },
       });
 
-      // 5. Return payment instructions
+      // 7. Return payment instructions
       return {
         transactionId: transaction.id,
         paymentReference: transaction.paymentReference,
         momoCode: tenant.momoCode, // From tenant admin configuration
         momoAccountName: tenant.momoAccountName || tenant.name,
-        amount: totalAmount, // Total cart amount (sum of all products)
+        amount: totalAmount, // Total cart amount (sum of all products * quantities)
         expiresAt: transaction.expiresAt,
         // Dial code format: *182*8*1*{MOMO_CODE}*{TOTAL_AMOUNT}#
         dialCode: `*182*8*1*${tenant.momoCode}*${totalAmount}#`,
