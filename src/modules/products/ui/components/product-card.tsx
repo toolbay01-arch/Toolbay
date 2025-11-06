@@ -145,11 +145,9 @@ export const ProductCard = ({
               {formatCurrency(price)}
             </p>
           </div>
-          {unit && unit !== "unit" && (
-            <p className="text-xs text-muted-foreground">
-              per {unit}
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground">
+            per {unit || "unit"}
+          </p>
         </div>
       </div>
     </div>
