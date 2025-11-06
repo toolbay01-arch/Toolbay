@@ -80,11 +80,9 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                   <div className="px-2 py-1 border bg-pink-400 w-fit">
                     <p className="text-base font-medium">{formatCurrency(data.price)}</p>
                   </div>
-                  {data.unit && data.unit !== "unit" && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      per {data.unit}
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground text-center">
+                    per {data.unit || "unit"}
+                  </p>
                 </div>
               </div>
 
@@ -125,15 +123,12 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
               </div>
             </div>
 
-            <div className="p-6 border-b">
-              {data.description ? (
+            {/* Description Row - Only show if description exists */}
+            {data.description && (
+              <div className="p-6 border-b">
                 <RichText data={data.description} />
-              ) : (
-                <p className="font-medium text-muted-foreground italic">
-                  No description provided
-                </p>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex flex-col gap-4 p-6 border-b">

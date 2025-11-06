@@ -9,9 +9,35 @@ import { formatCurrency } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
 import { StockStatusBadge } from "@/components/quantity-selector";
 
+// Helper function to extract plain text from Lexical rich text
+function extractPlainText(richText: any): string {
+  if (!richText || typeof richText !== 'object') return '';
+  
+  try {
+    if (richText.root && richText.root.children) {
+      return richText.root.children
+        .map((node: any) => {
+          if (node.children) {
+            return node.children
+              .map((child: any) => child.text || '')
+              .join('');
+          }
+          return node.text || '';
+        })
+        .join(' ')
+        .trim();
+    }
+  } catch (e) {
+    return '';
+  }
+  
+  return '';
+}
+
 interface ProductCardProps {
   id: string;
   name: string;
+  description?: any; // Rich text object or string
   imageUrl?: string | null;
   gallery?: Array<{ url: string; alt: string }> | null;
   tenantSlug: string;
@@ -28,6 +54,7 @@ interface ProductCardProps {
 export const ProductCard = ({
   id,
   name,
+  description,
   imageUrl,
   gallery,
   tenantSlug,
@@ -64,6 +91,11 @@ export const ProductCard = ({
     e.stopPropagation(); // Prevent card click
     router.push(tenantUrl);
   };
+
+  // Extract plain text from rich text description
+  const plainDescription = typeof description === 'string' 
+    ? description 
+    : extractPlainText(description);
 
   // Prepare images for carousel
   const images = gallery && gallery.length > 0
@@ -104,9 +136,14 @@ export const ProductCard = ({
       <div className="p-4 border-y flex flex-col gap-3 flex-1">
         {/* Product Name with Stock Badge */}
         <div className="flex items-start justify-between gap-2">
-          <h2 className="text-lg font-medium line-clamp-4 hover:text-gray-700 flex-1">{name}</h2>
+          <h2 className="text-lg font-medium line-clamp-2 hover:text-gray-700 flex-1">{name}</h2>
           <StockStatusBadge stockStatus={stockStatus} quantity={stockStatus === "low_stock" ? quantity : undefined} />
         </div>
+        
+        {/* Description */}
+        {plainDescription && (
+          <p className="text-sm text-muted-foreground line-clamp-2">{plainDescription}</p>
+        )}
         
         <button 
           type="button"

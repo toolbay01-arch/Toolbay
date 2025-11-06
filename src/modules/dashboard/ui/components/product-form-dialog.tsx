@@ -98,7 +98,8 @@ export const ProductFormDialog = ({
   useEffect(() => {
     if (mode === "edit" && productData) {
       setValue("name", productData.name);
-      setValue("description", JSON.stringify(productData.description) || "");
+      // Skip description - it's rich text, handled separately
+      // setValue("description", productData.description);
       setValue("price", productData.price);
       setValue("quantity", productData.quantity || 0);
       setValue("unit", (productData.unit as ProductFormData["unit"]) || "unit");
