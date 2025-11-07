@@ -8,9 +8,9 @@ export function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        // These settings will apply to all queries
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+        // Increased stale time to reduce unnecessary refetches on navigation
+        staleTime: 10 * 60 * 1000, // 10 minutes (was 5)
+        gcTime: 30 * 60 * 1000, // 30 minutes (was 10) - keep cached data longer
         retry: (failureCount, error) => {
           // Don't retry on certain errors
           if (error?.message?.includes('UNAUTHORIZED')) return false;
@@ -19,7 +19,7 @@ export function makeQueryClient() {
         },
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
         refetchOnWindowFocus: false,
-        refetchOnMount: true,
+        refetchOnMount: false, // Don't refetch on every mount - rely on staleTime
         refetchOnReconnect: 'always',
       },
       mutations: {
