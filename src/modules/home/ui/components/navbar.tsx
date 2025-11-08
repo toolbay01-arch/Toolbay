@@ -90,6 +90,13 @@ export const Navbar = () => {
   const logout = useMutation(trpc.auth.logout.mutationOptions({
     onSuccess: () => {
       toast.success("Logged out successfully");
+      
+      // Immediately update cache to logged-out state
+      queryClient.setQueryData(
+        trpc.auth.session.queryKey(),
+        { user: null, permissions: {} }
+      );
+      
       // Invalidate the session query so client UI updates immediately
       queryClient.invalidateQueries(trpc.auth.session.queryFilter());
       // Navigate to home and refresh any server-side data
@@ -106,6 +113,7 @@ export const Navbar = () => {
   };
   
   // Show tenant items if user is a tenant, customer items if logged in, otherwise show public items
+  // While loading, use the cached data to prevent flash
   const navbarItems = session.data?.user 
     ? session.data.user.roles?.includes('tenant') 
       ? tenantNavbarItems 

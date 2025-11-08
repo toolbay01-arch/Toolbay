@@ -6,7 +6,7 @@ import { Fragment, useState } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { CheckIcon, LinkIcon, StarIcon } from "lucide-react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
 import { useTRPC } from "@/trpc/client";
@@ -34,9 +34,14 @@ interface ProductViewProps {
 
 export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
   const trpc = useTRPC();
-  const { data } = useSuspenseQuery(trpc.products.getOne.queryOptions({ id: productId }));
+  const { data, isLoading } = useQuery(trpc.products.getOne.queryOptions({ id: productId }));
 
   const [isCopied, setIsCopied] = useState(false);
+  
+  // Show skeleton while loading
+  if (isLoading || !data) {
+    return <ProductViewSkeleton />;
+  }
 
   // Build gallery array from product data
   const images: Array<{ url: string; alt: string }> = [];
@@ -238,15 +243,86 @@ export const ProductViewSkeleton = () => {
   return (
     <div className="px-4 lg:px-12 py-10">
       <div className="border rounded-sm bg-white overflow-hidden">
-        <div className="relative aspect-[3.9] border-b">
-          <Image
-            src={"/placeholder.png"}
-            alt="Placeholder"
-            fill
-            className="object-cover"
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+          
+          {/* LEFT SIDE - Product Details Skeleton */}
+          <div className="order-2 lg:order-1 border-t lg:border-t-0 lg:border-r">
+            <div className="p-6 space-y-4">
+              {/* Title skeleton */}
+              <div className="h-10 bg-gray-200 rounded animate-pulse w-3/4"></div>
+            </div>
+            
+            <div className="border-y flex flex-wrap">
+              {/* Price skeleton */}
+              <div className="px-6 py-4 flex items-center justify-center border-r">
+                <div className="h-12 w-24 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+              
+              {/* Tenant skeleton */}
+              <div className="px-6 py-4 flex items-center justify-center border-r">
+                <div className="flex items-center gap-2">
+                  <div className="size-5 rounded-full bg-gray-200 animate-pulse"></div>
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+              
+              {/* Rating skeleton */}
+              <div className="px-6 py-4 flex items-center justify-center border-r">
+                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+              
+              {/* Stock skeleton */}
+              <div className="px-6 py-4 flex items-center justify-center">
+                <div className="h-6 w-20 bg-gray-200 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Description skeleton */}
+            <div className="p-6 border-b space-y-2">
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-4/6"></div>
+            </div>
+
+            {/* Buttons skeleton */}
+            <div className="p-6 border-b space-y-4">
+              <div className="h-12 bg-gray-200 rounded animate-pulse w-full"></div>
+              <div className="h-12 bg-gray-200 rounded animate-pulse w-full"></div>
+              <div className="h-6 bg-gray-200 rounded animate-pulse w-48 mx-auto"></div>
+            </div>
+
+            {/* Ratings skeleton */}
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="h-6 bg-gray-200 rounded animate-pulse w-24"></div>
+                <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
+              </div>
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="h-4 w-12 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="flex-1 h-4 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT SIDE - Image Skeleton */}
+          <div className="order-1 lg:order-2">
+            <div className="relative aspect-square bg-gray-100">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="animate-pulse text-gray-400">
+                  <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
