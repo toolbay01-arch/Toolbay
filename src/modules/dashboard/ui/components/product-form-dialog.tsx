@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -70,9 +70,11 @@ export const ProductFormDialog = ({
   const queryClient = useQueryClient();
   const initialGalleryRef = useRef<string[]>([]);
   const hasSubmittedRef = useRef(false);
+  const hasPopulatedRef = useRef(false); // Track if we've populated the form in edit mode
 
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<ProductFormData>({
+  const { register, handleSubmit, setValue, watch, getValues, control, reset, formState: { errors } } = useForm<ProductFormData>({
     defaultValues: {
+      category: "", // Add empty string default for category
       quantity: 0,
       unit: "unit",
       minOrderQuantity: 1,
@@ -87,61 +89,70 @@ export const ProductFormDialog = ({
   const { data: productData, isLoading: isLoadingProduct } = useQuery({
     ...trpc.products.getOne.queryOptions({ id: productId || "" }),
     enabled: mode === "edit" && !!productId,
+    staleTime: 0, // Always fetch fresh data when editing to ensure images/categories are current
+    gcTime: 0, // Don't cache edit data
   });
 
   // Fetch categories for dropdown
-  const { data: categoriesData } = useQuery(
-    trpc.categories.getMany.queryOptions()
-  );
+  const { data: categoriesData, isLoading: isLoadingCategories } = useQuery({
+    ...trpc.categories.getMany.queryOptions(),
+    staleTime: 60 * 1000,
+    enabled: open,
+  });
 
-  // Populate form when editing
+  // Populate form when editing - wait for BOTH product data AND categories to load
   useEffect(() => {
-    if (mode === "edit" && productData) {
-      setValue("name", productData.name);
-      // Skip description - it's rich text, handled separately
-      // setValue("description", productData.description);
-      setValue("price", productData.price);
-      setValue("quantity", productData.quantity || 0);
-      setValue("unit", (productData.unit as ProductFormData["unit"]) || "unit");
-      setValue("minOrderQuantity", productData.minOrderQuantity || 1);
-      setValue("maxOrderQuantity", productData.maxOrderQuantity || undefined);
-      setValue("lowStockThreshold", productData.lowStockThreshold || 10);
-      setValue("allowBackorder", productData.allowBackorder || false);
-      setValue("category", typeof productData.category === "string" ? productData.category : productData.category?.id || "");
-      setValue("refundPolicy", (productData.refundPolicy as ProductFormData["refundPolicy"]) || "30-day");
-      setValue("isPrivate", productData.isPrivate || false);
+    if (mode === "edit" && productData && !isLoadingCategories && categoriesData) {
+      const categoryId = typeof productData.category === "string" 
+        ? productData.category 
+        : productData.category?.id || "";
       
-      if (productData.image) {
-        const imageId = typeof productData.image === "string" ? productData.image : productData.image.id;
-        setValue("image", imageId);
-      }
+      const imageId = productData.image 
+        ? (typeof productData.image === "string" ? productData.image : productData.image.id)
+        : undefined;
       
-      if (productData.cover) {
-        const coverId = typeof productData.cover === "string" ? productData.cover : productData.cover.id;
-        setValue("cover", coverId);
-      }
+      const coverId = productData.cover 
+        ? (typeof productData.cover === "string" ? productData.cover : productData.cover.id)
+        : undefined;
 
-      // Handle gallery field (type assertion needed until payload-types regenerated)
       const productDataWithGallery = productData as any;
-      if (productDataWithGallery.gallery && Array.isArray(productDataWithGallery.gallery)) {
-        const galleryIds = productDataWithGallery.gallery.map((item: any) => {
-          if (typeof item === "string") return item;
-          if (item.media) {
-            return typeof item.media === "string" ? item.media : item.media.id;
-          }
-          return null;
-        }).filter(Boolean);
-        setValue("gallery", galleryIds);
-        // Store initial gallery state for cleanup comparison
-        initialGalleryRef.current = [...galleryIds];
-      }
+      const galleryIds = productDataWithGallery.gallery && Array.isArray(productDataWithGallery.gallery)
+        ? productDataWithGallery.gallery.map((item: any) => {
+            if (typeof item === "string") return item;
+            if (item.media) {
+              if (typeof item.media === "string") return item.media;
+              if (item.media.id) return item.media.id;
+            }
+            return null;
+          }).filter(Boolean)
+        : [];
+      
+      reset({
+        name: productData.name || "",
+        price: productData.price || 0,
+        quantity: productData.quantity || 0,
+        unit: (productData.unit as ProductFormData["unit"]) || "unit",
+        minOrderQuantity: productData.minOrderQuantity || 1,
+        maxOrderQuantity: productData.maxOrderQuantity || undefined,
+        lowStockThreshold: productData.lowStockThreshold || 10,
+        allowBackorder: productData.allowBackorder ?? false,
+        refundPolicy: (productData.refundPolicy as ProductFormData["refundPolicy"]) || "30-day",
+        isPrivate: productData.isPrivate ?? false,
+        category: categoryId,
+        image: imageId,
+        cover: coverId,
+        gallery: galleryIds,
+      }, { keepDefaultValues: false });
+      
+      hasPopulatedRef.current = true;
+      initialGalleryRef.current = [...galleryIds];
     } else if (mode === "create") {
-      // Reset initial gallery for new product
       initialGalleryRef.current = [];
+      hasPopulatedRef.current = false;
     }
-  }, [productData, mode, setValue]);
+  }, [productData, mode, isLoadingCategories, categoriesData, reset]);
 
-  // Cleanup orphaned images when dialog closes without submitting
+  // Cleanup orphaned images when dialog closes
   useEffect(() => {
     if (!open && !hasSubmittedRef.current) {
       const currentGallery = watch("gallery") || [];
@@ -151,24 +162,21 @@ export const ProductFormDialog = ({
       const orphanedImages = currentGallery.filter(id => !initialGallery.includes(id));
       
       if (orphanedImages.length > 0) {
-        console.log('[ProductFormDialog] Cleaning up orphaned images:', orphanedImages);
-        
-        // Delete orphaned images from server
         orphanedImages.forEach(async (id) => {
           try {
             await fetch(`/api/media?id=${id}&t=${Date.now()}`, { 
               method: 'DELETE',
               cache: 'no-store',
             });
-            console.log('[ProductFormDialog] Deleted orphaned image:', id);
           } catch (error) {
-            console.error('[ProductFormDialog] Failed to delete orphaned image:', id, error);
+            console.error('Failed to delete orphaned image:', id, error);
           }
         });
       }
       
       // Reset form when dialog closes with clean state
       reset({
+        category: "", // Reset category to empty
         quantity: 0,
         unit: "unit",
         minOrderQuantity: 1,
@@ -184,9 +192,9 @@ export const ProductFormDialog = ({
     if (open) {
       hasSubmittedRef.current = false;
       
-      // Ensure clean state for new products
       if (mode === "create") {
         reset({
+          category: "",
           quantity: 0,
           unit: "unit",
           minOrderQuantity: 1,
@@ -197,9 +205,12 @@ export const ProductFormDialog = ({
           gallery: [],
         });
         initialGalleryRef.current = [];
+        hasPopulatedRef.current = false;
+      } else if (mode === "edit") {
+        hasPopulatedRef.current = false;
       }
     }
-  }, [open, watch, reset, mode]);
+  }, [open, reset, mode]);
 
   // Create mutation
   const createMutation = useMutation(trpc.products.createProduct.mutationOptions({
@@ -284,6 +295,43 @@ export const ProductFormDialog = ({
   };
 
   const categories = categoriesData || [];
+  
+  // Build category options including current product's category
+  const categoryOptions = useMemo(() => {
+    const options: Array<{ id: string; name: string; isSubcategory: boolean }> = [];
+    const seenIds = new Set<string>();
+
+    // If editing, ensure current category is available
+    if (mode === "edit" && productData?.category) {
+      const currentCategoryId = typeof productData.category === 'string' 
+        ? productData.category 
+        : productData.category?.id;
+      const currentCategoryName = typeof productData.category === 'object' && productData.category?.name
+        ? productData.category.name
+        : 'Current Category';
+      
+      if (currentCategoryId) {
+        options.push({ id: currentCategoryId, name: currentCategoryName, isSubcategory: false });
+        seenIds.add(currentCategoryId);
+      }
+    }
+
+    // Add all loaded categories and subcategories
+    categories.forEach((cat) => {
+      if (!seenIds.has(cat.id)) {
+        options.push({ id: cat.id, name: cat.name, isSubcategory: false });
+        seenIds.add(cat.id);
+      }
+      (cat.subcategories || []).forEach((sub: any) => {
+        if (!seenIds.has(sub.id)) {
+          options.push({ id: sub.id, name: sub.name, isSubcategory: true });
+          seenIds.add(sub.id);
+        }
+      });
+    });
+
+    return options;
+  }, [categories, mode, productData?.category]);
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
@@ -302,32 +350,62 @@ export const ProductFormDialog = ({
         {isLoadingProduct && mode === "edit" ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2 text-gray-600">Loading product...</span>
+          </div>
+        ) : isLoadingCategories ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2 text-gray-600">Loading categories...</span>
+          </div>
+        ) : mode === "edit" && (!productData || !categoriesData) ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2 text-gray-600">Waiting for data...</span>
           </div>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* 1. Category */}
             <div>
               <Label htmlFor="category">Category *</Label>
-              <Select
-                value={watch("category")}
-                onValueChange={(value) => setValue("category", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.flatMap((cat) => [
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>,
-                    ...(cat.subcategories || []).map((sub) => (
-                      <SelectItem key={sub.id} value={sub.id} className="pl-6">
-                        ↳ {sub.name}
-                      </SelectItem>
-                    ))
-                  ])}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="category"
+                control={control}
+                rules={{ required: "Category is required" }}
+                render={({ field }) => (
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    disabled={isLoadingCategories || categoryOptions.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={
+                        isLoadingCategories 
+                          ? "Loading categories..." 
+                          : categories.length === 0
+                          ? "No categories available - contact admin"
+                          : field.value ? `Selected: ${field.value}` : "Select a category"
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoryOptions.length === 0 ? (
+                        <div className="p-2 text-sm text-gray-500 text-center">
+                          No categories available. Please contact your administrator.
+                        </div>
+                      ) : (
+                        categoryOptions.map((option) => (
+                          <SelectItem 
+                            key={option.id} 
+                            value={option.id}
+                            className={option.isSubcategory ? "pl-6" : ""}
+                          >
+                            {option.isSubcategory ? `↳ ${option.name}` : option.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.category && (
                 <p className="text-sm text-red-600 mt-1">{errors.category.message}</p>
               )}

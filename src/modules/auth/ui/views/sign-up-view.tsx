@@ -42,7 +42,9 @@ export const SignUpView = () => {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
+      // Ensure server-side content is refreshed after registering
       router.push("/");
+      router.refresh();
     },
   }));
 

@@ -50,19 +50,25 @@ export const ImageUpload = ({
       return;
     }
 
-    console.log('[ImageUpload] Loading files for IDs:', value);
-
     try {
       // Add cache busting and proper cache control headers
+      // Use relative URL to work in both localhost and production
       const response = await fetch(
         `/api/media?ids=${value.join(",")}&t=${Date.now()}`, // Cache buster
         {
           cache: 'no-store', // Disable browser cache
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
           },
         }
       );
+      
+      if (!response.ok) {
+        console.error('[ImageUpload] Failed to fetch media:', response.status, response.statusText);
+        throw new Error(`Failed to fetch media: ${response.status}`);
+      }
+      
       const data = await response.json();
       
       if (data.docs) {
@@ -77,8 +83,6 @@ export const ImageUpload = ({
         const sortedFiles = value
           .map(id => files.find((f: any) => f.id === id))
           .filter(Boolean); // Remove any undefined (shouldn't happen)
-        
-        console.log('[ImageUpload] Loaded files:', sortedFiles.map((f: any) => ({ id: f.id, url: f.url })));
         
         // Verify we got all expected files
         if (sortedFiles.length === value.length) {
@@ -410,10 +414,7 @@ export const ImageUpload = ({
 
       // Update the value with new media IDs (append to end to maintain grid stability)
       if (newMediaIds.length > 0) {
-        console.log('[ImageUpload] Before update - existing value:', value);
-        console.log('[ImageUpload] New media IDs to add:', newMediaIds);
         const updatedValue = [...value, ...newMediaIds];
-        console.log('[ImageUpload] After update - new value:', updatedValue);
         onChange(updatedValue);
       }
 
@@ -433,7 +434,6 @@ export const ImageUpload = ({
   // Handle file selection
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    console.log("Files selected:", files.length, files.map(f => ({ name: f.name, size: f.size, type: f.type })));
     
     if (files.length > 0) {
       uploadFiles(files);
@@ -474,8 +474,6 @@ export const ImageUpload = ({
   // Remove file - deletes from server and updates state
   const handleRemove = async (idToRemove: string) => {
     try {
-      console.log('[ImageUpload] Removing media ID:', idToRemove);
-      
       // Optimistic update (immediate visual feedback)
       const previousFiles = uploadedFiles;
       const previousValue = value;
@@ -505,8 +503,6 @@ export const ImageUpload = ({
         throw new Error('Failed to delete media from server');
       }
 
-      console.log('[ImageUpload] Successfully deleted from server:', idToRemove);
-      
       // Update toast
       toast.success('Image deleted successfully', { id: loadingToast });
     } catch (error) {
@@ -517,7 +513,6 @@ export const ImageUpload = ({
 
   // Load files when value changes
   useEffect(() => {
-    console.log('[ImageUpload] Value prop changed:', value);
     loadUploadedFiles();
   }, [value, loadUploadedFiles]);
 

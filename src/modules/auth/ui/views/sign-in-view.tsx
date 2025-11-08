@@ -41,7 +41,10 @@ export const SignInView = () => {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
+      // Refresh server-side content and navigate home so that
+      // server-rendered parts (if any) are updated after login
       router.push("/");
+      router.refresh();
     },
   }));
 

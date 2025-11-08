@@ -72,7 +72,7 @@ export const productsRouter = createTRPCRouter({
       const product = await ctx.db.findByID({
         collection: "products",
         id: input.id,
-        depth: 1, // Reduced from 2 to 1 - loads product.image and product.tenant (without tenant.image)
+        depth: 2, // Depth 2 to populate: image, category, cover, gallery.media, tenant
         select: {
           content: false,
         },
