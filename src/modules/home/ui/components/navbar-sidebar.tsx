@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { OptimizedLink } from "@/components/optimized-link";
 
 interface NavbarItem {
   href: string;
@@ -50,14 +51,14 @@ export const NavbarSidebar = ({
         </SheetHeader>
         <ScrollArea className="flex flex-col overflow-y-auto h-full pb-2">
           {items.map((item) => (
-            <Link
+            <OptimizedLink
               key={item.href}
               href={item.href}
               className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
               onClick={() => onOpenChange(false)}
             >
               {item.children}
-            </Link>
+            </OptimizedLink>
           ))}
           <div className="border-t">
             {isLoggedIn ? (
@@ -72,20 +73,20 @@ export const NavbarSidebar = ({
               </Button>
             ) : (
               <>
-                <Link 
+                <OptimizedLink 
                   onClick={() => onOpenChange(false)} 
                   href="/sign-in" 
                   className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
                 >
                   Log in
-                </Link>
-                <Link 
+                </OptimizedLink>
+                <OptimizedLink 
                   onClick={() => onOpenChange(false)} 
                   href="/sign-up" 
                   className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
                 >
                   Start Supplying
-                </Link>
+                </OptimizedLink>
               </>
             )}
           </div>
