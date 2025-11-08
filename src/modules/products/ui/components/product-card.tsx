@@ -55,17 +55,18 @@ export const ProductCard = ({
       return; // Let button handle its own click
     }
     
-    // Prefetch on mouseDown for instant navigation feel
-    router.prefetch(productUrl);
-    // Navigate immediately - no delay
+    // Navigate immediately - router.push is synchronous
     router.push(productUrl);
   };
 
   const handleTenantClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
-    // Prefetch and navigate immediately
-    router.prefetch(tenantUrl);
     router.push(tenantUrl);
+  };
+  
+  // Prefetch on hover for instant navigation
+  const handleMouseEnter = () => {
+    router.prefetch(productUrl);
   };
 
   // Prepare images for carousel
@@ -78,7 +79,8 @@ export const ProductCard = ({
   return (
     <div 
       onClick={handleCardClick}
-      className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow border rounded-md bg-white overflow-hidden h-full flex flex-col cursor-pointer" 
+      onMouseEnter={handleMouseEnter}
+      className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border rounded-md bg-white overflow-hidden h-full flex flex-col cursor-pointer"
     >
       <div className="relative aspect-square">
         {images.length > 1 ? (

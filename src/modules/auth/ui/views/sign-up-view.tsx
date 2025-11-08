@@ -41,7 +41,12 @@ export const SignUpView = () => {
       toast.error(error.message);
     },
     onSuccess: async () => {
+      // Register doesn't return user data, so just invalidate and refetch
       await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
+      
+      // Small delay to ensure session is fetched
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Ensure server-side content is refreshed after registering
       router.push("/");
       router.refresh();

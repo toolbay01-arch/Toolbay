@@ -39,10 +39,23 @@ export const SignInView = () => {
     onError: (error) => {
       toast.error(error.message);
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      // Immediately update the session cache with the logged-in user
+      // This prevents flash of logged-out state
+      if (data?.user) {
+        queryClient.setQueryData(
+          trpc.auth.session.queryKey(),
+          { user: data.user, permissions: {} }
+        );
+      }
+      
+      // Also invalidate to ensure fresh data
       await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
-      // Refresh server-side content and navigate home so that
-      // server-rendered parts (if any) are updated after login
+      
+      // Small delay to ensure cache is updated before navigation
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Navigate and refresh
       router.push("/");
       router.refresh();
     },
