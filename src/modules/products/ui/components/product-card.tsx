@@ -55,13 +55,16 @@ export const ProductCard = ({
       return; // Let button handle its own click
     }
     
-    // Don't prevent default - let browser handle navigation normally
-    // This provides visual feedback (loading bar, URL change)
+    // Prefetch on mouseDown for instant navigation feel
+    router.prefetch(productUrl);
+    // Navigate immediately - no delay
     router.push(productUrl);
   };
 
   const handleTenantClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
+    // Prefetch and navigate immediately
+    router.prefetch(tenantUrl);
     router.push(tenantUrl);
   };
 

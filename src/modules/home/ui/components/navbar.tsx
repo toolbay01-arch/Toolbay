@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { OptimizedLink } from "@/components/optimized-link";
 
 import { NavbarSidebar } from "./navbar-sidebar";
 
@@ -39,9 +40,9 @@ const NavbarItem = ({
         isActive && "bg-black text-white hover:bg-black hover:text-white",
       )}
     >
-      <Link href={href}>
+      <OptimizedLink href={href}>
         {children}
-      </Link>
+      </OptimizedLink>
     </Button>
   );
 };
@@ -77,7 +78,13 @@ export const Navbar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const trpc = useTRPC();
-  const session = useQuery(trpc.auth.session.queryOptions());
+  // Configure session query to avoid blocking UI when logged out
+  const session = useQuery({
+    ...trpc.auth.session.queryOptions(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: false, // Don't retry session checks
+    refetchOnMount: false, // Don't refetch on every mount
+  });
   const queryClient = useQueryClient();
   
   const logout = useMutation(trpc.auth.logout.mutationOptions({
@@ -163,17 +170,17 @@ export const Navbar = () => {
             variant="secondary"
             className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-white hover:bg-pink-400 transition-colors text-lg"
           >
-            <Link prefetch={true} href="/sign-in">
+            <OptimizedLink prefetch={true} href="/sign-in">
               Log in
-            </Link>
+            </OptimizedLink>
           </Button>
           <Button
             asChild
             className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-lg"
           >
-            <Link prefetch={true} href="/sign-up">
+            <OptimizedLink prefetch={true} href="/sign-up">
               Start Supplying
-            </Link>
+            </OptimizedLink>
           </Button>
         </div>
       )}
