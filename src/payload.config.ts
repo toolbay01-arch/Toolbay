@@ -15,6 +15,7 @@ import { Tags } from './collections/Tags'
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Orders } from './collections/Orders';
+import { Sales } from './collections/Sales';
 import { Tenants } from './collections/Tenants'
 import { Reviews } from './collections/Reviews';
 import { Products } from './collections/Products'
@@ -36,7 +37,7 @@ export default buildConfig({
       afterNavLinks: ['@/components/admin/UserVerificationBadge'],
     },
   },
-  collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews],
+  collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

@@ -76,6 +76,7 @@ export interface Config {
     transactions: Transaction;
     orders: Order;
     reviews: Review;
+    sales: Sale;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -95,6 +96,7 @@ export interface Config {
     transactions: TransactionsSelect<false> | TransactionsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     reviews: ReviewsSelect<false> | ReviewsSelect<true>;
+    sales: SalesSelect<false> | SalesSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -521,11 +523,15 @@ export interface Transaction {
    */
   tenant: string | Tenant;
   /**
-   * Products in this transaction
+   * Products in this transaction with quantities
    */
   products: {
     product: string | Product;
     price: number;
+    /**
+     * Quantity purchased
+     */
+    quantity: number;
     id?: string | null;
   }[];
   /**
@@ -664,6 +670,89 @@ export interface Review {
   createdAt: string;
 }
 /**
+ * Sales records are automatically created when orders are verified. Read-only for tenants.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sales".
+ */
+export interface Sale {
+  id: string;
+  /**
+   * Unique sale reference number
+   */
+  saleNumber: string;
+  /**
+   * Store that made this sale
+   */
+  tenant: string | Tenant;
+  /**
+   * Product that was sold
+   */
+  product: string | Product;
+  /**
+   * Related order
+   */
+  order: string | Order;
+  /**
+   * Customer who purchased
+   */
+  customer: string | User;
+  /**
+   * Customer name for quick reference
+   */
+  customerName: string;
+  /**
+   * Customer email
+   */
+  customerEmail?: string | null;
+  /**
+   * Quantity sold
+   */
+  quantity: number;
+  /**
+   * Price per unit at time of sale (RWF)
+   */
+  pricePerUnit: number;
+  /**
+   * Total sale amount before platform fee (RWF)
+   */
+  totalAmount: number;
+  /**
+   * Platform fee (10%)
+   */
+  platformFee: number;
+  /**
+   * Net amount for tenant (after platform fee)
+   */
+  netAmount: number;
+  /**
+   * Sale status (synced from order)
+   */
+  status: 'pending' | 'shipped' | 'delivered' | 'completed' | 'refunded' | 'cancelled';
+  /**
+   * Payment method used
+   */
+  paymentMethod: 'mobile_money' | 'bank_transfer';
+  /**
+   * Payment transaction ID
+   */
+  transactionId?: string | null;
+  /**
+   * Date when item was shipped
+   */
+  shippedAt?: string | null;
+  /**
+   * Date when item was delivered
+   */
+  deliveredAt?: string | null;
+  /**
+   * Date when customer confirmed receipt
+   */
+  completedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
@@ -705,6 +794,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'reviews';
         value: string | Review;
+      } | null)
+    | ({
+        relationTo: 'sales';
+        value: string | Sale;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -915,6 +1008,7 @@ export interface TransactionsSelect<T extends boolean = true> {
     | {
         product?: T;
         price?: T;
+        quantity?: T;
         id?: T;
       };
   totalAmount?: T;
@@ -971,6 +1065,32 @@ export interface ReviewsSelect<T extends boolean = true> {
   rating?: T;
   product?: T;
   user?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sales_select".
+ */
+export interface SalesSelect<T extends boolean = true> {
+  saleNumber?: T;
+  tenant?: T;
+  product?: T;
+  order?: T;
+  customer?: T;
+  customerName?: T;
+  customerEmail?: T;
+  quantity?: T;
+  pricePerUnit?: T;
+  totalAmount?: T;
+  platformFee?: T;
+  netAmount?: T;
+  status?: T;
+  paymentMethod?: T;
+  transactionId?: T;
+  shippedAt?: T;
+  deliveredAt?: T;
+  completedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
