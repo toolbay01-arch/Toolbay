@@ -27,6 +27,16 @@ const CartButton = dynamic(
   },
 );
 
+const BuyNowButton = dynamic(
+  () => import("../components/buy-now-button").then(
+    (mod) => mod.BuyNowButton,
+  ),
+  {
+    ssr: false,
+    loading: () => <Button disabled className="flex-1 bg-green-600">Buy Now</Button>
+  },
+);
+
 interface ProductViewProps {
   productId: string;
   tenantSlug: string;
@@ -138,17 +148,35 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
             {/* Action Buttons */}
             <div className="flex flex-col gap-4 p-6 border-b">
               <div className="flex flex-col gap-2">
-                <CartButton
-                  isPurchased={data.isPurchased}
-                  productId={productId}
-                  tenantSlug={tenantSlug}
-                  quantity={data.quantity || 0}
-                  minOrderQuantity={data.minOrderQuantity || 1}
-                  maxOrderQuantity={data.maxOrderQuantity || undefined}
-                  unit={data.unit || "unit"}
-                  stockStatus={data.stockStatus || "in_stock"}
-                  allowBackorder={data.allowBackorder || false}
-                />
+                {/* Cart and Buy Now Buttons */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <CartButton
+                    isPurchased={data.isPurchased}
+                    productId={productId}
+                    tenantSlug={tenantSlug}
+                    quantity={data.quantity || 0}
+                    minOrderQuantity={data.minOrderQuantity || 1}
+                    maxOrderQuantity={data.maxOrderQuantity || undefined}
+                    unit={data.unit || "unit"}
+                    stockStatus={data.stockStatus || "in_stock"}
+                    allowBackorder={data.allowBackorder || false}
+                  />
+                  <BuyNowButton
+                    isPurchased={data.isPurchased}
+                    productId={productId}
+                    productName={data.name}
+                    productPrice={data.price}
+                    tenantSlug={tenantSlug}
+                    quantity={data.quantity || 0}
+                    minOrderQuantity={data.minOrderQuantity || 1}
+                    maxOrderQuantity={data.maxOrderQuantity || undefined}
+                    unit={data.unit || "unit"}
+                    stockStatus={data.stockStatus || "in_stock"}
+                    allowBackorder={data.allowBackorder || false}
+                  />
+                </div>
+                
+                {/* Share Button */}
                 <Button
                   className="w-full"
                   variant="elevated"
