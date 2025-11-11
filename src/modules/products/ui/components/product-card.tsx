@@ -84,15 +84,15 @@ export const ProductCard = ({
       <div 
         onClick={handleCardClick}
         onMouseEnter={handleMouseEnter}
-        className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border rounded-md bg-white overflow-hidden flex flex-row cursor-pointer"
+        className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border rounded-md bg-white overflow-hidden flex flex-row cursor-pointer max-w-full"
       >
         {/* Image on the left - square, 25% wider on mobile */}
-        <div className="relative w-30 h-30 xs:w-36 xs:h-36 sm:w-40 sm:h-40 md:w-48 md:h-48 shrink-0">
+        <div className="relative w-28 h-28 xs:w-36 xs:h-36 sm:w-40 sm:h-40 md:w-48 md:h-48 shrink-0">
           {images.length > 1 ? (
             <ImageCarousel
               images={images}
               className="w-full h-full"
-              sizes="(max-width: 475px) 120px, (max-width: 640px) 144px, (max-width: 768px) 160px, 192px"
+              sizes="(max-width: 475px) 112px, (max-width: 640px) 144px, (max-width: 768px) 160px, 192px"
               loading={priority ? "eager" : "lazy"}
               priority={priority}
               quality={75}
@@ -103,7 +103,7 @@ export const ProductCard = ({
               fill
               src={images[0]?.url || "/placeholder.png"}
               className="object-cover"
-              sizes="(max-width: 475px) 120px, (max-width: 640px) 144px, (max-width: 768px) 160px, 192px"
+              sizes="(max-width: 475px) 112px, (max-width: 640px) 144px, (max-width: 768px) 160px, 192px"
               loading={priority ? "eager" : "lazy"}
               priority={priority}
               quality={75}
