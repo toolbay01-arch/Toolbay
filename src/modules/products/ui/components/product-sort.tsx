@@ -9,11 +9,11 @@ export const ProductSort = () => {
   const [filters, setFilters] = useProductFilters();
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1 sm:gap-2">
       <Button
         size="sm"
         className={cn(
-          "rounded-full bg-white hover:bg-white",
+          "rounded-full bg-white hover:bg-white text-xs sm:text-sm px-2 sm:px-3 h-8 sm:h-9",
           filters.sort !== "curated" &&
             "bg-transparent border-transparent hover:border-border hover:bg-transparent"
         )}
@@ -25,7 +25,7 @@ export const ProductSort = () => {
       <Button
         size="sm"
         className={cn(
-          "rounded-full bg-white hover:bg-white",
+          "rounded-full bg-white hover:bg-white text-xs sm:text-sm px-2 sm:px-3 h-8 sm:h-9",
           filters.sort !== "trending" &&
             "bg-transparent border-transparent hover:border-border hover:bg-transparent"
         )}
@@ -37,7 +37,7 @@ export const ProductSort = () => {
       <Button
         size="sm"
         className={cn(
-          "rounded-full bg-white hover:bg-white",
+          "rounded-full bg-white hover:bg-white text-xs sm:text-sm px-2 sm:px-3 h-8 sm:h-9 whitespace-nowrap",
           filters.sort !== "hot_and_new" &&
             "bg-transparent border-transparent hover:border-border hover:bg-transparent"
         )}

@@ -37,17 +37,17 @@ export const ProductListView = ({ category, tenantSlug, narrowView }: Props) => 
   }, []);
 
   return (
-    <div className="px-2 sm:px-4 lg:px-12 py-3 md:py-8 flex flex-col gap-4 overflow-x-hidden">
-      <div className="flex flex-col lg:flex-row lg:items-center gap-y-2 lg:gap-y-0 justify-between">
-        <p className="text-2xl font-medium">Curated for you</p>
-        <div className="flex items-center gap-4">
+    <div className="px-1 sm:px-4 lg:px-12 py-2 md:py-8 flex flex-col gap-3 overflow-x-hidden">
+      <div className="flex flex-col lg:flex-row lg:items-center gap-y-1.5 lg:gap-y-0 justify-between">
+        <p className="text-base font-medium px-1 sm:px-0">Curated for you</p>
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-4 overflow-x-auto">
           {/* View Toggle */}
-          <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as "grid" | "list")} className="justify-start">
-            <ToggleGroupItem value="grid" aria-label="Grid view" className="text-xs sm:text-sm">
+          <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as "grid" | "list")} className="justify-start shrink-0">
+            <ToggleGroupItem value="grid" aria-label="Grid view" className="text-xs sm:text-sm px-2 sm:px-3">
               <Grid3x3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
               <span className="hidden sm:inline">Grid</span>
             </ToggleGroupItem>
-            <ToggleGroupItem value="list" aria-label="List view" className="text-xs sm:text-sm">
+            <ToggleGroupItem value="list" aria-label="List view" className="text-xs sm:text-sm px-2 sm:px-3">
               <List className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
               <span className="hidden sm:inline">List</span>
             </ToggleGroupItem>
