@@ -11,11 +11,12 @@ import { MyProductCard, MyProductCardSkeleton } from "@/modules/dashboard/ui/com
 
 interface Props {
   searchQuery?: string;
+  viewMode?: "grid" | "list";
   onEdit?: (productId: string) => void;
   onDelete?: (productId: string, productName: string) => void;
 }
 
-export const MyProductsList = ({ searchQuery, onEdit, onDelete }: Props) => {
+export const MyProductsList = ({ searchQuery, viewMode = "grid", onEdit, onDelete }: Props) => {
   const trpc = useTRPC();
   const { 
     data, 
@@ -50,7 +51,11 @@ export const MyProductsList = ({ searchQuery, onEdit, onDelete }: Props) => {
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className={
+        viewMode === "grid" 
+          ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+          : "flex flex-col gap-4"
+      }>
         {data?.pages.flatMap((page) => page.docs).map((product) => {
           // Build gallery array from product data
           const gallery: Array<{ url: string; alt: string }> = [];
@@ -82,6 +87,7 @@ export const MyProductsList = ({ searchQuery, onEdit, onDelete }: Props) => {
               price={product.price}
               isPrivate={product.isPrivate ?? false}
               isArchived={product.isArchived ?? false}
+              viewMode={viewMode}
               onEdit={onEdit}
               onDelete={onDelete}
             />

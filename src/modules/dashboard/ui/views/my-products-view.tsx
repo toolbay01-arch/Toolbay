@@ -3,11 +3,12 @@
 import { Suspense, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { PlusIcon, SearchIcon, Loader2 } from "lucide-react";
+import { PlusIcon, SearchIcon, Loader2, Grid3x3, List } from "lucide-react";
 
 import { useTRPC } from "@/trpc/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 import { MyProductsList, MyProductsListSkeleton } from "../components/my-products-list";
 import { ProductFormDialog } from "../components/product-form-dialog";
@@ -18,6 +19,7 @@ export const MyProductsView = () => {
   const trpc = useTRPC();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   
   // Dialog state
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
@@ -78,43 +80,59 @@ export const MyProductsView = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-2 xs:px-4 py-4 sm:py-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 sm:mb-8">
+          <div className="flex items-start sm:items-center justify-between mb-3 sm:mb-4 flex-col xs:flex-row gap-3 xs:gap-0">
             <div>
-              <h1 className="text-3xl font-bold">My Products</h1>
-              <p className="text-gray-600 mt-2">
+              <h1 className="text-2xl sm:text-3xl font-bold">My Products</h1>
+              <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
                 Manage your product listings
               </p>
             </div>
             <Button 
               onClick={handleCreateProduct}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white w-full xs:w-auto text-sm sm:text-base"
+              size="sm"
             >
-              <PlusIcon className="size-4 mr-2" />
+              <PlusIcon className="size-3.5 sm:size-4 mr-1 sm:mr-2" />
               Add Product
             </Button>
           </div>
 
           {/* Search */}
           <div className="relative max-w-md">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 sm:size-4 text-gray-400" />
             <Input
               type="text"
               placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-9 sm:pl-10 text-sm sm:text-base h-9 sm:h-10"
             />
           </div>
+        </div>
+
+        {/* View Toggle */}
+        <div className="mb-6">
+          <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as "grid" | "list")} className="justify-start">
+            <ToggleGroupItem value="grid" aria-label="Grid view" className="text-xs sm:text-sm">
+              <Grid3x3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Grid</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="list" aria-label="List view" className="text-xs sm:text-sm">
+              <List className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+              <span className="hidden sm:inline">List</span>
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
 
         {/* Products Grid */}
         <Suspense fallback={<MyProductsListSkeleton />}>
           <MyProductsList 
             searchQuery={debouncedSearch}
+            viewMode={viewMode}
             onEdit={handleEditProduct}
             onDelete={handleDeleteProduct}
           />
