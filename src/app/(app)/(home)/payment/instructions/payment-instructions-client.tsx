@@ -100,10 +100,10 @@ export function PaymentInstructionsClient() {
   const expiresAt = new Date(transaction.expiresAt);
   const isExpired = new Date() > expiresAt;
 
-  // Calculate dial code from transaction data
-  const momoCode = transaction.tenant && typeof transaction.tenant === 'object' && 'momoCode' in transaction.tenant 
-    ? transaction.tenant.momoCode 
-    : '';
+  // Extract tenant data safely
+  const tenant = transaction.tenant && typeof transaction.tenant === 'object' ? transaction.tenant : null;
+  const momoCode = tenant && 'momoCode' in tenant ? tenant.momoCode : '';
+  const momoAccountName = tenant && 'momoAccountName' in tenant ? tenant.momoAccountName : '';
   const dialCode = `*182*8*1*${momoCode}*${transaction.totalAmount}#`;
 
   return (
@@ -126,6 +126,19 @@ export function PaymentInstructionsClient() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
+            {/* Seller Name Display */}
+            {momoAccountName && (
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200">
+                <p className="text-sm text-muted-foreground mb-1">Paying to:</p>
+                <p className="text-xl font-bold text-blue-900">
+                  {momoAccountName}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ⚠️ Please verify this name matches the one shown in your MTN Mobile Money confirmation
+                </p>
+              </div>
+            )}
+
             {/* Dial Code */}
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border-2 border-green-200">
               <div className="flex items-center justify-between gap-4">
