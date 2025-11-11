@@ -29,7 +29,7 @@ export const useCartStore = create<CartState>()(
       addProduct: (tenantSlug, productId, quantity = 1) => 
         set((state) => {
           const existingCart = state.tenantCarts[tenantSlug];
-          const existingItem = existingCart?.items.find(item => item.productId === productId);
+          const existingItem = existingCart?.items?.find(item => item.productId === productId);
           
           if (existingItem && existingCart) {
             // Update existing item quantity
