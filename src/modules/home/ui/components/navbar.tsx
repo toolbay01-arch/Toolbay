@@ -289,24 +289,17 @@ export const Navbar = () => {
         )}
 
         {/* Cart Icon with Badge - Always visible */}
-        <Button
-          variant="ghost"
-          size="icon"
-          asChild
-          className="relative h-12 w-12 rounded-full border-transparent bg-white"
-        >
-          <Link href="/cart">
-            <ShoppingCart className="h-5 w-5" />
-            {cartItemCount > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full"
-              >
-                {cartItemCount > 99 ? "99+" : cartItemCount}
-              </Badge>
-            )}
-          </Link>
-        </Button>
+        <Link href="/cart" className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+          <ShoppingCart className="h-5 w-5" />
+          {cartItemCount > 0 && (
+            <Badge 
+              variant="destructive" 
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full"
+            >
+              {cartItemCount > 99 ? "99+" : cartItemCount}
+            </Badge>
+          )}
+        </Link>
 
         {/* Menu Icon */}
         <Button
