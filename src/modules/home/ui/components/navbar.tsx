@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon, LogOut } from "lucide-react";
+import { MenuIcon, LogOut, ShoppingCart, User, LogIn } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,8 +12,17 @@ import { useTRPC } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { OptimizedLink } from "@/components/optimized-link";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 import { NavbarSidebar } from "./navbar-sidebar";
+import { useCartStore } from "@/modules/checkout/store/use-cart-store";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -61,6 +70,7 @@ const customerNavbarItems = [
   { href: "/orders", children: "My Orders" },
   { href: "/about", children: "About" },
   { href: "/contact", children: "Contact" },
+  { href: "/cart", children: "My Cart" },
 ];
 
 const tenantNavbarItems = [
@@ -71,6 +81,7 @@ const tenantNavbarItems = [
   { href: "/orders", children: "My Orders" },
   { href: "/about", children: "About" },
   { href: "/contact", children: "Contact" },
+  { href: "/cart", children: "My Cart" },
 ];
 
 export const Navbar = () => {
@@ -80,6 +91,14 @@ export const Navbar = () => {
 
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  
+  // Get total cart items across all tenants - handle undefined tenantCarts during hydration
+  const tenantCarts = useCartStore((state) => state.tenantCarts);
+  const cartItemCount = tenantCarts 
+    ? Object.values(tenantCarts).reduce((total, cart) => {
+        return total + (cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0);
+      }, 0)
+    : 0;
   
   // Configure session query for immediate UI updates
   const session = useQuery({
@@ -138,10 +157,13 @@ export const Navbar = () => {
       : customerNavbarItems 
     : publicNavbarItems;
 
+  const isLoggedIn = !!session.data?.user;
+
   return (
     <nav className="h-20 flex border-b justify-between font-medium bg-white">
-      <Link href="/" className="pl-6 flex items-center">
-        <span className={cn("text-5xl font-semibold", poppins.className)}>
+      {/* Logo - Smaller on mobile, left-aligned */}
+      <Link href="/" className="pl-3 lg:pl-6 flex items-center">
+        <span className={cn("text-2xl lg:text-5xl font-semibold", poppins.className)}>
           Toolboxx
         </span>
       </Link>
@@ -150,11 +172,12 @@ export const Navbar = () => {
         items={navbarItems}
         open={isSidebarOpen}
         onOpenChange={setIsSidebarOpen}
-        isLoggedIn={!!session.data?.user}
+        isLoggedIn={isLoggedIn}
         onLogout={handleLogout}
         isLoggingOut={logout.isPending}
       />
 
+      {/* Desktop Navigation - Hidden on mobile */}
       <div className="items-center gap-4 hidden lg:flex">
         {navbarItems.map((item) => (
           <NavbarItem
@@ -167,6 +190,7 @@ export const Navbar = () => {
         ))}
       </div>
 
+      {/* Desktop Auth Buttons - Hidden on mobile */}
       {session.data?.user ? (
         <div className="hidden lg:flex items-center">
           <Button
@@ -211,13 +235,87 @@ export const Navbar = () => {
         </div>
       )}
 
-      <div className="flex lg:hidden items-center justify-center">
+      {/* Mobile Icons - Right Side */}
+      <div className="flex lg:hidden items-center gap-1 pr-2">
+        {/* User Icon with Dropdown for logged in users or Login icon */}
+        {isLoggedIn ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-12 w-12 rounded-full border-transparent bg-white"
+              >
+                <User className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem asChild>
+                <Link 
+                  href={session.data?.user?.roles?.includes('super-admin') ? "/admin" : session.data?.user?.roles?.includes('tenant') ? "/dashboard" : "/my-account"}
+                  className="cursor-pointer"
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  My Account
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/orders" className="cursor-pointer">
+                  Orders
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={handleLogout}
+                disabled={logout.isPending}
+                className="cursor-pointer text-red-600"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                {logout.isPending ? "Logging out..." : "Logout"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            asChild
+            className="h-12 w-12 rounded-full border-transparent bg-white"
+          >
+            <Link href="/sign-in">
+              <LogIn className="h-5 w-5" />
+            </Link>
+          </Button>
+        )}
+
+        {/* Cart Icon with Badge - Always visible */}
         <Button
           variant="ghost"
-          className="size-12 border-transparent bg-white"
+          size="icon"
+          asChild
+          className="relative h-12 w-12 rounded-full border-transparent bg-white"
+        >
+          <Link href="/cart">
+            <ShoppingCart className="h-5 w-5" />
+            {cartItemCount > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full"
+              >
+                {cartItemCount > 99 ? "99+" : cartItemCount}
+              </Badge>
+            )}
+          </Link>
+        </Button>
+
+        {/* Menu Icon */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-12 w-12 border-transparent bg-white"
           onClick={() => setIsSidebarOpen(true)}
         >
-          <MenuIcon />
+          <MenuIcon className="h-5 w-5" />
         </Button>
       </div>
     </nav>
