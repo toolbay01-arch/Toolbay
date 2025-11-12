@@ -84,7 +84,10 @@ export const ProductList = ({ category, tenantSlug, narrowView, viewMode = "grid
               imageUrl={product.image?.url}
               gallery={gallery.length > 0 ? gallery : null}
               tenantSlug={product.tenant?.slug}
+              tenantName={product.tenant?.name}
               tenantImageUrl={product.tenant?.image?.url}
+              tenantIsVerified={product.tenant?.isVerified || false}
+              tenantSuccessfulOrders={0} // TODO: Add successful orders count
               reviewRating={product.reviewRating}
               reviewCount={product.reviewCount}
               price={product.price}

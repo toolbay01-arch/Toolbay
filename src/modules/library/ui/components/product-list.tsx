@@ -47,9 +47,14 @@ export const ProductList = () => {
             name={product.name}
             imageUrl={product.image?.url}
             tenantSlug={product.tenant?.slug}
+            tenantName={product.tenant?.name}
             tenantImageUrl={product.tenant?.image?.url}
+            tenantIsVerified={product.tenant?.isVerified || false}
+            tenantSuccessfulOrders={0} // TODO: Add successful orders count
             reviewRating={product.reviewRating}
             reviewCount={product.reviewCount}
+            price={product.price}
+            unit={product.unit}
           />
         ))}
       </div>
