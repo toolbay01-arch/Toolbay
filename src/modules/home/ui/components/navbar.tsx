@@ -241,13 +241,12 @@ export const Navbar = () => {
         {isLoggedIn ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative h-12 w-12 rounded-full border-transparent bg-white"
+              <button
+                type="button"
+                className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
               >
                 <User className="h-5 w-5" />
-              </Button>
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem asChild>
@@ -276,25 +275,24 @@ export const Navbar = () => {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Button
-            variant="ghost"
-            size="icon"
-            asChild
-            className="h-12 w-12 rounded-full border-transparent bg-white"
+          <Link 
+            href="/sign-in"
+            className="h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
           >
-            <Link href="/sign-in">
-              <LogIn className="h-5 w-5" />
-            </Link>
-          </Button>
+            <LogIn className="h-5 w-5" />
+          </Link>
         )}
 
         {/* Cart Icon with Badge - Always visible */}
-        <Link href="/cart" className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+        <Link 
+          href="/cart" 
+          className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
+        >
           <ShoppingCart className="h-5 w-5" />
           {cartItemCount > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none"
             >
               {cartItemCount > 99 ? "99+" : cartItemCount}
             </Badge>
@@ -302,14 +300,13 @@ export const Navbar = () => {
         </Link>
 
         {/* Menu Icon */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-12 w-12 border-transparent bg-white"
+        <button
+          type="button"
+          className="h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
           onClick={() => setIsSidebarOpen(true)}
         >
           <MenuIcon className="h-5 w-5" />
-        </Button>
+        </button>
       </div>
     </nav>
   );

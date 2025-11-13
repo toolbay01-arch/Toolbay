@@ -2,14 +2,17 @@
 
 import { InboxIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCartStore } from "../../store/use-cart-store";
 import { generateTenantURL } from "@/lib/utils";
+import { useTRPC } from "@/trpc/client";
 
 export const GlobalCartView = () => {
   const router = useRouter();
+  const trpc = useTRPC();
   const tenantCarts = useCartStore((state) => state.tenantCarts);
   
   // Calculate total items across all tenants - handle undefined during hydration
@@ -25,6 +28,24 @@ export const GlobalCartView = () => {
         ([_, cart]) => cart?.items && cart.items.length > 0
       )
     : [];
+
+  // Collect all product IDs across all carts
+  const allProductIds = tenantsWithItems.flatMap(([_, cart]) => 
+    cart.items.map(item => item.productId)
+  );
+
+  // Fetch all products at once
+  const { data: productsData } = useQuery(
+    trpc.checkout.getProducts.queryOptions({
+      ids: allProductIds,
+    })
+  );
+
+  // Create a map of productId to product for easy lookup
+  const productsMap = productsData?.docs.reduce((acc, product) => {
+    acc[product.id] = product;
+    return acc;
+  }, {} as Record<string, any>) || {};
 
   if (totalItems === 0) {
     return (
@@ -89,12 +110,17 @@ export const GlobalCartView = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  {cart.items.map((item) => (
-                    <div key={item.productId} className="flex justify-between text-sm py-2 border-t">
-                      <span className="text-muted-foreground">Product ID: {item.productId.slice(0, 8)}...</span>
-                      <span className="font-medium">Qty: {item.quantity}</span>
-                    </div>
-                  ))}
+                  {cart.items.map((item) => {
+                    const product = productsMap[item.productId];
+                    return (
+                      <div key={item.productId} className="flex justify-between text-sm py-2 border-t">
+                        <span className="text-muted-foreground truncate max-w-[200px]">
+                          {product?.name || `Product ${item.productId.slice(0, 8)}...`}
+                        </span>
+                        <span className="font-medium whitespace-nowrap ml-2">Qty: {item.quantity}</span>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <Button
