@@ -38,8 +38,12 @@ export const GlobalCartView = () => {
             <p className="text-xl font-medium">Your cart is empty</p>
             <p className="text-muted-foreground">Add some products to get started</p>
             <Button 
-              onClick={() => router.push("/")}
-              className="mt-4"
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                router.push("/");
+              }}
+              className="mt-4 border-2 border-black"
             >
               Continue Shopping
             </Button>
@@ -63,8 +67,8 @@ export const GlobalCartView = () => {
           const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
           
           return (
-            <Card key={tenantSlug} className="border-2 border-black">
-              <CardContent className="p-6">
+            <Card key={tenantSlug} className="border-2 border-black pointer-events-auto">
+              <CardContent className="p-6 pointer-events-auto">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-xl font-bold capitalize">{tenantSlug}</h2>
@@ -73,8 +77,12 @@ export const GlobalCartView = () => {
                     </p>
                   </div>
                   <Button
-                    onClick={() => router.push(`${generateTenantURL(tenantSlug)}/cart`)}
-                    className="bg-pink-400 hover:bg-pink-500"
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      router.push(`${generateTenantURL(tenantSlug)}/cart`);
+                    }}
+                    className="bg-pink-400 hover:bg-pink-500 text-white border-2 border-black cursor-pointer pointer-events-auto"
                   >
                     View Cart
                   </Button>
@@ -90,9 +98,13 @@ export const GlobalCartView = () => {
                 </div>
 
                 <Button
-                  onClick={() => router.push(`${generateTenantURL(tenantSlug)}/checkout`)}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    router.push(`${generateTenantURL(tenantSlug)}/checkout`);
+                  }}
                   variant="outline"
-                  className="w-full mt-4"
+                  className="w-full mt-4 border-2 border-black hover:bg-pink-400 cursor-pointer pointer-events-auto"
                 >
                   Checkout from {tenantSlug}
                 </Button>
@@ -104,9 +116,14 @@ export const GlobalCartView = () => {
 
       <div className="mt-8 flex justify-center">
         <Button
-          onClick={() => router.push("/")}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            router.push("/");
+          }}
           variant="outline"
           size="lg"
+          className="border-2 border-black hover:bg-pink-400"
         >
           Continue Shopping
         </Button>
