@@ -176,6 +176,45 @@ export const productsRouter = createTRPCRouter({
         });
       }
 
+      // Find the user who owns this tenant
+      let tenantOwnerId: string | null = null;
+      try {
+        const tenantId = typeof product.tenant === 'string' 
+          ? product.tenant 
+          : product.tenant?.id;
+        
+        if (tenantId) {
+          // Query users collection for the owner of this tenant
+          const owner = await ctx.db.find({
+            collection: 'users',
+            where: {
+              and: [
+                {
+                  'tenants.tenant': {
+                    equals: tenantId,
+                  },
+                },
+                {
+                  roles: {
+                    contains: 'tenant',
+                  },
+                },
+              ],
+            },
+            limit: 1,
+            depth: 0,
+          });
+          
+          if (owner.docs.length > 0 && owner.docs[0]) {
+            tenantOwnerId = owner.docs[0].id;
+          }
+        }
+      } catch (error) {
+        // Log error but don't fail the entire request
+        console.error('Error finding tenant owner for product:', product.id, error);
+        tenantOwnerId = null;
+      }
+
       return {
         ...product,
         isPurchased,
@@ -184,6 +223,7 @@ export const productsRouter = createTRPCRouter({
         reviewRating,
         reviewCount: reviews.totalDocs,
         ratingDistribution,
+        tenantOwnerId,
       }
     }),
   getMany: baseProcedure

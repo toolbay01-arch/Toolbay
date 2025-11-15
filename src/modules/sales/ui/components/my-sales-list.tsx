@@ -1,7 +1,9 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { Loader2, PackageIcon, TrendingUp, DollarSign } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useInfiniteQuery, useQuery, useMutation } from "@tanstack/react-query";
+import { Loader2, PackageIcon, TrendingUp, DollarSign, MessageCircle } from "lucide-react";
+import { toast } from "sonner";
 
 import { useTRPC } from "@/trpc/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,8 +18,48 @@ interface MySalesListProps {
 
 export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => {
   const trpc = useTRPC();
+  const router = useRouter();
   
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = 
+  const { data: session } = useQuery(trpc.auth.session.queryOptions());
+  
+  const startConversation = useMutation(trpc.chat.startConversation.mutationOptions({
+    onSuccess: (conversation) => {
+      router.push(`/chat/${conversation.id}`);
+      toast.success("Chat started with customer");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to start chat");
+    },
+  }));
+  
+  const handleMessageCustomer = (sale: any) => {
+    if (!session?.user) {
+      toast.error("Please log in to message the customer");
+      router.push("/sign-in");
+      return;
+    }
+    
+    if (!sale.customerId) {
+      toast.error("Unable to contact customer");
+      return;
+    }
+    
+    // Don't allow messaging yourself
+    if (sale.customerId === session.user.id) {
+      toast.error("You cannot message yourself");
+      return;
+    }
+    
+    const productName = typeof sale.product === 'object' ? sale.product.name : "your product";
+    
+    startConversation.mutate({
+      participantId: sale.customerId,
+      orderId: sale.order,
+      initialMessage: `Hi, regarding your purchase of "${productName}" (Sale #${sale.saleNumber})`,
+    });
+  };
+  
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading} = 
     useInfiniteQuery(
       trpc.sales.getMySales.infiniteQueryOptions({
         search: searchQuery || null,
@@ -125,6 +167,19 @@ export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => 
                       day: 'numeric',
                     })}
                   </div>
+                  
+                  {sale.customerId && (
+                    <div className="pt-2">
+                      <Button 
+                        onClick={() => handleMessageCustomer(sale)} 
+                        className="w-full bg-blue-600 hover:bg-blue-700"
+                        disabled={startConversation.isPending}
+                      >
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        {startConversation.isPending ? "Starting chat..." : "Message Customer"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

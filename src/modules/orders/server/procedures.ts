@@ -87,7 +87,7 @@ export const ordersRouter = createTRPCRouter({
 
     return {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      orders: orders.map((order: any) => {
+      orders: await Promise.all(orders.map(async (order: any) => {
         // Handle both old and new schema
         const orderProducts = Array.isArray(order.products) && order.products.length > 0
           ? order.products
@@ -98,6 +98,31 @@ export const ordersRouter = createTRPCRouter({
               priceAtPurchase: order.amount || 0,
             }]
           : [];
+
+        // Get seller user ID from the first product's tenant
+        let sellerUserId = null;
+        if (orderProducts.length > 0 && orderProducts[0].product?.tenant) {
+          const tenantId = typeof orderProducts[0].product.tenant === 'string' 
+            ? orderProducts[0].product.tenant 
+            : orderProducts[0].product.tenant.id;
+          
+          try {
+            const sellerUser = await ctx.db.find({
+              collection: 'users',
+              where: {
+                'tenants.tenant': {
+                  equals: tenantId,
+                },
+              },
+              limit: 1,
+              depth: 0,
+            });
+            sellerUserId = sellerUser.docs[0]?.id || null;
+          } catch (error) {
+            console.error('Error finding seller user:', error);
+            sellerUserId = null;
+          }
+        }
 
         return {
           id: typeof order.id === 'object' && 'toHexString' in order.id
@@ -111,6 +136,7 @@ export const ordersRouter = createTRPCRouter({
           shippedAt: order.shippedAt || null,
           deliveredAt: order.deliveredAt || null,
           received: order.received || false,
+          sellerUserId, // Add seller user ID
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           products: orderProducts.map((item: any) => ({
             id: typeof item.product?.id === 'object' && 'toHexString' in item.product.id
@@ -130,7 +156,7 @@ export const ordersRouter = createTRPCRouter({
               }
             : undefined,
         };
-      }),
+      })),
       pagination: {
         totalDocs,
         limit: input.limit,

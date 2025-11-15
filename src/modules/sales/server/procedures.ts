@@ -86,7 +86,16 @@ export const salesRouter = createTRPCRouter({
         limit: input.limit,
       });
 
-      return data;
+      // Add customer ID to each sale for messaging
+      const salesWithCustomerId = data.docs.map((sale: any) => ({
+        ...sale,
+        customerId: typeof sale.customer === 'string' ? sale.customer : sale.customer?.id,
+      }));
+
+      return {
+        ...data,
+        docs: salesWithCustomerId,
+      };
     }),
 
   // Get single sale details

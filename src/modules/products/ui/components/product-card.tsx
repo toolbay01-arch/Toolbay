@@ -99,8 +99,7 @@ export const ProductCard = ({
               images={images}
               className="w-full h-full"
               sizes="(max-width: 475px) 168px, (max-width: 640px) 216px, (max-width: 768px) 160px, 192px"
-              loading={priority ? "eager" : "lazy"}
-              priority={priority}
+              {...(priority ? { priority: true } : { loading: "lazy" })}
               quality={75}
             />
           ) : (
@@ -110,8 +109,7 @@ export const ProductCard = ({
               src={images[0]?.url || "/placeholder.png"}
               className="object-cover"
               sizes="(max-width: 475px) 168px, (max-width: 640px) 216px, (max-width: 768px) 160px, 192px"
-              loading={priority ? "eager" : "lazy"}
-              priority={priority}
+              {...(priority ? { priority: true } : { loading: "lazy" })}
               quality={75}
             />
           )}
@@ -203,8 +201,7 @@ export const ProductCard = ({
             images={images}
             className="aspect-square"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            loading={priority ? "eager" : "lazy"}
-            priority={priority}
+            {...(priority ? { priority: true } : { loading: "lazy" })}
             quality={75}
           />
         ) : (
@@ -214,8 +211,7 @@ export const ProductCard = ({
             src={images[0]?.url || "/placeholder.png"}
             className="object-cover"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            loading={priority ? "eager" : "lazy"}
-            priority={priority}
+            {...(priority ? { priority: true } : { loading: "lazy" })}
             quality={75}
           />
         )}
