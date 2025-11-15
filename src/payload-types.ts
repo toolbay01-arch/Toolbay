@@ -77,6 +77,8 @@ export interface Config {
     orders: Order;
     reviews: Review;
     sales: Sale;
+    conversations: Conversation;
+    messages: Message;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -97,6 +99,8 @@ export interface Config {
     orders: OrdersSelect<false> | OrdersSelect<true>;
     reviews: ReviewsSelect<false> | ReviewsSelect<true>;
     sales: SalesSelect<false> | SalesSelect<true>;
+    conversations: ConversationsSelect<false> | ConversationsSelect<true>;
+    messages: MessagesSelect<false> | MessagesSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -754,6 +758,97 @@ export interface Sale {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "conversations".
+ */
+export interface Conversation {
+  id: string;
+  /**
+   * Optional conversation title (auto-generated if empty)
+   */
+  title?: string | null;
+  /**
+   * Users participating in this conversation
+   */
+  participants: (string | User)[];
+  /**
+   * Product this conversation is about (optional)
+   */
+  product?: (string | null) | Product;
+  /**
+   * Order this conversation is about (optional)
+   */
+  order?: (string | null) | Order;
+  /**
+   * Preview of the last message
+   */
+  lastMessageContent?: string | null;
+  /**
+   * Timestamp of last message
+   */
+  lastMessageAt?: string | null;
+  /**
+   * Unread message count per user { [userId]: count }
+   */
+  unreadCount?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Conversation status
+   */
+  status?: ('active' | 'archived' | 'blocked') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "messages".
+ */
+export interface Message {
+  id: string;
+  /**
+   * The conversation this message belongs to
+   */
+  conversation: string | Conversation;
+  /**
+   * User who sent the message
+   */
+  sender: string | User;
+  /**
+   * User who receives the message
+   */
+  receiver: string | User;
+  /**
+   * Message content
+   */
+  content: string;
+  /**
+   * Optional file attachments (max 5)
+   */
+  attachments?:
+    | {
+        file: string | Media;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Whether the receiver has read this message
+   */
+  read?: boolean | null;
+  /**
+   * When the message was read
+   */
+  readAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
@@ -798,6 +893,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'sales';
         value: string | Sale;
+      } | null)
+    | ({
+        relationTo: 'conversations';
+        value: string | Conversation;
+      } | null)
+    | ({
+        relationTo: 'messages';
+        value: string | Message;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1091,6 +1194,42 @@ export interface SalesSelect<T extends boolean = true> {
   shippedAt?: T;
   deliveredAt?: T;
   completedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "conversations_select".
+ */
+export interface ConversationsSelect<T extends boolean = true> {
+  title?: T;
+  participants?: T;
+  product?: T;
+  order?: T;
+  lastMessageContent?: T;
+  lastMessageAt?: T;
+  unreadCount?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "messages_select".
+ */
+export interface MessagesSelect<T extends boolean = true> {
+  conversation?: T;
+  sender?: T;
+  receiver?: T;
+  content?: T;
+  attachments?:
+    | T
+    | {
+        file?: T;
+        id?: T;
+      };
+  read?: T;
+  readAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

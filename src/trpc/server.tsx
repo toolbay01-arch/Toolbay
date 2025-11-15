@@ -13,4 +13,25 @@ export const trpc = createTRPCOptionsProxy({
   queryClient: getQueryClient,
 });
 // ...
-export const caller = appRouter.createCaller(createTRPCContext);
+// Create caller with async context - must await createTRPCContext
+const getCaller = cache(async () => {
+  const ctx = await createTRPCContext();
+  return appRouter.createCaller(ctx);
+});
+
+// Minimal caller wrapper for server components
+// Only exposes commonly used procedures
+export const caller = {
+  auth: {
+    session: async () => {
+      const c = await getCaller();
+      return c.auth.session();
+    },
+  },
+  tenants: {
+    getCurrentTenant: async () => {
+      const c = await getCaller();
+      return c.tenants.getCurrentTenant();
+    },
+  },
+} as const;

@@ -1,11 +1,16 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { OrderStatusBadge } from './OrderStatusBadge'
 import { ConfirmReceiptButton } from './ConfirmReceiptButton'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Package, Calendar, DollarSign, MapPin } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Package, Calendar, DollarSign, MapPin, MessageCircle } from 'lucide-react'
+import { useTRPC } from '@/trpc/client'
 
 interface OrderCardProps {
   order: {
@@ -18,6 +23,7 @@ interface OrderCardProps {
     shippedAt?: string
     deliveredAt?: string
     received?: boolean
+    sellerUserId?: string | null
     products?: Array<{
       id: string
       title: string
@@ -38,7 +44,48 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order, onConfirmReceiptAction }: OrderCardProps) {
+  const router = useRouter()
+  const trpc = useTRPC()
   const canConfirmReceipt = order.status === 'delivered' && !order.received
+
+  const { data: session } = useQuery(trpc.auth.session.queryOptions())
+  
+  const startConversation = useMutation(trpc.chat.startConversation.mutationOptions({
+    onSuccess: (conversation) => {
+      router.push(`/chat/${conversation.id}`)
+      toast.success("Chat started with seller")
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to start chat")
+    },
+  }))
+  
+  const handleMessageSeller = () => {
+    if (!session?.user) {
+      toast.error("Please log in to message the seller")
+      router.push("/sign-in")
+      return
+    }
+    
+    if (!order.sellerUserId) {
+      toast.error("Unable to contact seller")
+      return
+    }
+    
+    // Don't allow messaging yourself
+    if (order.sellerUserId === session.user.id) {
+      toast.error("You cannot message yourself")
+      return
+    }
+    
+    const productName = order.products?.[0]?.title || "your order"
+    
+    startConversation.mutate({
+      participantId: order.sellerUserId,
+      orderId: order.id,
+      initialMessage: `Hi, I have a question about ${productName} (Order #${order.orderNumber})`,
+    })
+  }
 
   return (
     <Card className="w-full">
@@ -160,6 +207,20 @@ export function OrderCard({ order, onConfirmReceiptAction }: OrderCardProps) {
           </>
         )}
       </CardContent>
+
+      {/* Message Seller Button - Show for all orders */}
+      {order.sellerUserId && (
+        <CardFooter className="border-t pt-4 pb-4">
+          <Button
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={handleMessageSeller}
+            disabled={startConversation.isPending}
+          >
+            <MessageCircle className="mr-2 h-4 w-4" />
+            {startConversation.isPending ? "Starting chat..." : "Message Seller"}
+          </Button>
+        </CardFooter>
+      )}
 
       {canConfirmReceipt && (
         <CardFooter className="bg-muted/30 border-t pt-4">

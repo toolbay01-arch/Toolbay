@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon, LogOut, ShoppingCart, User, LogIn } from "lucide-react";
+import { MenuIcon, LogOut, ShoppingCart, User, LogIn, MessageCircle } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -68,6 +68,7 @@ const customerNavbarItems = [
   { href: "/", children: "Home" },
   { href: "/my-account", children: "My Account" },
   { href: "/orders", children: "My Orders" },
+  { href: "/users", children: "Find Users" },
   { href: "/about", children: "About" },
   { href: "/contact", children: "Contact" },
   { href: "/cart", children: "My Cart" },
@@ -79,6 +80,7 @@ const tenantNavbarItems = [
   { href: "/my-sales", children: "My Sales" },
   { href: "/my-account", children: "My Account" },
   { href: "/orders", children: "My Orders" },
+  { href: "/users", children: "Find Users" },
   { href: "/about", children: "About" },
   { href: "/contact", children: "Contact" },
   { href: "/cart", children: "My Cart" },
@@ -108,6 +110,13 @@ export const Navbar = () => {
     retry: false, // Don't retry session checks
     refetchOnMount: true, // Always check session on mount
     refetchOnWindowFocus: true, // Check session when window regains focus
+  });
+
+  // Get unread message count for logged-in users
+  const { data: unreadData } = useQuery({
+    ...trpc.chat.getUnreadCount.queryOptions(),
+    enabled: !!session.data?.user,
+    refetchInterval: 30000, // Poll every 30 seconds
   });
   
   const logout = useMutation(trpc.auth.logout.mutationOptions({
@@ -193,6 +202,26 @@ export const Navbar = () => {
       {/* Desktop Auth Buttons - Hidden on mobile */}
       {session.data?.user ? (
         <div className="hidden lg:flex items-center">
+          {/* Chat Icon with Badge */}
+          <OptimizedLink
+            href="/chat"
+            prefetch={true}
+            className={cn(
+              "relative border-l border-t-0 border-b-0 border-r-0 px-6 h-full flex items-center justify-center hover:bg-muted transition-colors",
+              pathname.startsWith('/chat') && "bg-muted"
+            )}
+          >
+            <MessageCircle className="h-5 w-5" />
+            {(unreadData?.totalUnread || 0) > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute top-4 right-2 h-5 min-w-5 px-1.5 flex items-center justify-center text-xs rounded-full pointer-events-none"
+              >
+                {(unreadData?.totalUnread || 0) > 99 ? "99+" : unreadData?.totalUnread}
+              </Badge>
+            )}
+          </OptimizedLink>
+
           <Button
             asChild
             className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-lg"
@@ -239,8 +268,29 @@ export const Navbar = () => {
       <div className="flex lg:hidden items-center gap-1 pr-2">
         {/* User Icon with Dropdown for logged in users or Login icon */}
         {isLoggedIn ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <>
+            {/* Chat Icon with Badge */}
+            <Link 
+              href="/chat"
+              prefetch={true}
+              className={cn(
+                "relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200",
+                pathname.startsWith('/chat') && "bg-gray-200"
+              )}
+            >
+              <MessageCircle className="h-5 w-5" />
+              {(unreadData?.totalUnread || 0) > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none"
+                >
+                  {(unreadData?.totalUnread || 0) > 99 ? "99+" : unreadData?.totalUnread}
+                </Badge>
+              )}
+            </Link>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
@@ -274,6 +324,7 @@ export const Navbar = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </>
         ) : (
           <Link 
             href="/sign-in"

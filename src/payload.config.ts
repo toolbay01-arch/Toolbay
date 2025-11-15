@@ -21,6 +21,8 @@ import { Reviews } from './collections/Reviews';
 import { Products } from './collections/Products'
 import { Categories } from './collections/Categories'
 import { Transactions } from './collections/Transactions'
+import { Messages } from './collections/Messages'
+import { Conversations } from './collections/Conversations'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -37,7 +39,7 @@ export default buildConfig({
       afterNavLinks: ['@/components/admin/UserVerificationBadge'],
     },
   },
-  collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales],
+  collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales, Conversations, Messages],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

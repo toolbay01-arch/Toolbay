@@ -4,9 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { Fragment, useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CheckIcon, LinkIcon, StarIcon } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { CheckIcon, LinkIcon, StarIcon, MessageCircle } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
 import { useTRPC } from "@/trpc/client";
@@ -44,9 +45,52 @@ interface ProductViewProps {
 
 export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
   const trpc = useTRPC();
+  const router = useRouter();
   const { data, isLoading } = useQuery(trpc.products.getOne.queryOptions({ id: productId }));
 
   const [isCopied, setIsCopied] = useState(false);
+  
+  // Get current user session to check if logged in
+  const { data: session } = useQuery(trpc.auth.session.queryOptions());
+  
+  // Start conversation mutation
+  const startConversation = useMutation(trpc.chat.startConversation.mutationOptions({
+    onSuccess: (conversation) => {
+      router.push(`/chat/${conversation.id}`);
+      toast.success("Chat started with seller");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to start chat");
+    },
+  }));
+  
+  const handleContactSeller = () => {
+    if (!session?.user) {
+      toast.error("Please log in to contact the seller");
+      router.push("/sign-in");
+      return;
+    }
+    
+    // Use the tenantOwnerId from the product data
+    const tenantOwnerId = (data as any)?.tenantOwnerId;
+    
+    if (!tenantOwnerId) {
+      toast.error("Unable to contact seller. Please try again later.");
+      return;
+    }
+    
+    // Don't allow messaging yourself
+    if (tenantOwnerId === session.user.id) {
+      toast.error("You cannot message yourself");
+      return;
+    }
+    
+    startConversation.mutate({
+      participantId: tenantOwnerId,
+      productId: productId,
+      initialMessage: `Hi, I'm interested in "${data?.name}"`,
+    });
+  };
   
   // Show skeleton while loading
   if (isLoading || !data) {
@@ -175,6 +219,16 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                     allowBackorder={data.allowBackorder || false}
                   />
                 </div>
+                
+                {/* Contact Seller Button */}
+                <Button
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={handleContactSeller}
+                  disabled={startConversation.isPending || !data?.tenant}
+                >
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  {startConversation.isPending ? "Starting chat..." : "Contact Seller"}
+                </Button>
                 
                 {/* Share Button */}
                 <Button
