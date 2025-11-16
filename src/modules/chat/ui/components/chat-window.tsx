@@ -5,7 +5,6 @@ import { format } from "date-fns";
 import { User, FileText } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTRPC } from "@/trpc/client";
 import type { User as UserType } from "@/payload-types";
@@ -91,10 +90,9 @@ export function ChatWindow({
     // Scroll to bottom when messages load or change
     if (scrollRef.current && messagesData?.docs) {
       const scrollElement = scrollRef.current;
-      // Use smooth scroll for better UX
-      scrollElement.scrollTo({
-        top: scrollElement.scrollHeight,
-        behavior: 'smooth',
+      // Scroll to bottom immediately for new messages
+      requestAnimationFrame(() => {
+        scrollElement.scrollTop = scrollElement.scrollHeight;
       });
     }
   }, [messagesData?.docs?.length]);
@@ -110,8 +108,8 @@ export function ChatWindow({
   const messages = messagesData?.docs || [];
 
   return (
-    <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-      <div className="space-y-4">
+    <div className="flex-1 overflow-y-auto p-4" ref={scrollRef}>
+      <div className="space-y-4 min-h-full">
         {messages.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">
@@ -185,6 +183,6 @@ export function ChatWindow({
             })
         )}
       </div>
-    </ScrollArea>
+    </div>
   );
 }

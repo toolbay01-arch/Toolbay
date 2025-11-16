@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { useTRPC } from "@/trpc/client";
 import type { User as UserType } from "@/payload-types";
 
@@ -25,22 +24,26 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   console.log('🟢 ChatView: Mounting with conversationId:', conversationId);
   console.log('🟢 ChatView: currentUserId:', currentUserId);
 
-  const { data: conversation, isLoading, error } = useQuery(
+  const { data: conversation, isLoading, error, fetchStatus, status } = useQuery(
     trpc.chat.getConversation.queryOptions(
       { conversationId },
       {
         retry: 1,
         refetchInterval: 30000,
         staleTime: 20000,
+        enabled: !!conversationId, // Only run if conversationId exists
       }
     )
   );
 
   console.log('🟢 ChatView: Query state:', { 
-    isLoading, 
+    isLoading,
+    status,
+    fetchStatus,
     hasData: !!conversation, 
     hasError: !!error,
-    conversationId: conversation?.id 
+    conversationId: conversation?.id,
+    errorMessage: error?.message
   });
 
   const handleMessageSent = () => {
@@ -58,6 +61,9 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
         <div className="text-center">
           <div className="animate-pulse mb-2">💬</div>
           <p className="text-muted-foreground">Loading conversation...</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Status: {status} | Fetch: {fetchStatus}
+          </p>
         </div>
       </div>
     );
@@ -68,8 +74,9 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <p className="text-muted-foreground">
-          {error ? "Error loading conversation" : "Conversation not found"}
+          {error ? `Error: ${error.message}` : "Conversation not found"}
         </p>
+        <p className="text-xs text-muted-foreground">ConversationId: {conversationId}</p>
         <Button onClick={() => router.push("/chat")} variant="outline">
           Back to conversations
         </Button>
@@ -85,9 +92,9 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   console.log('🟢 ChatView: Other user:', otherUser?.username || 'Unknown');
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="border-b p-4">
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header - Fixed at top */}
+      <div className="border-b p-4 flex-shrink-0">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -125,22 +132,22 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Messages - Scrollable flex-1 */}
       <ChatWindow
         conversationId={conversationId}
         currentUserId={currentUserId}
         onMessagesLoaded={handleMessageSent}
       />
 
-      <Separator />
-
-      {/* Input */}
-      <MessageInput
-        conversationId={conversationId}
-        receiverId={otherUser?.id || ""}
-        currentUserId={currentUserId}
-        onMessageSent={handleMessageSent}
-      />
+      {/* Input - Fixed at bottom */}
+      <div className="border-t flex-shrink-0">
+        <MessageInput
+          conversationId={conversationId}
+          receiverId={otherUser?.id || ""}
+          currentUserId={currentUserId}
+          onMessageSent={handleMessageSent}
+        />
+      </div>
     </div>
   );
 }
