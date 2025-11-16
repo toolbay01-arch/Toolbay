@@ -70,7 +70,7 @@ export function ChatList({
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-2 space-y-2">
+      <div className="p-2 space-y-2 overflow-hidden">
         {conversations.map((conversation) => {
           const participants = (conversation.participants || []) as UserType[];
           const otherUser = participants.find((p) => p.id !== currentUserId);
@@ -87,20 +87,20 @@ export function ChatList({
               onClick={() => handleConversationClick(conversation.id)}
               onMouseEnter={() => handleMouseEnter(conversation.id)}
               className={cn(
-                "p-3 rounded-lg border transition-all cursor-pointer",
+                "p-2.5 rounded-lg border transition-all cursor-pointer",
                 "bg-card hover:bg-accent/50 hover:shadow-sm",
                 isSelected && "bg-accent border-primary/20 shadow-sm"
               )}
             >
-              <div className="flex gap-3 min-w-0">
-                <Avatar className="h-10 w-10 shrink-0">
+              <div className="flex gap-2.5 min-w-0">
+                <Avatar className="h-9 w-9 shrink-0">
                   <AvatarFallback>
-                    <User className="h-5 w-5" />
+                    <User className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="flex-1 min-w-0 overflow-hidden">
-                  <div className="flex items-center justify-between mb-1 gap-2">
+                  <div className="flex items-center justify-between mb-0.5 gap-2">
                     <h4 className="font-semibold text-sm truncate">
                       {otherUser?.username || "Unknown User"}
                     </h4>
@@ -115,7 +115,7 @@ export function ChatList({
                   </div>
 
                   <div className="flex items-center gap-2 min-w-0">
-                    <p className="text-sm text-muted-foreground truncate flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground truncate flex-1 min-w-0">
                       {conversation.lastMessageContent ||
                         "No messages yet"}
                     </p>
