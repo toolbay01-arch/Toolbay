@@ -44,8 +44,6 @@ export function ChatWindow({
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasMarkedAsRead = useRef(false);
 
-  console.log('🟣 ChatWindow: Mounting with conversationId:', conversationId);
-
   const { data: messagesData, isLoading } = useQuery(
     trpc.chat.getMessages.queryOptions(
       {
@@ -59,11 +57,6 @@ export function ChatWindow({
       }
     )
   );
-
-  console.log('🟣 ChatWindow: Messages query state:', {
-    isLoading,
-    messageCount: messagesData?.docs?.length || 0,
-  });
 
   const markAsReadMutation = useMutation(
     trpc.chat.markAsRead.mutationOptions({

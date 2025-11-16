@@ -34,18 +34,10 @@ export const chatRouter = createTRPCRouter({
       })
     )
     .query(async ({ ctx, input }) => {
-      console.log('🔷 Server: getConversation called with:', input.conversationId);
-      console.log('🔷 Server: User ID:', ctx.session.user.id);
-      
       const conversation = await ctx.db.findByID({
         collection: 'conversations',
         id: input.conversationId,
         depth: 1, // Reduced from 2
-      });
-
-      console.log('🔷 Server: Found conversation:', {
-        id: conversation.id,
-        participantCount: (conversation.participants as any[])?.length,
       });
 
       // Verify user is participant
@@ -53,18 +45,13 @@ export const chatRouter = createTRPCRouter({
         typeof p === 'string' ? p : p.id
       );
 
-      console.log('🔷 Server: Participant IDs:', participantIds);
-      console.log('🔷 Server: Is user participant?', participantIds.includes(ctx.session.user.id));
-
       if (!participantIds.includes(ctx.session.user.id)) {
-        console.log('🔴 Server: User not participant - FORBIDDEN');
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You are not a participant in this conversation',
         });
       }
 
-      console.log('🔷 Server: Returning conversation');
       return conversation;
     }),
 
@@ -80,8 +67,6 @@ export const chatRouter = createTRPCRouter({
       })
     )
     .query(async ({ ctx, input }) => {
-      console.log('🔷 Server: getMessages called for conversation:', input.conversationId);
-      
       // First verify user is participant in the conversation
       const conversation = await ctx.db.findByID({
         collection: 'conversations',
@@ -91,10 +76,7 @@ export const chatRouter = createTRPCRouter({
 
       const participantIds = (conversation.participants as any as string[]);
       
-      console.log('🔷 Server: Checking message access, participant IDs:', participantIds);
-      
       if (!participantIds.includes(ctx.session.user.id)) {
-        console.log('🔴 Server: User not participant in messages - FORBIDDEN');
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You are not a participant in this conversation',
@@ -114,7 +96,6 @@ export const chatRouter = createTRPCRouter({
         page: input.page,
       });
 
-      console.log('🔷 Server: Returning messages, count:', messages.docs.length);
       return messages;
     }),
 
@@ -189,9 +170,8 @@ export const chatRouter = createTRPCRouter({
           lastMessageAt: new Date().toISOString(),
           unreadCount: updatedUnreadCount,
         } as any,
-      }).catch(err => {
-        // Log error but don't fail the message send
-        console.error('Failed to update conversation metadata:', err);
+      }).catch(() => {
+        // Silent error - don't fail the message send
       });
 
       return message;
@@ -397,7 +377,7 @@ export const chatRouter = createTRPCRouter({
             content: input.initialMessage,
             read: false,
           },
-        }).catch(console.error); // Log error but don't block
+        }).catch(() => {}); // Silent error - don't block
       }
 
       return conversation;

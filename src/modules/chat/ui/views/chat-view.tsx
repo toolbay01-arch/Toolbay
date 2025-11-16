@@ -63,12 +63,8 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
     );
   }
 
-  console.log('🟢 ChatView: Rendering conversation:', conversation.id);
-  
   const participants = (conversation.participants || []) as UserType[];
   const otherUser = participants.find((p) => p.id !== currentUserId);
-
-  console.log('🟢 ChatView: Other user:', otherUser?.username || 'Unknown');
   
   // Build product URL if exists
   let productUrl: string | undefined;

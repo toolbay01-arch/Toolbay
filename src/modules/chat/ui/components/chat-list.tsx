@@ -92,20 +92,20 @@ export function ChatList({
                 isSelected && "bg-accent border-primary/20 shadow-sm"
               )}
             >
-              <div className="flex gap-3">
+              <div className="flex gap-3 min-w-0">
                 <Avatar className="h-10 w-10 shrink-0">
                   <AvatarFallback>
                     <User className="h-5 w-5" />
                   </AvatarFallback>
                 </Avatar>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="flex items-center justify-between mb-1 gap-2">
                     <h4 className="font-semibold text-sm truncate">
                       {otherUser?.username || "Unknown User"}
                     </h4>
                     {conversation.lastMessageAt && (
-                      <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                      <span className="text-xs text-muted-foreground shrink-0">
                         {format(
                           new Date(conversation.lastMessageAt),
                           "MMM d"
@@ -114,8 +114,8 @@ export function ChatList({
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm text-muted-foreground truncate flex-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="text-sm text-muted-foreground truncate flex-1 min-w-0">
                       {conversation.lastMessageContent ||
                         "No messages yet"}
                     </p>
@@ -130,7 +130,7 @@ export function ChatList({
                   </div>
 
                   {conversation.product && (
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1 truncate">
                       Re: {typeof conversation.product === "object" ? conversation.product.name : "Product"}
                     </p>
                   )}
