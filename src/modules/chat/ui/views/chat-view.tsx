@@ -22,41 +22,42 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const { data: conversation, isLoading } = useQuery(
+  const { data: conversation, isLoading, error } = useQuery(
     trpc.chat.getConversation.queryOptions(
       { conversationId },
       {
-        refetchInterval: 10000,
+        retry: 1,
+        refetchInterval: 30000,
+        staleTime: 20000,
       }
     )
   );
 
   const handleMessageSent = () => {
-    // Refetch messages and conversations
-    queryClient.invalidateQueries({
-      queryKey: trpc.chat.getMessages.queryKey({ conversationId }),
-    });
+    // Only invalidate conversation list
     queryClient.invalidateQueries({
       queryKey: trpc.chat.getConversations.queryKey(),
-    });
-    queryClient.invalidateQueries({
-      queryKey: trpc.chat.getUnreadCount.queryKey(),
     });
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Loading conversation...</p>
+        <div className="text-center">
+          <div className="animate-pulse mb-2">💬</div>
+          <p className="text-muted-foreground">Loading conversation...</p>
+        </div>
       </div>
     );
   }
 
-  if (!conversation) {
+  if (error || !conversation) {
     return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <p className="text-muted-foreground mb-4">Conversation not found</p>
-        <Button onClick={() => router.push("/chat")}>
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <p className="text-muted-foreground">
+          {error ? "Error loading conversation" : "Conversation not found"}
+        </p>
+        <Button onClick={() => router.push("/chat")} variant="outline">
           Back to conversations
         </Button>
       </div>
@@ -120,6 +121,7 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
       <MessageInput
         conversationId={conversationId}
         receiverId={otherUser?.id || ""}
+        currentUserId={currentUserId}
         onMessageSent={handleMessageSent}
       />
     </div>

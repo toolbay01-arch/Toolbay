@@ -104,6 +104,7 @@ export const Conversations: CollectionConfig = {
     {
       name: 'lastMessageAt',
       type: 'date',
+      index: true, // Add index for sorting
       admin: {
         description: 'Timestamp of last message',
         readOnly: true,

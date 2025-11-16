@@ -116,7 +116,8 @@ export const Navbar = () => {
   const { data: unreadData } = useQuery({
     ...trpc.chat.getUnreadCount.queryOptions(),
     enabled: !!session.data?.user,
-    refetchInterval: 30000, // Poll every 30 seconds
+    refetchInterval: 60000, // Increased from 30s to 60s
+    staleTime: 30000,
   });
   
   const logout = useMutation(trpc.auth.logout.mutationOptions({

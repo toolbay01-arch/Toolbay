@@ -16,7 +16,7 @@ export const chatRouter = createTRPCRouter({
           contains: ctx.session.user.id,
         },
       },
-      depth: 2, // Include participant details and related product/order
+      depth: 1, // Reduced from 2 to 1 - only populate direct relationships
       sort: '-lastMessageAt',
       limit: 50,
     });
@@ -37,7 +37,7 @@ export const chatRouter = createTRPCRouter({
       const conversation = await ctx.db.findByID({
         collection: 'conversations',
         id: input.conversationId,
-        depth: 2,
+        depth: 1, // Reduced from 2
       });
 
       // Verify user is participant
@@ -90,7 +90,7 @@ export const chatRouter = createTRPCRouter({
             equals: input.conversationId,
           },
         },
-        depth: 2, // Include sender, receiver, and attachment details
+        depth: 1, // Reduced from 2 to 1 - only populate sender/receiver basics
         sort: '-createdAt',
         limit: input.limit,
         page: input.page,
@@ -151,16 +151,18 @@ export const chatRouter = createTRPCRouter({
             })),
           }),
         },
+        depth: 1, // Populate sender and receiver
       });
 
-      // Update conversation metadata
+      // Update conversation metadata asynchronously (don't wait for it)
       const currentUnreadCount = (conversation.unreadCount as any as Record<string, number>) || {};
       const updatedUnreadCount = {
         ...currentUnreadCount,
         [input.receiverId]: (currentUnreadCount[input.receiverId] || 0) + 1,
       };
 
-      await ctx.db.update({
+      // Fire and forget - don't await
+      ctx.db.update({
         collection: 'conversations',
         id: input.conversationId,
         data: {
@@ -168,6 +170,9 @@ export const chatRouter = createTRPCRouter({
           lastMessageAt: new Date().toISOString(),
           unreadCount: updatedUnreadCount,
         } as any,
+      }).catch(err => {
+        // Log error but don't fail the message send
+        console.error('Failed to update conversation metadata:', err);
       });
 
       return message;
@@ -223,7 +228,13 @@ export const chatRouter = createTRPCRouter({
         collection: 'messages',
         where: whereClause,
         limit: 100,
+        depth: 0, // No need for relations when just updating
       });
+
+      if (unreadMessages.docs.length === 0) {
+        // No messages to mark as read
+        return { success: true, markedCount: 0 };
+      }
 
       // Update each message
       const updatePromises = unreadMessages.docs.map((message) =>

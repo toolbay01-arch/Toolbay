@@ -24,6 +24,7 @@ export function ChatWindow({
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const hasMarkedAsRead = useRef(false);
 
   const { data: messagesData, isLoading } = useQuery(
     trpc.chat.getMessages.queryOptions(
@@ -33,18 +34,26 @@ export function ChatWindow({
         page: 1,
       },
       {
-        refetchInterval: 5000, // Poll for new messages every 5 seconds
+        refetchInterval: 10000, // Reduced from 5s to 10s
+        staleTime: 5000, // Consider data fresh for 5s
       }
     )
   );
 
   const markAsReadMutation = useMutation(
-    trpc.chat.markAsRead.mutationOptions()
+    trpc.chat.markAsRead.mutationOptions({
+      onSuccess: () => {
+        // Update unread count
+        queryClient.invalidateQueries({
+          queryKey: trpc.chat.getUnreadCount.queryKey(),
+        });
+      },
+    })
   );
 
   useEffect(() => {
-    if (messagesData?.docs && messagesData.docs.length > 0) {
-      // Mark unread messages as read
+    if (messagesData?.docs && messagesData.docs.length > 0 && !hasMarkedAsRead.current) {
+      // Mark unread messages as read only once
       const unreadMessageIds = messagesData.docs
         .filter(
           (msg) =>
@@ -55,6 +64,7 @@ export function ChatWindow({
         .map((msg) => msg.id);
 
       if (unreadMessageIds.length > 0) {
+        hasMarkedAsRead.current = true;
         markAsReadMutation.mutate({
           conversationId,
           messageIds: unreadMessageIds,
@@ -63,14 +73,24 @@ export function ChatWindow({
 
       onMessagesLoaded?.();
     }
-  }, [messagesData?.docs, conversationId, currentUserId, onMessagesLoaded]);
+  }, [messagesData?.docs?.length, conversationId, currentUserId, onMessagesLoaded]);
 
   useEffect(() => {
-    // Scroll to bottom when messages load
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    // Reset the flag when conversation changes
+    hasMarkedAsRead.current = false;
+  }, [conversationId]);
+
+  useEffect(() => {
+    // Scroll to bottom when messages load or change
+    if (scrollRef.current && messagesData?.docs) {
+      const scrollElement = scrollRef.current;
+      // Use smooth scroll for better UX
+      scrollElement.scrollTo({
+        top: scrollElement.scrollHeight,
+        behavior: 'smooth',
+      });
     }
-  }, [messagesData?.docs]);
+  }, [messagesData?.docs?.length]);
 
   if (isLoading) {
     return (

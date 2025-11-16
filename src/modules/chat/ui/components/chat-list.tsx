@@ -2,14 +2,16 @@
 
 import { format } from "date-fns";
 import { User, MessageCircle } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useTransition } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTRPC } from "@/trpc/client";
 import type { User as UserType } from "@/payload-types";
+import { cn } from "@/lib/utils";
 
 interface ChatListProps {
   currentUserId: string;
@@ -21,16 +23,26 @@ export function ChatList({
   selectedConversationId,
 }: ChatListProps) {
   const trpc = useTRPC();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const { data: conversationsData, isLoading } = useQuery({
     ...trpc.chat.getConversations.queryOptions(),
-    refetchInterval: 10000, // Poll every 10 seconds
+    refetchInterval: 15000,
+    staleTime: 10000,
   });
 
   const { data: unreadData } = useQuery({
     ...trpc.chat.getUnreadCount.queryOptions(),
-    refetchInterval: 10000,
+    refetchInterval: 15000,
+    staleTime: 10000,
   });
+
+  const handleConversationClick = (conversationId: string) => {
+    startTransition(() => {
+      router.push(`/chat/${conversationId}`);
+    });
+  };
 
   if (isLoading) {
     return (
@@ -64,14 +76,19 @@ export function ChatList({
             (conversation.unreadCount as Record<string, number>)?.[
               currentUserId
             ] || 0;
+          
+          const isSelected = selectedConversationId === conversation.id;
 
           return (
-            <Link
+            <button
               key={conversation.id}
-              href={`/chat/${conversation.id}`}
-              className={`block p-4 hover:bg-muted/50 transition-colors ${
-                selectedConversationId === conversation.id ? "bg-muted" : ""
-              }`}
+              onClick={() => handleConversationClick(conversation.id)}
+              disabled={isPending && !isSelected}
+              className={cn(
+                "w-full text-left p-4 transition-colors",
+                "hover:bg-muted/50 disabled:opacity-50",
+                isSelected && "bg-muted"
+              )}
             >
               <div className="flex gap-3">
                 <Avatar className="h-10 w-10 shrink-0">
@@ -117,7 +134,7 @@ export function ChatList({
                   )}
                 </div>
               </div>
-            </Link>
+            </button>
           );
         })}
       </div>

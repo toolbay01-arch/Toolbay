@@ -11,12 +11,14 @@ import { useTRPC } from "@/trpc/client";
 interface MessageInputProps {
   conversationId: string;
   receiverId: string;
+  currentUserId: string; // Add currentUserId to know who is sending
   onMessageSent?: () => void;
 }
 
 export function MessageInput({
   conversationId,
   receiverId,
+  currentUserId,
   onMessageSent,
 }: MessageInputProps) {
   const [message, setMessage] = useState("");
@@ -26,9 +28,72 @@ export function MessageInput({
 
   const sendMessageMutation = useMutation(
     trpc.chat.sendMessage.mutationOptions({
+      onMutate: async (variables) => {
+        // Cancel outgoing refetches
+        await queryClient.cancelQueries({
+          queryKey: trpc.chat.getMessages.queryKey({ conversationId }),
+        });
+
+        // Snapshot previous value
+        const previousMessages = queryClient.getQueryData(
+          trpc.chat.getMessages.queryKey({ 
+            conversationId, 
+            limit: 50, 
+            page: 1 
+          })
+        );
+
+        // Optimistically update with new message
+        queryClient.setQueryData(
+          trpc.chat.getMessages.queryKey({ 
+            conversationId, 
+            limit: 50, 
+            page: 1 
+          }),
+          (old: any) => {
+            if (!old) return old;
+            
+            const optimisticMessage = {
+              id: `temp-${Date.now()}`,
+              content: variables.content,
+              sender: { id: currentUserId },
+              receiver: { id: variables.receiverId },
+              conversation: conversationId,
+              read: false,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              attachments: variables.attachments || [],
+            };
+
+            return {
+              ...old,
+              docs: [optimisticMessage, ...old.docs],
+            };
+          }
+        );
+
+        return { previousMessages };
+      },
+      onError: (err, variables, context) => {
+        // Revert on error
+        if (context?.previousMessages) {
+          queryClient.setQueryData(
+            trpc.chat.getMessages.queryKey({ 
+              conversationId, 
+              limit: 50, 
+              page: 1 
+            }),
+            context.previousMessages
+          );
+        }
+      },
       onSuccess: () => {
         setMessage("");
         setAttachments([]);
+        // Refetch to get the real message with ID
+        queryClient.invalidateQueries({
+          queryKey: trpc.chat.getMessages.queryKey({ conversationId }),
+        });
         onMessageSent?.();
       },
     })
@@ -36,6 +101,7 @@ export function MessageInput({
 
   const handleSend = () => {
     if (!message.trim() && attachments.length === 0) return;
+    if (sendMessageMutation.isPending) return; // Prevent double-send
 
     sendMessageMutation.mutate({
       conversationId,

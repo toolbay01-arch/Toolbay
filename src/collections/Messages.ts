@@ -134,6 +134,15 @@ export const Messages: CollectionConfig = {
         condition: (data) => data.read === true,
       },
     },
+    {
+      name: 'createdAt',
+      type: 'date',
+      index: true, // Add index for sorting
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+      },
+    },
   ],
   timestamps: true,
 };

@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { caller } from "@/trpc/server";
 import { ChatList } from "@/modules/chat/ui/components/chat-list";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function ChatPage() {
   const session = await caller.auth.session();
@@ -20,7 +22,9 @@ export default async function ChatPage() {
           <div className="p-4 border-b">
             <h1 className="text-xl font-bold">Messages</h1>
           </div>
-          <ChatList currentUserId={session.user.id} />
+          <Suspense fallback={<div className="p-4 text-muted-foreground text-sm">Loading conversations...</div>}>
+            <ChatList currentUserId={session.user.id} />
+          </Suspense>
         </div>
 
         {/* Empty state */}
