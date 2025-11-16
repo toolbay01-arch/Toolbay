@@ -3,6 +3,7 @@
 import { ArrowLeft, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useTRPC } from "@/trpc/client";
@@ -21,16 +22,35 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const { data: conversation, isLoading, error } = useQuery(
+  // Fetch conversation WITH messages in a single request
+  const { data: conversationData, isLoading, error } = useQuery(
     trpc.chat.getConversation.queryOptions(
-      { conversationId },
+      { 
+        conversationId,
+        includeMessages: true,
+        messageLimit: 50,
+      },
       {
         retry: 1,
-        refetchInterval: 30000,
-        staleTime: 20000,
+        staleTime: 30000, // Consider fresh for 30s
+        gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
       }
     )
   );
+
+  // Prefill the messages query cache from conversation data
+  useEffect(() => {
+    if (conversationData?.messages) {
+      queryClient.setQueryData(
+        trpc.chat.getMessages.queryKey({ 
+          conversationId, 
+          limit: 50, 
+          page: 1 
+        }),
+        conversationData.messages
+      );
+    }
+  }, [conversationData?.messages, conversationId, queryClient, trpc]);
 
   const handleMessageSent = () => {
     // Only invalidate conversation list
@@ -49,6 +69,8 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
       </div>
     );
   }
+
+  const conversation = conversationData as any;
 
   if (error || !conversation) {
     return (

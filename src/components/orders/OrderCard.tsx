@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { OrderStatusBadge } from './OrderStatusBadge'
 import { ConfirmReceiptButton } from './ConfirmReceiptButton'
@@ -46,13 +46,15 @@ interface OrderCardProps {
 export function OrderCard({ order, onConfirmReceiptAction }: OrderCardProps) {
   const router = useRouter()
   const trpc = useTRPC()
+  const queryClient = useQueryClient()
   const canConfirmReceipt = order.status === 'delivered' && !order.received
 
   const { data: session } = useQuery(trpc.auth.session.queryOptions())
   
   const startConversation = useMutation(trpc.chat.startConversation.mutationOptions({
-    onSuccess: (conversation) => {
-      router.push(`/chat/${conversation.id}`)
+    onSuccess: (data) => {
+      // Just navigate immediately - the page will fetch fresh data with messages included
+      router.push(`/chat/${data.id}`)
       toast.success("Chat started with seller")
     },
     onError: (error) => {

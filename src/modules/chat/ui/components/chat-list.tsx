@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import { User, MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -23,17 +23,18 @@ export function ChatList({
 }: ChatListProps) {
   const trpc = useTRPC();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { data: conversationsData, isLoading } = useQuery({
     ...trpc.chat.getConversations.queryOptions(),
-    refetchInterval: 15000,
-    staleTime: 10000,
+    staleTime: 30000, // Consider fresh for 30s
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
   const { data: unreadData } = useQuery({
     ...trpc.chat.getUnreadCount.queryOptions(),
-    refetchInterval: 15000,
-    staleTime: 10000,
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000,
   });
 
   const handleConversationClick = (conversationId: string) => {
@@ -44,6 +45,15 @@ export function ChatList({
   const handleMouseEnter = (conversationId: string) => {
     // Prefetch on hover for instant navigation
     router.prefetch(`/chat/${conversationId}`);
+    
+    // Prefetch conversation data with messages using queryClient
+    queryClient.prefetchQuery(
+      trpc.chat.getConversation.queryOptions({
+        conversationId,
+        includeMessages: true,
+        messageLimit: 50,
+      })
+    );
   };
 
   if (isLoading) {

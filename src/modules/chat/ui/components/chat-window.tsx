@@ -55,8 +55,8 @@ export function ChatWindow({
         page: 1,
       },
       {
-        refetchInterval: 10000, // Reduced from 5s to 10s
-        staleTime: 5000, // Consider data fresh for 5s
+        staleTime: 30000, // Consider fresh for 30s - reduced refetching
+        gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
       }
     )
   );

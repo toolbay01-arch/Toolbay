@@ -25,20 +25,38 @@ export const chatRouter = createTRPCRouter({
   }),
 
   /**
-   * Get a specific conversation by ID
+   * Get a specific conversation by ID with messages in one query
    */
   getConversation: protectedProcedure
     .input(
       z.object({
         conversationId: z.string(),
+        includeMessages: z.boolean().optional().default(true),
+        messageLimit: z.number().min(1).max(100).optional().default(50),
       })
     )
     .query(async ({ ctx, input }) => {
-      const conversation = await ctx.db.findByID({
-        collection: 'conversations',
-        id: input.conversationId,
-        depth: 1, // Reduced from 2
-      });
+      // Fetch conversation and messages in parallel for speed
+      const [conversation, messages] = await Promise.all([
+        ctx.db.findByID({
+          collection: 'conversations',
+          id: input.conversationId,
+          depth: 1,
+        }),
+        input.includeMessages
+          ? ctx.db.find({
+              collection: 'messages',
+              where: {
+                conversation: {
+                  equals: input.conversationId,
+                },
+              },
+              depth: 1,
+              sort: '-createdAt',
+              limit: input.messageLimit,
+            })
+          : Promise.resolve(null),
+      ]);
 
       // Verify user is participant
       const participantIds = (conversation.participants as User[]).map((p) => 
@@ -52,7 +70,10 @@ export const chatRouter = createTRPCRouter({
         });
       }
 
-      return conversation;
+      return {
+        ...conversation,
+        messages: messages || undefined,
+      };
     }),
 
   /**
@@ -268,7 +289,7 @@ export const chatRouter = createTRPCRouter({
     }),
 
   /**
-   * Start a new conversation
+   * Start a new conversation - optimized for speed
    */
   startConversation: protectedProcedure
     .input(
@@ -297,11 +318,11 @@ export const chatRouter = createTRPCRouter({
             },
           ],
         },
-        depth: 0,
+        depth: 1, // Changed from 0 to 1 to get participant details
         limit: 1,
       });
 
-      // If conversation exists, send message and return
+      // If conversation exists, send message and return with messages
       if (existingConversations.docs.length > 0) {
         const existing = existingConversations.docs[0];
         
@@ -312,7 +333,7 @@ export const chatRouter = createTRPCRouter({
           });
         }
         
-        // If initial message provided, send it (without awaiting conversation update for speed)
+        // If initial message provided, send it
         if (input.initialMessage) {
           const currentUnreadCount = (existing.unreadCount as any as Record<string, number>) || {};
           
@@ -343,7 +364,23 @@ export const chatRouter = createTRPCRouter({
           ]);
         }
 
-        return existing;
+        // Fetch messages immediately to return with conversation
+        const messages = await ctx.db.find({
+          collection: 'messages',
+          where: {
+            conversation: {
+              equals: existing.id,
+            },
+          },
+          depth: 1,
+          sort: '-createdAt',
+          limit: 50,
+        });
+
+        return {
+          ...existing,
+          messages,
+        };
       }
 
       // Create new conversation with initial metadata
@@ -363,12 +400,13 @@ export const chatRouter = createTRPCRouter({
       const conversation = await ctx.db.create({
         collection: 'conversations',
         data: conversationData,
+        depth: 1,
       });
 
-      // Send initial message if provided (in parallel with return - fire and forget)
+      // Send initial message if provided
+      let messages = null;
       if (input.initialMessage) {
-        // Don't await - let it happen in background
-        ctx.db.create({
+        const message = await ctx.db.create({
           collection: 'messages',
           data: {
             conversation: conversation.id,
@@ -377,10 +415,24 @@ export const chatRouter = createTRPCRouter({
             content: input.initialMessage,
             read: false,
           },
-        }).catch(() => {}); // Silent error - don't block
+          depth: 1,
+        });
+        
+        messages = {
+          docs: [message],
+          totalDocs: 1,
+          limit: 50,
+          page: 1,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        };
       }
 
-      return conversation;
+      return {
+        ...conversation,
+        messages,
+      };
     }),
 
   /**

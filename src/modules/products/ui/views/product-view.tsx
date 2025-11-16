@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CheckIcon, LinkIcon, StarIcon, MessageCircle } from "lucide-react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
 import { useTRPC } from "@/trpc/client";
@@ -46,6 +46,7 @@ interface ProductViewProps {
 export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
   const trpc = useTRPC();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(trpc.products.getOne.queryOptions({ id: productId }));
 
   const [isCopied, setIsCopied] = useState(false);
@@ -55,8 +56,9 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
   
   // Start conversation mutation
   const startConversation = useMutation(trpc.chat.startConversation.mutationOptions({
-    onSuccess: (conversation) => {
-      router.push(`/chat/${conversation.id}`);
+    onSuccess: (data) => {
+      // Just navigate immediately - the page will fetch fresh data with messages included
+      router.push(`/chat/${data.id}`);
       toast.success("Chat started with seller");
     },
     onError: (error) => {

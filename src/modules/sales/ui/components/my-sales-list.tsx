@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useInfiniteQuery, useQuery, useMutation } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, PackageIcon, TrendingUp, DollarSign, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,12 +19,14 @@ interface MySalesListProps {
 export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => {
   const trpc = useTRPC();
   const router = useRouter();
+  const queryClient = useQueryClient();
   
   const { data: session } = useQuery(trpc.auth.session.queryOptions());
   
   const startConversation = useMutation(trpc.chat.startConversation.mutationOptions({
-    onSuccess: (conversation) => {
-      router.push(`/chat/${conversation.id}`);
+    onSuccess: (data) => {
+      // Just navigate immediately - the page will fetch fresh data with messages included
+      router.push(`/chat/${data.id}`);
       toast.success("Chat started with customer");
     },
     onError: (error) => {
