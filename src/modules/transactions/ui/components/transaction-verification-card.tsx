@@ -16,7 +16,9 @@ import {
   Phone, 
   MapPin,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -61,14 +63,16 @@ interface Transaction {
 
 interface TransactionVerificationCardProps {
   transaction: Transaction;
+  viewMode?: 'grid' | 'list';
 }
 
-export function TransactionVerificationCard({ transaction }: TransactionVerificationCardProps) {
+export function TransactionVerificationCard({ transaction, viewMode = 'grid' }: TransactionVerificationCardProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const verifyMutation = useMutation(
     trpc.transactions.verifyTransaction.mutationOptions({
@@ -132,6 +136,182 @@ export function TransactionVerificationCard({ transaction }: TransactionVerifica
   const isExpired = new Date() > new Date(transaction.expiresAt);
   const isProcessing = verifyMutation.isPending || rejectMutation.isPending;
 
+  // List view with collapsible details
+  if (viewMode === 'list') {
+    return (
+      <>
+        <Card className={`${isExpired ? 'opacity-60 border-red-200' : 'border-green-200'}`}>
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <CardTitle className="text-lg truncate">{transaction.paymentReference}</CardTitle>
+                  <Badge variant={isExpired ? "destructive" : "default"} className="text-xs shrink-0">
+                    {isExpired ? "Expired" : "Pending"}
+                  </Badge>
+                </div>
+                
+                {/* Essential Info - Always Visible */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-gray-400 shrink-0" />
+                    <span className="truncate">{transaction.customerName}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-gray-400 shrink-0" />
+                    <span className="truncate">{transaction.customerPhone}</span>
+                  </div>
+                </div>
+
+                {/* MTN TX ID - Prominent */}
+                <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <AlertCircle className="h-4 w-4 text-blue-600 shrink-0" />
+                    <span className="text-xs font-semibold text-blue-900">MTN Transaction ID</span>
+                  </div>
+                  <p className="text-lg font-mono font-bold text-blue-900 truncate">
+                    {transaction.mtnTransactionId || "Not provided"}
+                  </p>
+                </div>
+
+                {/* Total Amount */}
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-green-700">Total Amount:</span>
+                  <span className="text-xl font-bold text-green-700">{formatCurrency(transaction.totalAmount)}</span>
+                </div>
+              </div>
+
+              {/* Expand/Collapse Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="shrink-0"
+              >
+                {isExpanded ? (
+                  <ChevronUp className="h-5 w-5" />
+                ) : (
+                  <ChevronDown className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
+          </CardHeader>
+
+          {/* Expandable Details */}
+          {isExpanded && (
+            <CardContent className="space-y-4 pt-0 border-t">
+              {/* Products */}
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm text-gray-700 flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Products ({transaction.products.length})
+                </h4>
+                <div className="space-y-2">
+                  {transaction.products.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
+                      <div>
+                        <p className="font-medium">{item.product.name}</p>
+                        <p className="text-gray-600 text-xs">
+                          Qty: {item.quantity} × {formatCurrency(item.price)}
+                        </p>
+                      </div>
+                      <p className="font-semibold">{formatCurrency(item.price * item.quantity)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Shipping Address */}
+              {transaction.shippingAddress && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm text-gray-700 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Shipping Address
+                  </h4>
+                  <div className="text-sm bg-gray-50 p-2 rounded">
+                    {transaction.shippingAddress.line1}, {transaction.shippingAddress.city}, {transaction.shippingAddress.country}
+                  </div>
+                </div>
+              )}
+
+              {/* Timestamps */}
+              <div className="space-y-1 text-xs text-gray-600">
+                <p>Submitted: {formatDate(transaction.createdAt)}</p>
+                {!isExpired && <p className="text-yellow-600">Expires: {formatDate(transaction.expiresAt)}</p>}
+              </div>
+
+              <p className="text-xs text-gray-600 border-t pt-2">
+                You receive the full amount (no platform fees)
+              </p>
+            </CardContent>
+          )}
+
+          {/* Action Buttons - Always Visible */}
+          {!isExpired && (
+            <CardContent className="pt-0 pb-4">
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setShowVerifyDialog(true)}
+                  disabled={isProcessing}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  size="sm"
+                >
+                  {verifyMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Approve
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => setShowRejectDialog(true)}
+                  disabled={isProcessing}
+                  variant="destructive"
+                  className="flex-1"
+                  size="sm"
+                >
+                  {rejectMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Rejecting...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Reject
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* Dialogs */}
+        <VerifyDialog 
+          open={showVerifyDialog}
+          onOpenChange={setShowVerifyDialog}
+          transaction={transaction}
+          onConfirm={handleVerify}
+          formatCurrency={formatCurrency}
+        />
+        <RejectDialog
+          open={showRejectDialog}
+          onOpenChange={setShowRejectDialog}
+          rejectionReason={rejectionReason}
+          setRejectionReason={setRejectionReason}
+          onConfirm={handleReject}
+        />
+      </>
+    );
+  }
+
+  // Grid view - Full details always visible
   return (
     <>
       <Card className={`${isExpired ? 'opacity-60 border-red-200' : 'border-green-200'}`}>
@@ -273,66 +453,116 @@ export function TransactionVerificationCard({ transaction }: TransactionVerifica
       </Card>
 
       {/* Verify Confirmation Dialog */}
-      <AlertDialog open={showVerifyDialog} onOpenChange={setShowVerifyDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Payment Verification</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              <p>You are about to approve this payment:</p>
-              <div className="bg-gray-100 p-3 rounded space-y-1 text-sm">
-                <p><strong>Payment Ref:</strong> {transaction.paymentReference}</p>
-                <p><strong>MTN TX ID:</strong> {transaction.mtnTransactionId}</p>
-                <p><strong>Total Amount:</strong> {formatCurrency(transaction.totalAmount)}</p>
-              </div>
-              <p className="text-green-600 font-semibold">
-                ✅ You will receive the full amount (no platform fees)
-              </p>
-              <p className="text-orange-600 font-semibold">
-                ⚠️ This will create {transaction.products.length} order(s) and cannot be undone.
-              </p>
-              <p>Have you verified this payment in your MTN MoMo account?</p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleVerify} className="bg-green-600 hover:bg-green-700">
-              Yes, Approve Payment
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <VerifyDialog 
+        open={showVerifyDialog}
+        onOpenChange={setShowVerifyDialog}
+        transaction={transaction}
+        onConfirm={handleVerify}
+        formatCurrency={formatCurrency}
+      />
 
       {/* Reject Dialog */}
-      <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reject Payment</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              <p>Please provide a reason for rejecting this payment:</p>
-              <Textarea
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="e.g., Transaction ID not found in MTN MoMo dashboard, incorrect amount, etc."
-                rows={4}
-                className="mt-2"
-              />
-              <p className="text-sm text-gray-600">
-                The customer will be notified with this reason.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setRejectionReason("")}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleReject}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={rejectionReason.trim().length < 10}
-            >
-              Reject Payment
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <RejectDialog
+        open={showRejectDialog}
+        onOpenChange={setShowRejectDialog}
+        rejectionReason={rejectionReason}
+        setRejectionReason={setRejectionReason}
+        onConfirm={handleReject}
+      />
     </>
+  );
+}
+
+// Reusable Verify Dialog Component
+function VerifyDialog({ 
+  open, 
+  onOpenChange, 
+  transaction, 
+  onConfirm, 
+  formatCurrency 
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  transaction: Transaction;
+  onConfirm: () => void;
+  formatCurrency: (amount: number) => string;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirm Payment Verification</AlertDialogTitle>
+          <AlertDialogDescription className="space-y-3">
+            <p>You are about to approve this payment:</p>
+            <div className="bg-gray-100 p-3 rounded space-y-1 text-sm">
+              <p><strong>Payment Ref:</strong> {transaction.paymentReference}</p>
+              <p><strong>MTN TX ID:</strong> {transaction.mtnTransactionId}</p>
+              <p><strong>Total Amount:</strong> {formatCurrency(transaction.totalAmount)}</p>
+            </div>
+            <p className="text-green-600 font-semibold">
+              ✅ You will receive the full amount (no platform fees)
+            </p>
+            <p className="text-orange-600 font-semibold">
+              ⚠️ This will create {transaction.products.length} order(s) and cannot be undone.
+            </p>
+            <p>Have you verified this payment in your MTN MoMo account?</p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm} className="bg-green-600 hover:bg-green-700">
+            Yes, Approve Payment
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+// Reusable Reject Dialog Component
+function RejectDialog({
+  open,
+  onOpenChange,
+  rejectionReason,
+  setRejectionReason,
+  onConfirm
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  rejectionReason: string;
+  setRejectionReason: (reason: string) => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Reject Payment</AlertDialogTitle>
+          <AlertDialogDescription className="space-y-3">
+            <p>Please provide a reason for rejecting this payment:</p>
+            <Textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="e.g., Transaction ID not found in MTN MoMo dashboard, incorrect amount, etc."
+              rows={4}
+              className="mt-2"
+            />
+            <p className="text-sm text-gray-600">
+              The customer will be notified with this reason.
+            </p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setRejectionReason("")}>Cancel</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={onConfirm}
+            className="bg-red-600 hover:bg-red-700"
+            disabled={rejectionReason.trim().length < 10}
+          >
+            Reject Payment
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

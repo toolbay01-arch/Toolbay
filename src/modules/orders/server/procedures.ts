@@ -142,7 +142,7 @@ export const ordersRouter = createTRPCRouter({
             id: typeof item.product?.id === 'object' && 'toHexString' in item.product.id
               ? item.product.id.toHexString()
               : String(item.product?.id || ''),
-            title: item.product?.title || 'Unknown Product',
+            title: item.product?.name || item.product?.title || 'Unknown Product',
             priceAtPurchase: item.priceAtPurchase || item.price || 0,
             quantity: item.quantity || 1,
           })),

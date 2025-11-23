@@ -103,8 +103,8 @@ export const SalesStats = () => {
 
   return (
     <div className="space-y-6 mb-8">
-      {/* Main Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Main Stats - Commented out as requested */}
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {mainStatCards.map((stat, index) => (
           <Card key={index} className={stat.bgColor}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -121,10 +121,10 @@ export const SalesStats = () => {
             </CardContent>
           </Card>
         ))}
-      </div>
+      </div> */}
 
-      {/* Status Breakdown */}
-      <Card>
+      {/* Status Breakdown - Commented out as requested */}
+      {/* <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center justify-between">
             <span>Sales by Status</span>
@@ -146,7 +146,6 @@ export const SalesStats = () => {
             ))}
           </div>
           
-          {/* Total Verification */}
           <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
               Status Total: <strong>{statusTotal}</strong>
@@ -156,36 +155,36 @@ export const SalesStats = () => {
             </span>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
-      {/* Average Sale Amount */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Total Sales & Success Rate - Compact, side by side on all screens */}
+      <div className="grid grid-cols-2 gap-3">
         <Card className="bg-gradient-to-br from-blue-50 to-purple-50">
-          <CardHeader>
-            <CardTitle className="text-sm">Average Sale Amount</CardTitle>
+          <CardHeader className="pb-0.5 pt-1.5 sm:pt-2">
+            <CardTitle className="text-xs sm:text-sm">Total Sales</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">
-              {stats.averageSaleAmount.toLocaleString()} RWF
+          <CardContent className="pb-1.5 pt-0">
+            <div className="text-base sm:text-xl font-bold text-blue-600">
+              {stats.totalSales}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Average net revenue per sale
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0">
+              All orders
             </p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-green-50 to-emerald-50">
-          <CardHeader>
-            <CardTitle className="text-sm">Success Rate</CardTitle>
+          <CardHeader className="pb-0.5 pt-1.5 sm:pt-2">
+            <CardTitle className="text-xs sm:text-sm">Success Rate</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">
+          <CardContent className="pb-1.5 pt-0">
+            <div className="text-base sm:text-xl font-bold text-green-600">
               {stats.totalSales > 0 
                 ? Math.round((stats.statusCounts.completed / stats.totalSales) * 100)
                 : 0}%
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats.statusCounts.completed} of {stats.totalSales} sales completed
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0">
+              {stats.statusCounts.completed} completed
             </p>
           </CardContent>
         </Card>

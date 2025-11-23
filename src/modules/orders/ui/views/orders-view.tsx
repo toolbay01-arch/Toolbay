@@ -1,18 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTRPC } from '@/trpc/client'
 import { OrderCard } from '@/components/orders/OrderCard'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Loader2, PackageX, RefreshCw } from 'lucide-react'
+import { Loader2, PackageX, RefreshCw, Grid3x3, List } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 export function OrdersView() {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'shipped' | 'delivered' | 'completed' | 'cancelled'>('all')
+  
+  // Responsive view mode: list on mobile, grid on desktop by default
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  
+  useEffect(() => {
+    // Set initial view based on screen size
+    const isMobile = window.innerWidth < 768;
+    setViewMode(isMobile ? 'list' : 'grid');
+  }, []);
 
   const { data, isLoading, refetch, isRefetching } = useQuery(trpc.orders.getMyOrders.queryOptions({
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -94,14 +104,44 @@ export function OrdersView() {
             </div>
           ) : (
             <>
-              {orders.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  order={order as any}
-                  onConfirmReceiptAction={handleConfirmReceipt}
-                />
-              ))}
+              {/* View Toggle */}
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="gap-2"
+                >
+                  <Grid3x3 className="h-4 w-4" />
+                  Grid
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="gap-2"
+                >
+                  <List className="h-4 w-4" />
+                  List
+                </Button>
+              </div>
+
+              {/* Orders Display */}
+              <div className={cn(
+                viewMode === 'grid' 
+                  ? "grid grid-cols-1 md:grid-cols-2 gap-4"
+                  : "space-y-4"
+              )}>
+                {orders.map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    order={order as any}
+                    onConfirmReceiptAction={handleConfirmReceipt}
+                    viewMode={viewMode}
+                  />
+                ))}
+              </div>
               
               {/* Pagination Info */}
               {data?.pagination && (

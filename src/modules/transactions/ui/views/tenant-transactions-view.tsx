@@ -4,14 +4,24 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
-import { Loader2, AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, RefreshCw, Grid3x3, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TransactionVerificationCard } from "../components/transaction-verification-card";
+import { cn } from "@/lib/utils";
 
 export function TenantTransactionsView() {
   const router = useRouter();
   const trpc = useTRPC();
   const [autoRefresh, setAutoRefresh] = useState(true);
+  
+  // Responsive view mode: list on mobile, grid on desktop by default
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  
+  useEffect(() => {
+    // Set initial view based on screen size
+    const isMobile = window.innerWidth < 768;
+    setViewMode(isMobile ? 'list' : 'grid');
+  }, []);
 
   // Check authentication and tenant status
   const { data: session, isLoading: sessionLoading } = useQuery(
@@ -70,7 +80,7 @@ export function TenantTransactionsView() {
               <div>
                 <h1 className="text-3xl font-bold">Payment Verification</h1>
                 <p className="text-gray-600 mt-1">
-                  Review and approve customer payments
+                  Review and approve customer payments to create orders
                 </p>
               </div>
             </div>
@@ -111,11 +121,12 @@ export function TenantTransactionsView() {
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="text-sm text-blue-900 space-y-1">
-                <p className="font-semibold">How to verify payments:</p>
+                <p className="font-semibold">How to verify payments and create orders:</p>
                 <ol className="list-decimal list-inside space-y-1 ml-2">
                   <li>Check the <strong>MTN Transaction ID</strong> in your MTN MoMo account/dashboard</li>
                   <li>Verify the <strong>amount</strong> matches what you received</li>
-                  <li>Click <strong>"Approve Payment"</strong> to create orders and process fulfillment</li>
+                  <li>Click <strong>"Approve Payment"</strong> to verify transaction and auto-create orders</li>
+                  <li>Approved orders will appear in your <strong>Sales Dashboard</strong> for fulfillment</li>
                   <li>If the payment doesn't match, click <strong>"Reject"</strong> with a reason</li>
                 </ol>
               </div>
@@ -143,19 +154,46 @@ export function TenantTransactionsView() {
               <p className="text-sm text-gray-600">
                 {transactions.length} payment{transactions.length !== 1 ? 's' : ''} awaiting verification
               </p>
-              {autoRefresh && (
-                <p className="text-xs text-green-600">
-                  🔄 Auto-refreshing every 30 seconds...
-                </p>
-              )}
+              <div className="flex items-center gap-2">
+                {autoRefresh && (
+                  <p className="text-xs text-green-600 mr-2">
+                    🔄 Auto-refreshing every 30 seconds...
+                  </p>
+                )}
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="gap-2"
+                >
+                  <Grid3x3 className="h-4 w-4" />
+                  Grid
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="gap-2"
+                >
+                  <List className="h-4 w-4" />
+                  List
+                </Button>
+              </div>
             </div>
 
-            {transactions.map((transaction: any) => (
-              <TransactionVerificationCard
-                key={transaction.id}
-                transaction={transaction}
-              />
-            ))}
+            <div className={cn(
+              viewMode === 'grid' 
+                ? "grid grid-cols-1 lg:grid-cols-2 gap-6"
+                : "space-y-6"
+            )}>
+              {transactions.map((transaction: any) => (
+                <TransactionVerificationCard
+                  key={transaction.id}
+                  transaction={transaction}
+                  viewMode={viewMode}
+                />
+              ))}
+            </div>
 
             {/* Pagination Info */}
             {data?.totalDocs && data.totalDocs > transactions.length && (

@@ -79,7 +79,7 @@ export const salesRouter = createTRPCRouter({
 
       const data = await ctx.db.find({
         collection: "sales",
-        depth: 1, // Populate product details
+        depth: 2, // Populate product details including image
         where,
         sort: "-createdAt",
         page: input.cursor,
