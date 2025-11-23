@@ -159,31 +159,31 @@ export const SalesStats = () => {
 
       {/* Total Sales & Success Rate - Compact, side by side on all screens */}
       <div className="grid grid-cols-2 gap-3">
-        <Card className="bg-gradient-to-br from-blue-50 to-purple-50">
-          <CardHeader className="pb-0.5 pt-1.5 sm:pt-2">
+        <Card className="bg-gradient-to-br from-blue-50 to-purple-50 py-2 sm:py-3">
+          <CardHeader className="pb-0 pt-0 px-3 sm:px-4 gap-0">
             <CardTitle className="text-xs sm:text-sm">Total Sales</CardTitle>
           </CardHeader>
-          <CardContent className="pb-1.5 pt-0">
+          <CardContent className="pb-0 pt-0.5 px-3 sm:px-4">
             <div className="text-base sm:text-xl font-bold text-blue-600">
               {stats.totalSales}
             </div>
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0">
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground">
               All orders
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-50">
-          <CardHeader className="pb-0.5 pt-1.5 sm:pt-2">
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 py-2 sm:py-3">
+          <CardHeader className="pb-0 pt-0 px-3 sm:px-4 gap-0">
             <CardTitle className="text-xs sm:text-sm">Success Rate</CardTitle>
           </CardHeader>
-          <CardContent className="pb-1.5 pt-0">
+          <CardContent className="pb-0 pt-0.5 px-3 sm:px-4">
             <div className="text-base sm:text-xl font-bold text-green-600">
               {stats.totalSales > 0 
                 ? Math.round((stats.statusCounts.completed / stats.totalSales) * 100)
                 : 0}%
             </div>
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0">
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground">
               {stats.statusCounts.completed} completed
             </p>
           </CardContent>
