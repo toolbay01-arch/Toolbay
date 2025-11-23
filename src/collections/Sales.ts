@@ -109,7 +109,7 @@ export const Sales: CollectionConfig = {
       relationTo: 'products',
       required: true,
       index: true,
-      maxDepth: 1, // Populate product details for display
+      maxDepth: 2, // Changed from 1 to 2 to populate product image
       admin: {
         description: 'Product that was sold',
         readOnly: true,
