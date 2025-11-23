@@ -97,9 +97,10 @@ export function ChatList({
               onClick={() => handleConversationClick(conversation.id)}
               onMouseEnter={() => handleMouseEnter(conversation.id)}
               className={cn(
-                "p-2.5 rounded-lg border transition-all cursor-pointer",
-                "bg-card hover:bg-accent/50 hover:shadow-sm",
-                isSelected && "bg-accent border-primary/20 shadow-sm"
+                "p-3 rounded-md border transition-all cursor-pointer",
+                isSelected 
+                  ? "bg-primary/10 border-primary shadow-md" 
+                  : "bg-card border-border hover:bg-accent/80 hover:border-primary/50 hover:shadow-sm"
               )}
             >
               <div className="flex gap-2.5 min-w-0">
@@ -124,25 +125,19 @@ export function ChatList({
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 min-w-0">
-                    <p className="text-xs text-muted-foreground truncate flex-1 min-w-0">
-                      {conversation.lastMessageContent ||
-                        "No messages yet"}
-                    </p>
-                    {unreadCount > 0 && (
-                      <Badge
-                        variant="default"
-                        className="h-5 min-w-5 px-1.5 shrink-0"
-                      >
-                        {unreadCount}
-                      </Badge>
-                    )}
-                  </div>
-
                   {conversation.product && (
-                    <p className="text-xs text-muted-foreground mt-1 truncate">
+                    <p className="text-xs text-muted-foreground truncate">
                       Re: {typeof conversation.product === "object" ? conversation.product.name : "Product"}
                     </p>
+                  )}
+
+                  {unreadCount > 0 && (
+                    <Badge
+                      variant="default"
+                      className="h-5 min-w-5 px-1.5 shrink-0 mt-1"
+                    >
+                      {unreadCount}
+                    </Badge>
                   )}
                 </div>
               </div>
