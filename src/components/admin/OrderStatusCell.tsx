@@ -11,7 +11,7 @@ interface CellProps {
 export const OrderStatusCell: React.FC<CellProps> = (props) => {
   const { rowData } = props
   const orderId = rowData.id
-  const status = rowData.status as 'pending' | 'shipped' | 'delivered' | 'completed' | 'cancelled'
+  const status = rowData.status as 'pending' | 'shipped' | 'delivered' | 'completed' | 'refunded' | 'cancelled'
   const received = rowData.received as boolean | undefined
   const getStatusBadge = () => {
     const statusConfig = {
@@ -34,6 +34,11 @@ export const OrderStatusCell: React.FC<CellProps> = (props) => {
         label: 'Completed',
         className: 'bg-green-100 text-green-800 border-green-300',
         icon: '✅',
+      },
+      refunded: {
+        label: 'Refunded',
+        className: 'bg-orange-100 text-orange-800 border-orange-300',
+        icon: '🔄',
       },
       cancelled: {
         label: 'Cancelled',

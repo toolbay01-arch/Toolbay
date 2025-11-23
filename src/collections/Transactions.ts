@@ -85,6 +85,9 @@ export const Transactions: CollectionConfig = {
       required: true,
       unique: true,
       index: true,
+      access: {
+        update: () => false, // Never allow updates to payment reference
+      },
       admin: {
         description: 'Auto-generated payment reference (e.g., PAY1AB2C3D4E)',
         readOnly: true,
@@ -230,35 +233,54 @@ export const Transactions: CollectionConfig = {
       type: 'number',
       required: true,
       min: 0,
+      access: {
+        update: () => false, // Never allow updates to amounts
+      },
       admin: {
-        description: 'Total amount in RWF',
+        description: 'Total amount in RWF (tenant receives full amount)',
+        readOnly: true,
       },
     },
     {
       name: 'platformFee',
       type: 'number',
-      required: true,
+      defaultValue: 0,
       min: 0,
+      access: {
+        update: () => false,
+      },
       admin: {
-        description: 'Platform fee (10% of total)',
+        description: 'Platform fee (DEPRECATED - Always 0)',
+        readOnly: true,
+        condition: () => false, // Hide from UI
       },
     },
     {
       name: 'tenantAmount',
       type: 'number',
-      required: true,
+      defaultValue: 0,
       min: 0,
+      access: {
+        update: () => false,
+      },
       admin: {
-        description: 'Amount for tenant after platform fee',
+        description: 'Tenant amount (DEPRECATED - Same as totalAmount)',
+        readOnly: true,
+        condition: () => false, // Hide from UI
       },
     },
     {
       name: 'mtnTransactionId',
       type: 'text',
       index: true,
+      access: {
+        // Tenants can only read, not update the transaction ID
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
       admin: {
-        description: 'MTN Mobile Money Transaction ID (from customer SMS)',
+        description: 'MTN Mobile Money Transaction ID (from customer SMS) - Read-only for verification',
         placeholder: 'e.g., MP241021.1234.A56789',
+        // Use condition to hide from edit, tenants view only in custom component
       },
     },
     {
@@ -335,12 +357,6 @@ export const Transactions: CollectionConfig = {
             const expiryDate = new Date();
             expiryDate.setHours(expiryDate.getHours() + 48);
             data.expiresAt = expiryDate.toISOString(); // Convert to ISO string
-          }
-          
-          // Calculate fees if not set
-          if (data.totalAmount && !data.platformFee) {
-            data.platformFee = Math.round(data.totalAmount * 0.1); // 10% platform fee
-            data.tenantAmount = data.totalAmount - data.platformFee;
           }
         }
         return data;

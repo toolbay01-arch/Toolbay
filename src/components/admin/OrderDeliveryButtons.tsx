@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 
 interface OrderDeliveryButtonsProps {
   orderId: string
-  currentStatus: 'pending' | 'shipped' | 'delivered' | 'completed' | 'cancelled'
+  currentStatus: 'pending' | 'shipped' | 'delivered' | 'completed' | 'refunded' | 'cancelled'
   onStatusUpdateAction: () => void
 }
 
@@ -53,7 +53,7 @@ export const OrderDeliveryButtons: React.FC<OrderDeliveryButtonsProps> = ({
     }
   }
 
-  if (currentStatus === 'completed' || currentStatus === 'cancelled') {
+  if (currentStatus === 'completed' || currentStatus === 'cancelled' || currentStatus === 'refunded') {
     return null
   }
 

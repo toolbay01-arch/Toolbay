@@ -144,22 +144,17 @@ export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => 
                     <span className="font-medium">{sale.quantity} {product?.unit || 'unit'}(s)</span>
                   </div>
 
-                  <div className="pt-2 border-t space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Gross:</span>
-                      <span className="font-medium">{sale.totalAmount.toLocaleString()} RWF</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm text-red-600">
-                      <span>Platform Fee (10%):</span>
-                      <span>-{sale.platformFee.toLocaleString()} RWF</span>
-                    </div>
+                  <div className="pt-2 border-t">
                     <div className="flex items-center justify-between font-semibold text-green-600">
                       <span className="flex items-center gap-1">
                         <DollarSign className="h-4 w-4" />
-                        Net Amount:
+                        Total Amount:
                       </span>
-                      <span>{sale.netAmount.toLocaleString()} RWF</span>
+                      <span>{sale.totalAmount.toLocaleString()} RWF</span>
                     </div>
+                    <p className="text-xs text-gray-600 mt-1">
+                      You receive the full amount (no platform fees)
+                    </p>
                   </div>
 
                   <div className="pt-2 text-xs text-gray-500">

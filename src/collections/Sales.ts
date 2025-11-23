@@ -181,28 +181,30 @@ export const Sales: CollectionConfig = {
       required: true,
       min: 0,
       admin: {
-        description: 'Total sale amount before platform fee (RWF)',
+        description: 'Total sale amount (RWF) - Tenant receives full amount',
         readOnly: true,
       }
     },
     {
       name: 'platformFee',
       type: 'number',
-      required: true,
+      defaultValue: 0,
       min: 0,
       admin: {
-        description: 'Platform fee (10%)',
+        description: 'Platform fee (DEPRECATED - Always 0)',
         readOnly: true,
+        condition: () => false, // Hide from UI
       }
     },
     {
       name: 'netAmount',
       type: 'number',
-      required: true,
+      defaultValue: 0,
       min: 0,
       admin: {
-        description: 'Net amount for tenant (after platform fee)',
+        description: 'Net amount (DEPRECATED - Same as totalAmount)',
         readOnly: true,
+        condition: () => false, // Hide from UI
       }
     },
     {

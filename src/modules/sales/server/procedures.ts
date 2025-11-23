@@ -173,9 +173,8 @@ export const salesRouter = createTRPCRouter({
       });
 
       const totalSales = allSales.totalDocs;
-      const totalRevenue = allSales.docs.reduce((sum, sale) => sum + (sale.netAmount || 0), 0);
+      const totalRevenue = allSales.docs.reduce((sum, sale) => sum + (sale.netAmount || sale.totalAmount || 0), 0);
       const totalGrossRevenue = allSales.docs.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0);
-      const totalPlatformFees = allSales.docs.reduce((sum, sale) => sum + (sale.platformFee || 0), 0);
 
       // Count by status
       const statusCounts = {
@@ -195,9 +194,8 @@ export const salesRouter = createTRPCRouter({
 
       return {
         totalSales,
-        totalRevenue, // Net amount after platform fees
-        totalGrossRevenue, // Total before fees
-        totalPlatformFees,
+        totalRevenue, // Full amount (no fees)
+        totalGrossRevenue, // Same as totalRevenue
         averageSaleAmount: totalSales > 0 ? totalRevenue / totalSales : 0,
         statusCounts,
       };

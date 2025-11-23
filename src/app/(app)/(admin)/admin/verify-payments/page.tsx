@@ -194,17 +194,14 @@ function TransactionCard({ transaction, onVerified }: TransactionCardProps) {
         <h4 className="text-sm font-semibold text-gray-700 mb-2">Payment Breakdown</h4>
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-600">You Receive:</span>
+            <span className="text-gray-600">Total Amount:</span>
             <span className="font-semibold text-green-600">
-              {transaction.tenantAmount?.toLocaleString()} RWF (90%)
+              {transaction.totalAmount?.toLocaleString()} RWF
             </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Platform Fee:</span>
-            <span className="text-gray-700">
-              {transaction.platformFee?.toLocaleString()} RWF (10%)
-            </span>
-          </div>
+          <p className="text-xs text-gray-600 mt-1">
+            You receive the full amount (no platform fees)
+          </p>
         </div>
       </div>
 

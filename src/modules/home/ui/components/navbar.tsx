@@ -77,6 +77,7 @@ const customerNavbarItems = [
 const tenantNavbarItems = [
   { href: "/", children: "Home" },
   { href: "/my-products", children: "My Products" },
+  { href: "/transactions", children: "Verify Payments" },
   { href: "/my-sales", children: "My Sales" },
   { href: "/my-account", children: "My Account" },
   { href: "/orders", children: "My Orders" },

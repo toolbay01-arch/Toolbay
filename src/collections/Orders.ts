@@ -38,8 +38,8 @@ export const Orders: CollectionConfig = {
 
             // Calculate amounts
             const totalAmount = doc.totalAmount || 0;
-            const platformFee = Math.round(totalAmount * 0.1);
-            const netAmount = totalAmount - platformFee;
+            const platformFee = 0; // No platform fee
+            const netAmount = totalAmount; // Tenant receives full amount
 
             // Get tenant ID from product
             const tenantId = typeof product.tenant === 'string' ? product.tenant : product.tenant?.id;
@@ -327,6 +327,7 @@ export const Orders: CollectionConfig = {
         { label: "Shipped - Item Sent", value: "shipped" },
         { label: "Delivered - Awaiting Confirmation", value: "delivered" },
         { label: "Completed - Customer Confirmed", value: "completed" },
+        { label: "Refunded", value: "refunded" },
         { label: "Cancelled", value: "cancelled" },
       ],
       admin: {
