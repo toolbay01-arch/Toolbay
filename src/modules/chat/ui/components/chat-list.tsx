@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { User, MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -24,16 +25,37 @@ export function ChatList({
   const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [isWindowVisible, setIsWindowVisible] = useState(true);
+
+  // Track window visibility to pause polling when tab is not active
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsWindowVisible(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   const { data: conversationsData, isLoading } = useQuery({
     ...trpc.chat.getConversations.queryOptions(),
-    staleTime: 30000, // Consider fresh for 30s
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    // Real-time polling for new messages/conversations
+    refetchInterval: isWindowVisible ? 5000 : false, // Poll every 5 seconds when window is visible
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 5 * 60 * 1000,
   });
 
   const { data: unreadData } = useQuery({
     ...trpc.chat.getUnreadCount.queryOptions(),
-    staleTime: 30000,
+    // Poll for unread count updates
+    refetchInterval: isWindowVisible ? 5000 : false,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
     gcTime: 5 * 60 * 1000,
   });
 

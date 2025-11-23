@@ -46,6 +46,19 @@ export function ChatWindow({
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasMarkedAsRead = useRef(false);
   const [previewProductUrl, setPreviewProductUrl] = useState<string | null>(null);
+  const [isWindowVisible, setIsWindowVisible] = useState(true);
+
+  // Track window visibility to pause polling when tab is not active
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsWindowVisible(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   const { data: messagesData, isLoading } = useQuery(
     trpc.chat.getMessages.queryOptions(
@@ -55,7 +68,11 @@ export function ChatWindow({
         page: 1,
       },
       {
-        staleTime: 30000, // Consider fresh for 30s - reduced refetching
+        // Real-time polling configuration
+        refetchInterval: isWindowVisible ? 3000 : false, // Poll every 3 seconds when window is visible
+        refetchIntervalInBackground: false, // Don't poll when tab is not active
+        refetchOnWindowFocus: true, // Refresh when user comes back to tab
+        staleTime: 0, // Always consider data stale for real-time updates
         gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
       }
     )
