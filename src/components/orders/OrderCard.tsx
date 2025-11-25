@@ -61,7 +61,7 @@ export function OrderCard({ order, onConfirmReceiptAction }: OrderCardProps) {
     }
     
     if (!order.sellerUserId) {
-      toast.error('Unable to contact seller')
+      toast.error('Unable to contact seller. Please try again later.')
       return
     }
     
@@ -72,10 +72,13 @@ export function OrderCard({ order, onConfirmReceiptAction }: OrderCardProps) {
     
     const productName = order.productName || order.products?.[0]?.title || 'your order'
     
+    // Build a rich initial message like the product page does
+    const initialMessage = `Hello, I have a question about my order:\n\nOrder #${order.orderNumber}\nProduct: ${productName}\nAmount: ${(order.totalAmount || 0).toLocaleString()} RWF\n\nPlease contact me regarding this order.`
+    
     startConversation.mutate({
       participantId: order.sellerUserId,
       orderId: order.id,
-      initialMessage: `Hi, I have a question about ${productName} (Order #${order.orderNumber})`,
+      initialMessage: initialMessage,
     })
   }
 
@@ -144,20 +147,23 @@ export function OrderCard({ order, onConfirmReceiptAction }: OrderCardProps) {
                   </Button>
                 )}
 
-                {/* Message Seller */}
+                {/* Contact Seller */}
                 {order.sellerUserId && order.sellerUserId !== session?.user?.id && (
                   <Button
                     onClick={handleMessageSeller}
                     disabled={startConversation.isPending}
                     size="sm"
-                    variant="outline"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     {startConversation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                        Starting...
+                      </>
                     ) : (
                       <>
                         <MessageCircle className="h-4 w-4 mr-1" />
-                        Chat
+                        Contact Seller
                       </>
                     )}
                   </Button>

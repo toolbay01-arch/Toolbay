@@ -103,7 +103,7 @@ export function OrdersView() {
     }
 
     if (!order.sellerUserId) {
-      toast.error('Unable to contact seller')
+      toast.error('Unable to contact seller. Please try again later.')
       return
     }
 
@@ -112,10 +112,14 @@ export function OrdersView() {
       return
     }
 
+    // Build a rich initial message like the product page does
+    const orderUrl = `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/orders`
+    const initialMessage = `Hello, I have a question about my order:\n\nOrder #${order.orderNumber}\nProduct: ${order.productName}\nAmount: ${(order.totalAmount || 0).toLocaleString()} RWF\n\nPlease contact me regarding this order.`
+
     startConversation.mutate({
       participantId: order.sellerUserId,
       orderId: order.id,
-      initialMessage: `Hi, I have a question about ${order.productName} (Order #${order.orderNumber})`,
+      initialMessage: initialMessage,
     })
   }
 
@@ -259,15 +263,15 @@ export function OrdersView() {
                               )}
                             </button>
                           )}
-                          {/* Message Seller */}
+                          {/* Contact Seller */}
                           {order.sellerUserId && order.sellerUserId !== session?.user?.id && (
                             <button
                               onClick={() => handleMessageSeller(order)}
                               disabled={startConversation.isPending}
-                              className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded transition-colors flex items-center gap-1"
+                              className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded transition-all hover:shadow-md flex items-center gap-1"
                             >
                               <MessageCircle className="h-3 w-3" />
-                              Message
+                              {startConversation.isPending ? 'Starting...' : 'Contact Seller'}
                             </button>
                           )}
                           {/* Status indicators */}
@@ -289,77 +293,70 @@ export function OrdersView() {
             </div>
           </div>
         ) : (
-          /* Grid View */
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+          /* Grid View - Compact cards */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3">
             {orders.map((order: any) => (
               <div
                 key={order.id}
-                className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-2 border-blue-600 rounded-lg bg-white overflow-hidden flex flex-col"
+                className="hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all border border-blue-600 rounded-lg bg-white overflow-hidden flex flex-col"
               >
-                {/* Product Image */}
+                {/* Product Image - Smaller */}
                 {order.productImage ? (
                   <img
                     src={order.productImage}
                     alt={order.productName}
-                    className="aspect-square w-full object-cover border-b-2 border-blue-600"
+                    className="aspect-square w-full object-cover border-b border-blue-600"
                   />
                 ) : (
-                  <div className="aspect-square w-full flex items-center justify-center bg-gray-100 border-b-2 border-blue-600">
-                    <Package className="h-16 w-16 text-gray-300" />
+                  <div className="aspect-square w-full flex items-center justify-center bg-gray-100 border-b border-blue-600">
+                    <Package className="h-8 w-8 text-gray-300" />
                   </div>
                 )}
 
-                {/* Card Content */}
-                <div className="p-4 flex flex-col gap-2 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="font-mono text-xs text-blue-700">#{order.orderNumber}</div>
+                {/* Card Content - Compact */}
+                <div className="p-2 flex flex-col gap-1 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <div className="font-mono text-[10px] text-blue-700 truncate">#{order.orderNumber}</div>
                     <OrderStatusBadge status={order.status} />
                   </div>
-                  <div className="font-semibold text-lg text-gray-900 truncate">{order.productName}</div>
-                  <div className="text-xs text-gray-500 truncate">{order.storeName || 'Unknown Store'}</div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-green-600">
+                  <div className="font-medium text-sm text-gray-900 truncate">{order.productName}</div>
+                  <div className="text-[10px] text-gray-500 truncate">{order.storeName || 'Unknown Store'}</div>
+                  <div className="flex items-center gap-1">
+                    <span className="font-semibold text-green-600 text-xs">
                       {(order.totalAmount || 0).toLocaleString()} RWF
                     </span>
-                    <span className="text-xs text-gray-700">Qty: {order.quantity}</span>
+                    <span className="text-[10px] text-gray-500">x{order.quantity}</span>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {/* Confirm Receipt for delivered orders */}
+                  {/* Action Buttons - Compact */}
+                  <div className="flex flex-wrap gap-1 mt-1">
                     {order.status === 'delivered' && !order.received && (
                       <button
                         onClick={() => handleConfirmReceipt(order.id)}
                         disabled={confirmReceiptMutation.isPending}
-                        className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded transition-colors"
+                        className="px-2 py-0.5 text-[10px] font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded transition-colors"
                       >
-                        {confirmReceiptMutation.isPending ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          '✅ Confirm Receipt'
-                        )}
+                        {confirmReceiptMutation.isPending ? '...' : '✅ Confirm'}
                       </button>
                     )}
-                    {/* Message Seller */}
                     {order.sellerUserId && order.sellerUserId !== session?.user?.id && (
                       <button
                         onClick={() => handleMessageSeller(order)}
                         disabled={startConversation.isPending}
-                        className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded transition-colors flex items-center gap-1"
+                        className="px-2 py-0.5 text-[10px] font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded transition-all flex items-center gap-0.5"
                       >
-                        <MessageCircle className="h-3 w-3" />
-                        Chat
+                        <MessageCircle className="h-2.5 w-2.5" />
+                        {startConversation.isPending ? '...' : 'Chat'}
                       </button>
                     )}
-                    {/* Status indicators */}
                     {order.status === 'pending' && (
-                      <span className="text-xs text-yellow-600 font-medium">⏳ Awaiting shipment</span>
+                      <span className="text-[10px] text-yellow-600 font-medium">⏳</span>
                     )}
                     {order.status === 'shipped' && (
-                      <span className="text-xs text-blue-600 font-medium">🚚 On the way</span>
+                      <span className="text-[10px] text-blue-600 font-medium">🚚</span>
                     )}
                     {order.status === 'completed' && (
-                      <span className="text-xs text-green-600 font-medium">✅ Completed</span>
+                      <span className="text-[10px] text-green-600 font-medium">✅</span>
                     )}
                   </div>
                 </div>

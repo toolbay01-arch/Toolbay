@@ -152,45 +152,45 @@ function PendingTransactionsList() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3">
           {transactions.map((transaction: Transaction) => (
-            <div key={transaction.id} className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-2 border-blue-600 rounded-lg bg-white overflow-hidden flex flex-col">
-              <div className="p-4 flex flex-col gap-2 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="font-mono text-xs text-blue-700">#{transaction.paymentReference}</div>
+            <div key={transaction.id} className="hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all border border-blue-600 rounded-lg bg-white overflow-hidden flex flex-col">
+              <div className="p-2 flex flex-col gap-1 flex-1">
+                <div className="flex items-center justify-between gap-1">
+                  <div className="font-mono text-[10px] text-blue-700 truncate">#{transaction.paymentReference}</div>
                   <TransactionStatusBadge status={transaction.status} />
                 </div>
-                <div className="font-semibold text-lg text-gray-900 truncate">{transaction.customerName}</div>
-                <div className="text-xs text-gray-500 truncate">{transaction.customerEmail}</div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-green-600">{transaction.totalAmount?.toLocaleString()} RWF</span>
-                  <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{transaction.mtnTransactionId || 'Not submitted'}</span>
+                <div className="font-medium text-sm text-gray-900 truncate">{transaction.customerName}</div>
+                <div className="text-[10px] text-gray-500 truncate">{transaction.customerEmail}</div>
+                <div className="flex flex-col gap-1">
+                  <span className="font-semibold text-green-600 text-xs">{transaction.totalAmount?.toLocaleString()} RWF</span>
+                  <span className="font-mono text-[10px] bg-gray-100 px-1 py-0.5 rounded truncate">{transaction.mtnTransactionId || 'Not submitted'}</span>
                 </div>
-                <div className="flex gap-2 mt-2">
+                <div className="flex flex-wrap gap-1 mt-1">
                   {transaction.status === 'awaiting_verification' && (
                     <>
                       <button
                         onClick={() => window.confirm('Open verification modal in list view for this card.') && alert('Use list view to verify.')}
-                        className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors"
+                        className="px-2 py-0.5 text-[10px] font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors"
                       >
                         ✅ Verify
                       </button>
                       <button
                         onClick={() => window.confirm('Use list view to reject this payment.') && alert('Use list view to reject.')}
-                        className="px-3 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+                        className="px-2 py-0.5 text-[10px] font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
                       >
                         ❌ Reject
                       </button>
                     </>
                   )}
                   {transaction.status === 'verified' && (
-                    <span className="text-xs text-green-600 font-medium">✅ Verified</span>
+                    <span className="text-[10px] text-green-600 font-medium">✅ Verified</span>
                   )}
                   {transaction.status === 'rejected' && (
-                    <span className="text-xs text-red-600 font-medium">❌ Rejected</span>
+                    <span className="text-[10px] text-red-600 font-medium">❌ Rejected</span>
                   )}
                   {transaction.status === 'expired' && (
-                    <span className="text-xs text-gray-600 font-medium">⏱️ Expired</span>
+                    <span className="text-[10px] text-gray-600 font-medium">⏱️ Expired</span>
                   )}
                 </div>
               </div>
