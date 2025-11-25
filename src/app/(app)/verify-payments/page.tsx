@@ -6,12 +6,13 @@ import { useState } from 'react'
 import { formatDistance } from 'date-fns'
 import type { Transaction } from '@/payload-types'
 import Link from 'next/link'
+import { PackageIcon } from 'lucide-react';
 
 export default function VerifyPaymentsPage() {
   const [activeTab, setActiveTab] = useState<'payments' | 'orders'>('payments')
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 mt-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Payment & Order Verification</h1>
         <p className="text-gray-600">
@@ -62,14 +63,19 @@ function LoadingState() {
   )
 }
 
+import { Grid3x3, List } from "lucide-react";
+
 function PendingTransactionsList() {
-  const trpc = useTRPC()
-  const { data: transactions, isLoading, refetch } = useQuery(
-    trpc.admin.getPendingTransactions.queryOptions()
-  )
+  const trpc = useTRPC();
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const { data: transactions, isLoading, refetch } = useQuery({
+    ...trpc.admin.getPendingTransactions.queryOptions(),
+    refetchInterval: autoRefresh ? 5000 : false,
+  });
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   if (isLoading) {
-    return <LoadingState />
+    return <LoadingState />;
   }
 
   if (!transactions || transactions.length === 0) {
@@ -83,7 +89,7 @@ function PendingTransactionsList() {
           Transaction history will appear here once customers make purchases.
         </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -97,46 +103,103 @@ function PendingTransactionsList() {
         </p>
       </div>
 
-      {/* Transactions Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Order Ref
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Customer
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  MTN TX ID
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {transactions.map((transaction: Transaction) => (
-                <TransactionRow 
-                  key={transaction.id} 
-                  transaction={transaction} 
-                  onVerified={() => refetch()}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* View & Auto-Refresh Toggle */}
+      <div className="flex flex-wrap justify-end gap-2 pb-2">
+        <button
+          className={`gap-2 px-3 py-1 rounded border ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'}`}
+          onClick={() => setViewMode('grid')}
+        >
+          <Grid3x3 className="h-4 w-4" /> Grid
+        </button>
+        <button
+          className={`gap-2 px-3 py-1 rounded border ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'}`}
+          onClick={() => setViewMode('list')}
+        >
+          <List className="h-4 w-4" /> List
+        </button>
+        <button
+          className={`gap-2 px-3 py-1 rounded border ${autoRefresh ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
+          onClick={() => setAutoRefresh((v) => !v)}
+        >
+          {autoRefresh ? 'Auto-Refresh: On' : 'Auto-Refresh: Off'}
+        </button>
       </div>
+
+      {viewMode === 'list' ? (
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order Ref</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Customer</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">MTN TX ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Amount</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {transactions.map((transaction: Transaction) => (
+                  <TransactionRow 
+                    key={transaction.id} 
+                    transaction={transaction} 
+                    onVerified={() => refetch()}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+          {transactions.map((transaction: Transaction) => (
+            <div key={transaction.id} className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-2 border-blue-600 rounded-lg bg-white overflow-hidden flex flex-col">
+              <div className="p-4 flex flex-col gap-2 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-mono text-xs text-blue-700">#{transaction.paymentReference}</div>
+                  <TransactionStatusBadge status={transaction.status} />
+                </div>
+                <div className="font-semibold text-lg text-gray-900 truncate">{transaction.customerName}</div>
+                <div className="text-xs text-gray-500 truncate">{transaction.customerEmail}</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-green-600">{transaction.totalAmount?.toLocaleString()} RWF</span>
+                  <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{transaction.mtnTransactionId || 'Not submitted'}</span>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  {transaction.status === 'awaiting_verification' && (
+                    <>
+                      <button
+                        onClick={() => window.confirm('Open verification modal in list view for this card.') && alert('Use list view to verify.')}
+                        className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors"
+                      >
+                        ✅ Verify
+                      </button>
+                      <button
+                        onClick={() => window.confirm('Use list view to reject this payment.') && alert('Use list view to reject.')}
+                        className="px-3 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+                      >
+                        ❌ Reject
+                      </button>
+                    </>
+                  )}
+                  {transaction.status === 'verified' && (
+                    <span className="text-xs text-green-600 font-medium">✅ Verified</span>
+                  )}
+                  {transaction.status === 'rejected' && (
+                    <span className="text-xs text-red-600 font-medium">❌ Rejected</span>
+                  )}
+                  {transaction.status === 'expired' && (
+                    <span className="text-xs text-gray-600 font-medium">⏱️ Expired</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
-  )
+  );
 }
 
 interface TransactionRowProps {
@@ -341,26 +404,29 @@ function EmptyState() {
   )
 }
 
-function PendingOrdersList() {
-  const trpc = useTRPC()
-  const { data: orders, isLoading, refetch } = useQuery(
-    trpc.sales.getPendingOrders.queryOptions()
-  )
 
+function PendingOrdersList() {
+  const trpc = useTRPC();
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const { data: orders, isLoading, refetch } = useQuery({
+    ...trpc.sales.getPendingOrders.queryOptions(),
+    refetchInterval: autoRefresh ? 5000 : false,
+  });
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const updateOrderStatus = useMutation(
     trpc.sales.updateOrderStatus.mutationOptions({
       onSuccess: () => {
-        alert('✅ Order status updated successfully!')
-        refetch()
+        alert('✅ Order status updated successfully!');
+        refetch();
       },
       onError: (error) => {
-        alert(`❌ Error: ${error.message}`)
+        alert(`❌ Error: ${error.message}`);
       },
     })
-  )
+  );
 
   if (isLoading) {
-    return <LoadingState />
+    return <LoadingState />;
   }
 
   if (!orders || orders.length === 0) {
@@ -380,7 +446,7 @@ function PendingOrdersList() {
           View All Sales
         </Link>
       </div>
-    )
+    );
   }
 
   return (
@@ -394,127 +460,195 @@ function PendingOrdersList() {
         </p>
       </div>
 
-      {/* Orders Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Product
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Order #
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Customer
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Qty
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {orders.map((order: any) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      {order.productImage && (
-                        <img 
-                          src={order.productImage} 
-                          alt={order.productName}
-                          className="w-12 h-12 object-cover rounded border border-gray-200"
-                        />
-                      )}
-                      <div className="text-sm font-medium text-gray-900">
-                        {order.productName}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <div className="font-mono text-xs">
-                      #{order.orderNumber || order.saleNumber}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <div className="font-medium text-gray-900">{order.customerName}</div>
-                    <div className="text-xs text-gray-500">{order.customerEmail}</div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
-                    {order.quantity}
-                  </td>
-                  <td className="px-4 py-3 text-sm font-semibold text-green-600">
-                    {order.totalAmount.toLocaleString()} RWF
-                  </td>
-                  <td className="px-4 py-3">
-                    <OrderStatusBadge status={order.status} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      {order.status === 'pending' && (
-                        <button
-                          onClick={() => {
-                            if (confirm('Mark this order as shipped?')) {
-                              updateOrderStatus.mutate({
-                                orderId: order.orderId,
-                                status: 'shipped',
-                              })
-                            }
-                          }}
-                          disabled={updateOrderStatus.isPending}
-                          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded transition-colors"
-                        >
-                          🚚 Ship
-                        </button>
-                      )}
-
-                      {order.status === 'shipped' && (
-                        <button
-                          onClick={() => {
-                            if (confirm('Mark this order as delivered?')) {
-                              updateOrderStatus.mutate({
-                                orderId: order.orderId,
-                                status: 'delivered',
-                              })
-                            }
-                          }}
-                          disabled={updateOrderStatus.isPending}
-                          className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded transition-colors"
-                        >
-                          📦 Deliver
-                        </button>
-                      )}
-
-                      {order.status === 'delivered' && (
-                        <span className="text-xs text-purple-600 font-medium">
-                          ⏳ Awaiting confirmation
-                        </span>
-                      )}
-
-                      {order.status === 'completed' && (
-                        <span className="text-xs text-green-600 font-medium">
-                          ✅ Completed
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* View & Auto-Refresh Toggle */}
+      <div className="flex flex-wrap justify-end gap-2 pb-2">
+        <button
+          className={`gap-2 px-3 py-1 rounded border ${viewMode === 'grid' ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
+          onClick={() => setViewMode('grid')}
+        >
+          <Grid3x3 className="h-4 w-4" /> Grid
+        </button>
+        <button
+          className={`gap-2 px-3 py-1 rounded border ${viewMode === 'list' ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
+          onClick={() => setViewMode('list')}
+        >
+          <List className="h-4 w-4" /> List
+        </button>
+        <button
+          className={`gap-2 px-3 py-1 rounded border ${autoRefresh ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
+          onClick={() => setAutoRefresh((v) => !v)}
+        >
+          {autoRefresh ? 'Auto-Refresh: On' : 'Auto-Refresh: Off'}
+        </button>
       </div>
+
+      {viewMode === 'list' ? (
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Product</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order #</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Customer</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Qty</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Amount</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {orders.map((order: any) => (
+                  <tr key={order.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        {order.productImage && (
+                          <img 
+                            src={order.productImage} 
+                            alt={order.productName}
+                            className="w-12 h-12 object-cover rounded border border-gray-200"
+                          />
+                        )}
+                        <div className="text-sm font-medium text-gray-900">
+                          {order.productName}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <div className="font-mono text-xs">
+                        #{order.orderNumber || order.saleNumber}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <div className="font-medium text-gray-900">{order.customerName}</div>
+                      <div className="text-xs text-gray-500">{order.customerEmail}</div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      {order.quantity}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-semibold text-green-600">
+                      {order.totalAmount.toLocaleString()} RWF
+                    </td>
+                    <td className="px-4 py-3">
+                      <OrderStatusBadge status={order.status} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2">
+                        {order.status === 'pending' && (
+                          <button
+                            onClick={() => {
+                              if (confirm('Mark this order as shipped?')) {
+                                updateOrderStatus.mutate({
+                                  orderId: order.orderId,
+                                  status: 'shipped',
+                                });
+                              }
+                            }}
+                            disabled={updateOrderStatus.isPending}
+                            className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded transition-colors"
+                          >
+                            🚚 Ship
+                          </button>
+                        )}
+                        {order.status === 'shipped' && (
+                          <button
+                            onClick={() => {
+                              if (confirm('Mark this order as delivered?')) {
+                                updateOrderStatus.mutate({
+                                  orderId: order.orderId,
+                                  status: 'delivered',
+                                });
+                              }
+                            }}
+                            disabled={updateOrderStatus.isPending}
+                            className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded transition-colors"
+                          >
+                            📦 Deliver
+                          </button>
+                        )}
+                        {order.status === 'delivered' && (
+                          <span className="text-xs text-purple-600 font-medium">⏳ Awaiting confirmation</span>
+                        )}
+                        {order.status === 'completed' && (
+                          <span className="text-xs text-green-600 font-medium">✅ Completed</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+          {orders.map((order: any) => (
+            <div key={order.id} className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-2 border-green-600 rounded-lg bg-white overflow-hidden flex flex-col">
+              {order.productImage ? (
+                <img src={order.productImage} alt={order.productName} className="aspect-square w-full object-cover border-b-2 border-green-600" />
+              ) : (
+                <div className="aspect-square w-full flex items-center justify-center bg-gray-100 border-b-2 border-green-600">
+                  <PackageIcon className="h-16 w-16 text-gray-300" />
+                </div>
+              )}
+              <div className="p-4 flex flex-col gap-2 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-mono text-xs text-green-700">#{order.orderNumber || order.saleNumber}</div>
+                  <OrderStatusBadge status={order.status} />
+                </div>
+                <div className="font-semibold text-lg text-gray-900 truncate">{order.productName}</div>
+                <div className="text-xs text-gray-500 truncate">{order.customerName}</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-green-600">{order.totalAmount.toLocaleString()} RWF</span>
+                  <span className="text-xs text-gray-700">Qty: {order.quantity}</span>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  {order.status === 'pending' && (
+                    <button
+                      onClick={() => {
+                        if (confirm('Mark this order as shipped?')) {
+                          updateOrderStatus.mutate({
+                            orderId: order.orderId,
+                            status: 'shipped',
+                          });
+                        }
+                      }}
+                      disabled={updateOrderStatus.isPending}
+                      className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded transition-colors"
+                    >
+                      🚚 Ship
+                    </button>
+                  )}
+                  {order.status === 'shipped' && (
+                    <button
+                      onClick={() => {
+                        if (confirm('Mark this order as delivered?')) {
+                          updateOrderStatus.mutate({
+                            orderId: order.orderId,
+                            status: 'delivered',
+                          });
+                        }
+                      }}
+                      disabled={updateOrderStatus.isPending}
+                      className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded transition-colors"
+                    >
+                      📦 Deliver
+                    </button>
+                  )}
+                  {order.status === 'delivered' && (
+                    <span className="text-xs text-purple-600 font-medium">⏳ Awaiting confirmation</span>
+                  )}
+                  {order.status === 'completed' && (
+                    <span className="text-xs text-green-600 font-medium">✅ Completed</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
-  )
+  );
 }
 
 function TransactionStatusBadge({ status }: { status: string }) {

@@ -3,156 +3,371 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTRPC } from '@/trpc/client'
-import { OrderCard } from '@/components/orders/OrderCard'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Loader2, PackageX, RefreshCw, Grid3x3, List } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Grid3x3, List, Package, MessageCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
+import Link from 'next/link'
+
+// Order status badge matching verify-payments style
+function OrderStatusBadge({ status }: { status: string }) {
+  const config: Record<string, { label: string; className: string }> = {
+    pending: { label: 'Pending', className: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
+    shipped: { label: 'Shipped', className: 'bg-blue-100 text-blue-800 border-blue-300' },
+    delivered: { label: 'Delivered', className: 'bg-purple-100 text-purple-800 border-purple-300' },
+    completed: { label: 'Completed', className: 'bg-green-100 text-green-800 border-green-300' },
+    cancelled: { label: 'Cancelled', className: 'bg-red-100 text-red-800 border-red-300' },
+  }
+
+  const statusConfig = config[status] || { label: status, className: 'bg-gray-100 text-gray-800' }
+
+  return (
+    <span className={`px-2 py-1 text-xs font-medium rounded-full border ${statusConfig.className}`}>
+      {statusConfig.label}
+    </span>
+  )
+}
+
+// Loading state
+function LoadingState() {
+  return (
+    <div className="text-center py-12">
+      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <p className="mt-4 text-gray-600">Loading your orders...</p>
+    </div>
+  )
+}
 
 export function OrdersView() {
   const trpc = useTRPC()
+  const router = useRouter()
   const queryClient = useQueryClient()
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'shipped' | 'delivered' | 'completed' | 'cancelled'>('all')
   
   // Responsive view mode: list on mobile, grid on desktop by default
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  
+  const [autoRefresh, setAutoRefresh] = useState(false)
+
   useEffect(() => {
-    // Set initial view based on screen size
-    const isMobile = window.innerWidth < 768;
-    setViewMode(isMobile ? 'list' : 'grid');
-  }, []);
+    const isMobile = window.innerWidth < 768
+    setViewMode(isMobile ? 'list' : 'grid')
+  }, [])
 
-  const { data, isLoading, refetch, isRefetching } = useQuery(trpc.orders.getMyOrders.queryOptions({
-    status: statusFilter === 'all' ? undefined : statusFilter,
-    limit: 20,
-    page: 1,
-  }))
+  // Fetch orders with auto-refresh support
+  const { data, isLoading, refetch } = useQuery({
+    ...trpc.orders.getMyOrders.queryOptions({
+      limit: 50,
+      page: 1,
+    }),
+    refetchInterval: autoRefresh ? 5000 : false,
+  })
 
-  const confirmReceiptMutation = useMutation(trpc.orders.confirmReceipt.mutationOptions({
-    onSuccess: () => {
-      toast.success('Receipt confirmed! Order marked as completed.')
-      queryClient.invalidateQueries(trpc.orders.getMyOrders.queryFilter())
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to confirm receipt')
-    },
-  }))
+  // Get session for chat functionality
+  const { data: session } = useQuery(trpc.auth.session.queryOptions())
 
-  const handleConfirmReceipt = async (orderId: string) => {
-    await confirmReceiptMutation.mutateAsync({ orderId })
+  // Confirm receipt mutation
+  const confirmReceiptMutation = useMutation(
+    trpc.orders.confirmReceipt.mutationOptions({
+      onSuccess: () => {
+        toast.success('Receipt confirmed! Order marked as completed.')
+        queryClient.invalidateQueries(trpc.orders.getMyOrders.queryFilter())
+      },
+      onError: (error) => {
+        toast.error(error.message || 'Failed to confirm receipt')
+      },
+    })
+  )
+
+  // Start conversation mutation
+  const startConversation = useMutation(
+    trpc.chat.startConversation.mutationOptions({
+      onSuccess: (data) => {
+        router.push(`/chat/${data.id}`)
+        toast.success('Chat started with seller')
+      },
+      onError: (error) => {
+        toast.error(error.message || 'Failed to start chat')
+      },
+    })
+  )
+
+  const handleConfirmReceipt = (orderId: string) => {
+    if (confirm('Confirm that you have received this order in good condition?')) {
+      confirmReceiptMutation.mutate({ orderId })
+    }
+  }
+
+  const handleMessageSeller = (order: any) => {
+    if (!session?.user) {
+      toast.error('Please log in to message the seller')
+      router.push('/sign-in?redirect=/orders')
+      return
+    }
+
+    if (!order.sellerUserId) {
+      toast.error('Unable to contact seller')
+      return
+    }
+
+    if (order.sellerUserId === session.user.id) {
+      toast.error('You cannot message yourself')
+      return
+    }
+
+    startConversation.mutate({
+      participantId: order.sellerUserId,
+      orderId: order.id,
+      initialMessage: `Hi, I have a question about ${order.productName} (Order #${order.orderNumber})`,
+    })
   }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="container mx-auto px-4 py-8 mt-6">
+        <LoadingState />
       </div>
     )
   }
 
   const orders = data?.orders || []
 
-  return (
-    <div className="container max-w-5xl mx-auto py-8 px-4 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">My Orders</h1>
-          <p className="text-muted-foreground mt-1">
-            Track your order status and confirm receipt
-          </p>
+  if (orders.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-8 mt-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">My Orders</h1>
+          <p className="text-gray-600">Track your purchases and delivery status</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isRefetching}
-        >
-          {isRefetching ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
-          )}
-          Refresh
-        </Button>
+        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+          <div className="text-4xl mb-4">📦</div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Orders Yet</h3>
+          <p className="text-gray-600 mb-4">
+            Your orders will appear here once you make a purchase.
+          </p>
+          <Link
+            href="/"
+            className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+          >
+            Browse Products
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8 mt-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">My Orders</h1>
+        <p className="text-gray-600">Track your purchases and delivery status</p>
       </div>
 
-      {/* Status Filter Tabs */}
-      <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="shipped">Shipped</TabsTrigger>
-          <TabsTrigger value="delivered">Delivered</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-          <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
-        </TabsList>
+      <div className="space-y-4">
+        {/* Header with count */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h2 className="text-lg font-semibold text-blue-900 mb-1">
+            All Orders ({orders.length})
+          </h2>
+          <p className="text-sm text-blue-700">
+            Track your order status and confirm receipt when delivered
+          </p>
+        </div>
 
-        <TabsContent value={statusFilter} className="mt-6 space-y-4">
-          {orders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
-              <PackageX className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold">No orders found</h3>
-              <p className="text-muted-foreground mt-2">
-                {statusFilter === 'all' 
-                  ? "You haven't placed any orders yet."
-                  : `You don't have any ${statusFilter} orders.`
-                }
-              </p>
+        {/* View & Auto-Refresh Toggle */}
+        <div className="flex flex-wrap justify-end gap-2 pb-2">
+          <button
+            className={`gap-2 px-3 py-1 rounded border flex items-center ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'}`}
+            onClick={() => setViewMode('grid')}
+          >
+            <Grid3x3 className="h-4 w-4" /> Grid
+          </button>
+          <button
+            className={`gap-2 px-3 py-1 rounded border flex items-center ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'}`}
+            onClick={() => setViewMode('list')}
+          >
+            <List className="h-4 w-4" /> List
+          </button>
+          <button
+            className={`gap-2 px-3 py-1 rounded border flex items-center ${autoRefresh ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
+            onClick={() => setAutoRefresh((v) => !v)}
+          >
+            {autoRefresh ? 'Auto-Refresh: On' : 'Auto-Refresh: Off'}
+          </button>
+        </div>
+
+        {/* List View */}
+        {viewMode === 'list' ? (
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Product</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order #</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Store</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Qty</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Amount</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {orders.map((order: any) => (
+                    <tr key={order.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {order.productImage ? (
+                            <img
+                              src={order.productImage}
+                              alt={order.productName}
+                              className="w-12 h-12 object-cover rounded border border-gray-200"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 flex items-center justify-center bg-gray-100 border border-gray-200 rounded">
+                              <Package className="h-6 w-6 text-gray-300" />
+                            </div>
+                          )}
+                          <div className="text-sm font-medium text-gray-900 max-w-[150px] truncate">
+                            {order.productName}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="font-mono text-xs">#{order.orderNumber}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="text-gray-900">{order.storeName || 'Unknown Store'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{order.quantity}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-green-600">
+                        {(order.totalAmount || 0).toLocaleString()} RWF
+                      </td>
+                      <td className="px-4 py-3">
+                        <OrderStatusBadge status={order.status} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          {/* Confirm Receipt for delivered orders */}
+                          {order.status === 'delivered' && !order.received && (
+                            <button
+                              onClick={() => handleConfirmReceipt(order.id)}
+                              disabled={confirmReceiptMutation.isPending}
+                              className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded transition-colors"
+                            >
+                              {confirmReceiptMutation.isPending ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                '✅ Confirm Receipt'
+                              )}
+                            </button>
+                          )}
+                          {/* Message Seller */}
+                          {order.sellerUserId && order.sellerUserId !== session?.user?.id && (
+                            <button
+                              onClick={() => handleMessageSeller(order)}
+                              disabled={startConversation.isPending}
+                              className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded transition-colors flex items-center gap-1"
+                            >
+                              <MessageCircle className="h-3 w-3" />
+                              Message
+                            </button>
+                          )}
+                          {/* Status indicators */}
+                          {order.status === 'pending' && (
+                            <span className="text-xs text-yellow-600 font-medium">⏳ Awaiting shipment</span>
+                          )}
+                          {order.status === 'shipped' && (
+                            <span className="text-xs text-blue-600 font-medium">🚚 On the way</span>
+                          )}
+                          {order.status === 'completed' && (
+                            <span className="text-xs text-green-600 font-medium">✅ Completed</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ) : (
-            <>
-              {/* View Toggle */}
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className="gap-2"
-                >
-                  <Grid3x3 className="h-4 w-4" />
-                  Grid
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className="gap-2"
-                >
-                  <List className="h-4 w-4" />
-                  List
-                </Button>
-              </div>
-
-              {/* Orders Display */}
-              <div className={cn(
-                viewMode === 'grid' 
-                  ? "grid grid-cols-1 md:grid-cols-2 gap-4"
-                  : "space-y-4"
-              )}>
-                {orders.map((order) => (
-                  <OrderCard
-                    key={order.id}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    order={order as any}
-                    onConfirmReceiptAction={handleConfirmReceipt}
-                    viewMode={viewMode}
+          </div>
+        ) : (
+          /* Grid View */
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+            {orders.map((order: any) => (
+              <div
+                key={order.id}
+                className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-2 border-blue-600 rounded-lg bg-white overflow-hidden flex flex-col"
+              >
+                {/* Product Image */}
+                {order.productImage ? (
+                  <img
+                    src={order.productImage}
+                    alt={order.productName}
+                    className="aspect-square w-full object-cover border-b-2 border-blue-600"
                   />
-                ))}
-              </div>
-              
-              {/* Pagination Info */}
-              {data?.pagination && (
-                <div className="text-center text-sm text-muted-foreground pt-4">
-                  Showing {orders.length} of {data.pagination.totalDocs} orders
+                ) : (
+                  <div className="aspect-square w-full flex items-center justify-center bg-gray-100 border-b-2 border-blue-600">
+                    <Package className="h-16 w-16 text-gray-300" />
+                  </div>
+                )}
+
+                {/* Card Content */}
+                <div className="p-4 flex flex-col gap-2 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-mono text-xs text-blue-700">#{order.orderNumber}</div>
+                    <OrderStatusBadge status={order.status} />
+                  </div>
+                  <div className="font-semibold text-lg text-gray-900 truncate">{order.productName}</div>
+                  <div className="text-xs text-gray-500 truncate">{order.storeName || 'Unknown Store'}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-green-600">
+                      {(order.totalAmount || 0).toLocaleString()} RWF
+                    </span>
+                    <span className="text-xs text-gray-700">Qty: {order.quantity}</span>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {/* Confirm Receipt for delivered orders */}
+                    {order.status === 'delivered' && !order.received && (
+                      <button
+                        onClick={() => handleConfirmReceipt(order.id)}
+                        disabled={confirmReceiptMutation.isPending}
+                        className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded transition-colors"
+                      >
+                        {confirmReceiptMutation.isPending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          '✅ Confirm Receipt'
+                        )}
+                      </button>
+                    )}
+                    {/* Message Seller */}
+                    {order.sellerUserId && order.sellerUserId !== session?.user?.id && (
+                      <button
+                        onClick={() => handleMessageSeller(order)}
+                        disabled={startConversation.isPending}
+                        className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded transition-colors flex items-center gap-1"
+                      >
+                        <MessageCircle className="h-3 w-3" />
+                        Chat
+                      </button>
+                    )}
+                    {/* Status indicators */}
+                    {order.status === 'pending' && (
+                      <span className="text-xs text-yellow-600 font-medium">⏳ Awaiting shipment</span>
+                    )}
+                    {order.status === 'shipped' && (
+                      <span className="text-xs text-blue-600 font-medium">🚚 On the way</span>
+                    )}
+                    {order.status === 'completed' && (
+                      <span className="text-xs text-green-600 font-medium">✅ Completed</span>
+                    )}
+                  </div>
                 </div>
-              )}
-            </>
-          )}
-        </TabsContent>
-      </Tabs>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

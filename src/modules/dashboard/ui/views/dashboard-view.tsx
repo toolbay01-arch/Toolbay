@@ -1,13 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTRPC } from '@/trpc/client'
 import { OrderStats } from '@/components/dashboard/OrderStats'
 import { OrderCard } from '@/components/orders/OrderCard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { toast } from 'sonner'
 import { 
   Package, 
   ShoppingBag, 
@@ -19,6 +20,7 @@ import {
 
 export function DashboardView() {
   const trpc = useTRPC()
+  const queryClient = useQueryClient()
   
   // Get session to check user role
   const { data: session } = useQuery(
@@ -38,9 +40,22 @@ export function DashboardView() {
     })
   )
 
+  // Confirm receipt mutation
+  const confirmReceiptMutation = useMutation(
+    trpc.orders.confirmReceipt.mutationOptions({
+      onSuccess: () => {
+        toast.success('Receipt confirmed! Order marked as completed.')
+        queryClient.invalidateQueries(trpc.orders.getMyOrders.queryFilter())
+        queryClient.invalidateQueries(trpc.orders.getDashboardStats.queryFilter())
+      },
+      onError: (error) => {
+        toast.error(error.message || 'Failed to confirm receipt')
+      },
+    })
+  )
+
   const handleConfirmReceipt = async (orderId: string) => {
-    // This will be handled by the OrderCard component
-    console.log('Confirm receipt:', orderId)
+    await confirmReceiptMutation.mutateAsync({ orderId })
   }
 
   if (statsLoading) {

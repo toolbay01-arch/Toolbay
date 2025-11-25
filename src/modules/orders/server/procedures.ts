@@ -46,7 +46,7 @@ export const ordersRouter = createTRPCRouter({
     }),
 
   /**
-   * Get orders for the current authenticated user
+   * Get orders for the current authenticated user (buyer view)
    */
   getMyOrders: protectedProcedure
   .input(
@@ -82,7 +82,7 @@ export const ordersRouter = createTRPCRouter({
       limit: input.limit,
       page: input.page,
       sort: '-createdAt',
-      depth: 2, // Populate products and transaction
+      depth: 3, // Populate products with images and transaction
     })
 
     return {
@@ -99,12 +99,13 @@ export const ordersRouter = createTRPCRouter({
             }]
           : [];
 
-        // Get seller user ID from the first product's tenant
+        // Get seller user ID and tenant/store name from the first product's tenant
         let sellerUserId = null;
+        let storeName = null;
         if (orderProducts.length > 0 && orderProducts[0].product?.tenant) {
-          const tenantId = typeof orderProducts[0].product.tenant === 'string' 
-            ? orderProducts[0].product.tenant 
-            : orderProducts[0].product.tenant.id;
+          const tenant = orderProducts[0].product.tenant;
+          const tenantId = typeof tenant === 'string' ? tenant : tenant.id;
+          storeName = typeof tenant === 'object' ? tenant.name : null;
           
           try {
             const sellerUser = await ctx.db.find({
@@ -124,6 +125,11 @@ export const ordersRouter = createTRPCRouter({
           }
         }
 
+        // Get product image from the first product
+        const firstProduct = orderProducts[0]?.product;
+        const productImage = firstProduct?.image?.url || null;
+        const productName = firstProduct?.name || firstProduct?.title || 'Unknown Product';
+
         return {
           id: typeof order.id === 'object' && 'toHexString' in order.id
             ? order.id.toHexString()
@@ -136,7 +142,12 @@ export const ordersRouter = createTRPCRouter({
           shippedAt: order.shippedAt || null,
           deliveredAt: order.deliveredAt || null,
           received: order.received || false,
-          sellerUserId, // Add seller user ID
+          sellerUserId,
+          storeName,
+          // Flattened product info for easy display (like verify-payments)
+          productName,
+          productImage,
+          quantity: orderProducts.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0),
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           products: orderProducts.map((item: any) => ({
             id: typeof item.product?.id === 'object' && 'toHexString' in item.product.id
@@ -145,6 +156,7 @@ export const ordersRouter = createTRPCRouter({
             title: item.product?.name || item.product?.title || 'Unknown Product',
             priceAtPurchase: item.priceAtPurchase || item.price || 0,
             quantity: item.quantity || 1,
+            image: item.product?.image?.url || null,
           })),
           transaction: order.transaction
             ? {
