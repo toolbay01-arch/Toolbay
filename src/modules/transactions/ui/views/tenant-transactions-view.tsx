@@ -24,25 +24,34 @@ export function TenantTransactionsView() {
   }, []);
 
   // Check authentication and tenant status
-  const { data: session, isLoading: sessionLoading } = useQuery(
-    trpc.auth.session.queryOptions()
-  );
+  const sessionQuery = useQuery(trpc.auth.session.queryOptions());
+  const isTenant = sessionQuery.data?.user?.roles?.includes("tenant");
 
   useEffect(() => {
-    if (!sessionLoading && !session?.user) {
-      router.push("/sign-in?redirect=/dashboard/transactions");
-    } else if (!sessionLoading && session?.user && !session.user.roles?.includes('tenant')) {
+    if (sessionQuery.isFetched && !sessionQuery.data?.user) {
+      router.push("/sign-in?redirect=/transactions");
+    } else if (
+      sessionQuery.isFetched &&
+      sessionQuery.data?.user &&
+      !isTenant
+    ) {
       router.push("/");
     }
-  }, [session, sessionLoading, router]);
+  }, [isTenant, router, sessionQuery.data, sessionQuery.isFetched]);
 
   // Fetch transactions awaiting verification
-  const { data, isLoading, refetch, isRefetching } = useQuery(
-    trpc.transactions.getAwaitingVerification.queryOptions({
+  const {
+    data,
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useQuery({
+    ...trpc.transactions.getAwaitingVerification.queryOptions({
       limit: 20,
       page: 1,
-    })
-  );
+    }),
+    enabled: !!isTenant,
+  });
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -55,7 +64,7 @@ export function TenantTransactionsView() {
     return () => clearInterval(interval);
   }, [autoRefresh, refetch]);
 
-  if (sessionLoading || isLoading) {
+  if (sessionQuery.isLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -63,7 +72,7 @@ export function TenantTransactionsView() {
     );
   }
 
-  if (!session?.user || !session.user.roles?.includes('tenant')) {
+  if (!sessionQuery.data?.user || !isTenant) {
     return null;
   }
 
