@@ -33,7 +33,8 @@ export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => 
     setViewMode(isMobile ? 'list' : 'grid');
   }, []);
   
-  const { data: session } = useQuery(trpc.auth.session.queryOptions());
+  const { data: session, isFetched: sessionFetched } = useQuery(trpc.auth.session.queryOptions());
+  const isTenant = session?.user?.roles?.includes('tenant');
   
   const startConversation = useMutation(trpc.chat.startConversation.mutationOptions({
     onSuccess: (data) => {
@@ -74,8 +75,8 @@ export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => 
   };
   
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading} = 
-    useInfiniteQuery(
-      trpc.sales.getMySales.infiniteQueryOptions({
+    useInfiniteQuery({
+      ...trpc.sales.getMySales.infiniteQueryOptions({
         search: searchQuery || null,
         status: statusFilter as any || null,
       }, {
@@ -85,8 +86,9 @@ export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => 
           }
           return undefined;
         },
-      })
-    );
+      }),
+      enabled: !!isTenant, // Only fetch if authenticated tenant
+    });
 
   if (isLoading) {
     return <MySalesListSkeleton />;

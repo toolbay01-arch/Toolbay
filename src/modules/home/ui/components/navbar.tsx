@@ -163,12 +163,14 @@ export const Navbar = () => {
   // Configure session query for immediate UI updates
   const session = useQuery({
     ...trpc.auth.session.queryOptions(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always refetch to catch logouts from other tabs
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     retry: false, // Don't retry session checks
-    refetchOnMount: true, // Always check session on mount
-    refetchOnWindowFocus: true, // Check session when window regains focus
+    refetchOnMount: 'always', // Always check session on mount
+    refetchOnWindowFocus: 'always', // Always check session when window regains focus
   });
+
+  const isLoggedIn = !!session.data?.user;
 
   // Get unread message count for logged-in users
   const { data: unreadData } = useQuery({
@@ -220,18 +222,99 @@ export const Navbar = () => {
   // Show tenant items if user is a tenant, customer items if logged in, otherwise show public items
   // While loading, use the cached data to prevent flash
   const isTenant = session.data?.user?.roles?.includes('tenant');
-  const navbarItems = session.data?.user 
-    ? isTenant 
-      ? tenantNavbarItems 
-      : customerNavbarItems 
+  const navbarItems = session.data?.user
+    ? isTenant
+      ? tenantNavbarItems
+      : customerNavbarItems
     : publicNavbarItems;
   const accountHref = isTenant ? "/dashboard" : "/my-account";
   const mobileStoreItems = myStoreBaseItems.map((item) => ({
     ...item,
     href: item.children === "My Account" ? accountHref : item.href,
   }));
+  const sidebarItems = isLoggedIn ? navbarItems : publicNavbarItems;
 
-  const isLoggedIn = !!session.data?.user;
+  if (!isLoggedIn) {
+    return (
+      <nav className="h-16 flex border-b justify-between font-medium bg-white max-w-full overflow-hidden sticky top-0 z-50 lg:fixed lg:w-full">
+        <Link href="/" className="pl-3 lg:pl-4 flex items-center flex-shrink-0">
+          <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
+            Toolboxx
+          </span>
+        </Link>
+        <NavbarSidebar
+          items={sidebarItems}
+          open={isSidebarOpen}
+          onOpenChange={setIsSidebarOpen}
+          isLoggedIn={isLoggedIn}
+          onLogout={handleLogout}
+          isLoggingOut={logout.isPending}
+        />
+        {/* Desktop Navigation for public */}
+        <div className="items-center gap-2 hidden lg:flex flex-1 justify-center overflow-x-auto px-2">
+          {publicNavbarItems.map((item) => (
+            <NavbarItemButton
+              key={item.href}
+              href={item.href}
+              isActive={pathname === item.href}
+            >
+              {item.children}
+            </NavbarItemButton>
+          ))}
+        </div>
+        {/* Desktop Auth Buttons */}
+        <div className="hidden lg:flex flex-shrink-0">
+          <Button
+            asChild
+            variant="secondary"
+            className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-white hover:bg-pink-400 transition-colors text-sm"
+          >
+            <OptimizedLink prefetch={true} href="/sign-in">
+              Log in
+            </OptimizedLink>
+          </Button>
+          <Button
+            asChild
+            className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-sm"
+          >
+            <OptimizedLink prefetch={true} href="/sign-up">
+              Sign Up
+            </OptimizedLink>
+          </Button>
+        </div>
+        {/* Mobile Icons - Right Side: Sign In, Cart, Menu */}
+        <div className="flex lg:hidden items-center gap-1 pr-2">
+          <Link
+            href="/sign-in"
+            className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <LogIn className="h-5 w-5" />
+          </Link>
+          <Link
+            href="/cart"
+            className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {cartItemCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none"
+              >
+                {cartItemCount > 99 ? "99+" : cartItemCount}
+              </Badge>
+            )}
+          </Link>
+          <button
+            type="button"
+            className="h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            onClick={() => setIsSidebarOpen(true)}
+          >
+            <MenuIcon className="h-5 w-5" />
+          </button>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="h-16 flex border-b justify-between font-medium bg-white max-w-full overflow-hidden sticky top-0 z-50 lg:fixed lg:w-full">

@@ -11,9 +11,14 @@ import { Badge } from "@/components/ui/badge";
 export const SalesStats = () => {
   const trpc = useTRPC();
   
-  const { data: stats, isLoading } = useQuery(
-    trpc.sales.getSalesStats.queryOptions()
-  );
+  // Check if user is authenticated tenant
+  const { data: session } = useQuery(trpc.auth.session.queryOptions());
+  const isTenant = session?.user?.roles?.includes('tenant');
+  
+  const { data: stats, isLoading } = useQuery({
+    ...trpc.sales.getSalesStats.queryOptions(),
+    enabled: !!isTenant, // Only fetch if authenticated tenant
+  });
 
   if (isLoading) {
     return <SalesStatsSkeleton />;

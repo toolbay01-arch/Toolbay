@@ -19,14 +19,17 @@ export const MySalesView = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   
-  // Check authentication and tenant status
-  const { data: session, isLoading: sessionLoading } = useQuery(
-    trpc.auth.session.queryOptions()
-  );
+  // Check authentication and tenant status - refetch on mount and window focus to catch logouts from other tabs
+  const { data: session, isLoading: sessionLoading } = useQuery({
+    ...trpc.auth.session.queryOptions(),
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    staleTime: 0, // Always check fresh
+  });
 
   useEffect(() => {
     if (!sessionLoading && !session?.user) {
-      router.push("/sign-in?redirect=/dashboard/my-sales");
+      router.push("/sign-in?redirect=/my-sales");
     } else if (!sessionLoading && session?.user && !session.user.roles?.includes('tenant')) {
       router.push("/");
     }

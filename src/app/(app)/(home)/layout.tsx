@@ -28,16 +28,16 @@ const Layout = async ({ children }: Props) => {
   return ( 
     <div className="flex flex-col min-h-screen pt-16">
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <Suspense fallback={<SearchFiltersSkeleton />}>
-          <SearchFilters />
-        </Suspense>
+       <Suspense fallback={<SearchFiltersSkeleton />}>
+         <SearchFilters />
+       </Suspense>
       </HydrationBoundary>
       <div className="flex-1 bg-[#F4F4F0]">
-        {children}
+         {children}
       </div>
       <Footer />
     </div>
   );
 };
-
+ 
 export default Layout;

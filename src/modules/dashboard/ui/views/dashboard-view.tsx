@@ -1,6 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTRPC } from '@/trpc/client'
 import { OrderStats } from '@/components/dashboard/OrderStats'
@@ -20,25 +22,40 @@ import {
 
 export function DashboardView() {
   const trpc = useTRPC()
+  const router = useRouter()
   const queryClient = useQueryClient()
   
-  // Get session to check user role
-  const { data: session } = useQuery(
-    trpc.auth.session.queryOptions()
-  )
+  // Get session to check user role - refetch on mount and window focus to catch logouts from other tabs
+  const { data: session, isLoading: sessionLoading, isFetched: sessionFetched } = useQuery({
+    ...trpc.auth.session.queryOptions(),
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    staleTime: 0, // Always check fresh
+  })
 
-  // Fetch dashboard statistics
-  const { data: statsData, isLoading: statsLoading } = useQuery(
-    trpc.orders.getDashboardStats.queryOptions()
-  )
+  const isAuthenticated = !!session?.user;
 
-  // Fetch recent orders
-  const { data: ordersData, isLoading: ordersLoading } = useQuery(
-    trpc.orders.getMyOrders.queryOptions({
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (sessionFetched && !session?.user) {
+      router.push('/sign-in?redirect=/my-account');
+    }
+  }, [sessionFetched, session?.user, router]);
+
+  // Fetch dashboard statistics - only if authenticated
+  const { data: statsData, isLoading: statsLoading } = useQuery({
+    ...trpc.orders.getDashboardStats.queryOptions(),
+    enabled: isAuthenticated,
+  })
+
+  // Fetch recent orders - only if authenticated
+  const { data: ordersData, isLoading: ordersLoading } = useQuery({
+    ...trpc.orders.getMyOrders.queryOptions({
       limit: 5,
       page: 1,
-    })
-  )
+    }),
+    enabled: isAuthenticated,
+  })
 
   // Confirm receipt mutation
   const confirmReceiptMutation = useMutation(
@@ -58,7 +75,17 @@ export function DashboardView() {
     await confirmReceiptMutation.mutateAsync({ orderId })
   }
 
-  if (statsLoading) {
+  // Show loading while checking session
+  if (sessionLoading || !sessionFetched || statsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  // If not authenticated, show loading while redirect happens
+  if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

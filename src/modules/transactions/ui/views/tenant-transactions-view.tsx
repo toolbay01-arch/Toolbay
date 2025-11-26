@@ -23,8 +23,13 @@ export function TenantTransactionsView() {
     setViewMode(isMobile ? 'list' : 'grid');
   }, []);
 
-  // Check authentication and tenant status
-  const sessionQuery = useQuery(trpc.auth.session.queryOptions());
+  // Check authentication and tenant status - refetch on mount and window focus to catch logouts from other tabs
+  const sessionQuery = useQuery({
+    ...trpc.auth.session.queryOptions(),
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    staleTime: 0, // Always check fresh
+  });
   const isTenant = sessionQuery.data?.user?.roles?.includes("tenant");
 
   useEffect(() => {

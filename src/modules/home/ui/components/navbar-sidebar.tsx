@@ -110,14 +110,14 @@ export const NavbarSidebar = ({
               </div>
             ) : (
               // Regular item
-              <OptimizedLink
-                key={item.href}
-                href={item.href}
-                className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
+            <OptimizedLink
+              key={item.href}
+              href={item.href}
+              className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
                 onClick={handleClose}
-              >
-                {item.children}
-              </OptimizedLink>
+            >
+              {item.children}
+            </OptimizedLink>
             )
           ))}
           <div className="border-t">

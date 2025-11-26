@@ -16,20 +16,39 @@ export default function VerifyPaymentsPage() {
   const trpc = useTRPC();
   const [activeTab, setActiveTab] = useState<TabType>('payments')
 
-  const session = useQuery(trpc.auth.session.queryOptions());
+  // Refetch on mount and window focus to catch logouts from other tabs
+  const session = useQuery({
+    ...trpc.auth.session.queryOptions(),
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    staleTime: 0, // Always check fresh
+  });
   const isTenant = session.data?.user?.roles?.includes('tenant');
 
   useEffect(() => {
-    if (session.isFetched && !session.data?.user) {
+    // Wait until session is fetched before redirecting
+    if (!session.isFetched) return;
+    
+    // Not logged in -> redirect to sign-in
+    if (!session.data?.user) {
       router.push('/sign-in?redirect=/verify-payments');
+      return;
     }
-  }, [session.isFetched, session.data?.user, router]);
+    
+    // Logged in but not a tenant -> redirect to home
+    if (!session.data.user.roles?.includes('tenant')) {
+      router.push('/');
+      return;
+    }
+  }, [session.isFetched, session.data, router]);
 
-  if (session.isLoading) {
+  // Show loading while session is being fetched
+  if (session.isLoading || !session.isFetched) {
     return <LoadingState />;
   }
 
-  if (!isTenant) {
+  // Not authenticated or not a tenant - show loading while redirect happens
+  if (!session.data?.user || !isTenant) {
     return <LoadingState />;
   }
 
