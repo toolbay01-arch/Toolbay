@@ -2,16 +2,36 @@
 
 import { useTRPC } from '@/trpc/client'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { formatDistance } from 'date-fns'
 import type { Transaction } from '@/payload-types'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { PackageIcon, Grid3x3, List, CreditCard, Truck } from 'lucide-react';
 
 type TabType = 'payments' | 'orders'
 
 export default function VerifyPaymentsPage() {
+  const router = useRouter();
+  const trpc = useTRPC();
   const [activeTab, setActiveTab] = useState<TabType>('payments')
+
+  const session = useQuery(trpc.auth.session.queryOptions());
+  const isTenant = session.data?.user?.roles?.includes('tenant');
+
+  useEffect(() => {
+    if (session.isFetched && !session.data?.user) {
+      router.push('/sign-in?redirect=/verify-payments');
+    }
+  }, [session.isFetched, session.data?.user, router]);
+
+  if (session.isLoading) {
+    return <LoadingState />;
+  }
+
+  if (!isTenant) {
+    return <LoadingState />;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 mt-6">
@@ -49,8 +69,8 @@ export default function VerifyPaymentsPage() {
       </div>
 
       {/* Content */}
-      {activeTab === 'payments' && <PendingTransactionsList />}
-      {activeTab === 'orders' && <PendingOrdersList />}
+      {activeTab === 'payments' && <PendingTransactionsList enabled={!!isTenant} />}
+      {activeTab === 'orders' && <PendingOrdersList enabled={!!isTenant} />}
     </div>
   )
 }
@@ -64,12 +84,13 @@ function LoadingState() {
   )
 }
 
-function PendingTransactionsList() {
+function PendingTransactionsList({ enabled }: { enabled: boolean }) {
   const trpc = useTRPC();
   const [autoRefresh, setAutoRefresh] = useState(false);
   const { data: transactions, isLoading, refetch } = useQuery({
     ...trpc.admin.getPendingTransactions.queryOptions(),
     refetchInterval: autoRefresh ? 5000 : false,
+    enabled,
   });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -423,12 +444,13 @@ function TransactionRow({ transaction, onVerified }: TransactionRowProps) {
   )
 }
 
-function PendingOrdersList() {
+function PendingOrdersList({ enabled }: { enabled: boolean }) {
   const trpc = useTRPC();
   const [autoRefresh, setAutoRefresh] = useState(false);
   const { data: orders, isLoading, refetch } = useQuery({
     ...trpc.sales.getPendingOrders.queryOptions(),
     refetchInterval: autoRefresh ? 5000 : false,
+    enabled,
   });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const updateOrderStatus = useMutation(

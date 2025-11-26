@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon, LogOut, ShoppingCart, User, LogIn, MessageCircle, Store, ChevronDown } from "lucide-react";
+import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -76,18 +76,20 @@ const customerNavbarItems: NavbarItem[] = [
   { href: "/cart", children: "My Cart" },
 ];
 
+const myStoreBaseItems: NavbarItem[] = [
+  { href: "/my-account", children: "My Account" },
+  { href: "/orders", children: "My Purchases" },
+  { href: "/my-products", children: "My Products" },
+  { href: "/my-sales", children: "Sales" },
+];
+
 const tenantNavbarItems: NavbarItem[] = [
   { href: "/", children: "Home" },
   { href: "/verify-payments", children: "Transactions" },
   { 
     href: "#", 
     children: "My Store",
-    subItems: [
-      { href: "/my-account", children: "My Account" },
-      { href: "/orders", children: "My Purchases" },
-      { href: "/my-products", children: "My Products" },
-      { href: "/my-sales", children: "Sales" },
-    ]
+    subItems: myStoreBaseItems,
   },
   { href: "/cart", children: "My Cart" },
 ];
@@ -95,12 +97,18 @@ const tenantNavbarItems: NavbarItem[] = [
 // Desktop dropdown for items with subItems
 const NavbarDropdownItem = ({ 
   item, 
-  pathname 
+  pathname,
+  accountHref,
 }: { 
   item: NavbarItem; 
   pathname: string;
+  accountHref: string;
 }) => {
-  const isAnySubItemActive = item.subItems?.some(sub => pathname === sub.href || pathname.startsWith(sub.href + '/'));
+  const subItems = item.subItems?.map((subItem) => ({
+    ...subItem,
+    href: subItem.children === "My Account" ? accountHref : subItem.href,
+  }));
+  const isAnySubItemActive = subItems?.some(sub => pathname === sub.href || pathname.startsWith(sub.href + '/'));
   
   return (
     <DropdownMenu>
@@ -118,7 +126,7 @@ const NavbarDropdownItem = ({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" className="w-48">
-        {item.subItems?.map((subItem) => (
+        {subItems?.map((subItem) => (
           <DropdownMenuItem key={subItem.href} asChild>
             <Link 
               href={subItem.href}
@@ -217,6 +225,11 @@ export const Navbar = () => {
       ? tenantNavbarItems 
       : customerNavbarItems 
     : publicNavbarItems;
+  const accountHref = isTenant ? "/dashboard" : "/my-account";
+  const mobileStoreItems = myStoreBaseItems.map((item) => ({
+    ...item,
+    href: item.children === "My Account" ? accountHref : item.href,
+  }));
 
   const isLoggedIn = !!session.data?.user;
 
@@ -242,7 +255,7 @@ export const Navbar = () => {
       <div className="items-center gap-2 hidden lg:flex flex-1 justify-center overflow-x-auto px-2">
         {navbarItems.map((item) => (
           item.subItems ? (
-            <NavbarDropdownItem key={item.href} item={item} pathname={pathname} />
+            <NavbarDropdownItem key={item.href} item={item} pathname={pathname} accountHref={accountHref} />
           ) : (
             <NavbarItemButton
               key={item.href}
@@ -322,91 +335,66 @@ export const Navbar = () => {
 
       {/* Mobile Icons - Right Side */}
       <div className="flex lg:hidden items-center gap-1 pr-2">
-        {/* User Icon with Dropdown for logged in users or Login icon */}
-        {isLoggedIn ? (
-          <>
-            {/* Chat Icon with Badge */}
-            <Link 
-              href="/chat"
-              prefetch={true}
-              className={cn(
-                "relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200",
-                pathname.startsWith('/chat') && "bg-gray-200"
-              )}
-            >
-              <MessageCircle className="h-5 w-5" />
-              {(unreadData?.totalUnread || 0) > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none"
-                >
-                  {(unreadData?.totalUnread || 0) > 99 ? "99+" : unreadData?.totalUnread}
-                </Badge>
-              )}
-            </Link>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+        {mobileStoreItems.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
               >
-                <User className="h-5 w-5" />
+                <Store className="h-5 w-5" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem asChild>
-                <Link 
-                  href={session.data?.user?.roles?.includes('super-admin') ? "/admin" : session.data?.user?.roles?.includes('tenant') ? "/dashboard" : "/my-account"}
-                  className="cursor-pointer"
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  {session.data?.user?.roles?.includes('tenant') ? "Dashboard" : "My Account"}
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/orders" className="cursor-pointer">
-                  {isTenant ? "Purchases" : "My Orders"}
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={handleLogout}
-                disabled={logout.isPending}
-                className="cursor-pointer text-red-600"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                {logout.isPending ? "Logging out..." : "Logout"}
-              </DropdownMenuItem>
+              {mobileStoreItems.map((item) => (
+                <DropdownMenuItem key={item.href} asChild>
+                  <Link href={item.href} className="cursor-pointer">
+                    {item.children}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          </>
-        ) : (
-          <Link 
-            href="/sign-in"
-            className="h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
-          >
-            <LogIn className="h-5 w-5" />
-          </Link>
         )}
-
-        {/* Cart Icon with Badge - Always visible */}
-        <Link 
-          href="/cart" 
+        <Link
+          href="/verify-payments"
+          prefetch={true}
+          className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
+        >
+          <Wallet className="h-5 w-5" />
+        </Link>
+        <Link
+          href="/chat"
+          prefetch={true}
+          className={cn(
+            "relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200",
+            pathname.startsWith("/chat") && "bg-gray-200"
+          )}
+        >
+          <MessageCircle className="h-5 w-5" />
+          {(unreadData?.totalUnread || 0) > 0 && (
+            <Badge
+              variant="destructive"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none"
+            >
+              {(unreadData?.totalUnread || 0) > 99 ? "99+" : unreadData?.totalUnread}
+            </Badge>
+          )}
+        </Link>
+        <Link
+          href="/cart"
           className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
         >
           <ShoppingCart className="h-5 w-5" />
           {cartItemCount > 0 && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none"
             >
               {cartItemCount > 99 ? "99+" : cartItemCount}
             </Badge>
           )}
         </Link>
-
-        {/* Menu Icon */}
         <button
           type="button"
           className="h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
