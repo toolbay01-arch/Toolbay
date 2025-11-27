@@ -17,6 +17,7 @@ import { StarRating } from "@/components/star-rating";
 import { formatCurrency, generateTenantURL } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
 import { StockStatusBadge } from "@/components/quantity-selector";
+import { SuggestedProductCard, SuggestedProductCardSkeleton } from "../components/suggested-product-card";
 
 const CartButton = dynamic(
   () => import("../components/cart-button").then(
@@ -48,6 +49,15 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(trpc.products.getOne.queryOptions({ id: productId }));
+  
+  // Fetch suggested products
+  const { data: suggestedProducts, isLoading: isLoadingSuggested } = useQuery(
+    trpc.products.getSuggested.queryOptions({
+      productId,
+      tenantSlug,
+      limit: 8,
+    })
+  );
 
   const [isCopied, setIsCopied] = useState(false);
   
@@ -328,6 +338,57 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
           </div>
         </div>
       </div>
+
+      {/* Suggested Products Section */}
+      {suggestedProducts && suggestedProducts.docs.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-2xl font-semibold mb-6">Suggested Products</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-4">
+            {suggestedProducts.docs.map((product, index) => {
+              // Build gallery array from product data
+              const gallery: Array<{ url: string; alt: string }> = [];
+              
+              // Type assertion for gallery field
+              const productWithGallery = product as any;
+              if (productWithGallery.gallery && Array.isArray(productWithGallery.gallery)) {
+                productWithGallery.gallery.forEach((item: any) => {
+                  if (item.media && typeof item.media === 'object' && item.media.url) {
+                    gallery.push({
+                      url: item.media.url,
+                      alt: item.media.alt || product.name,
+                    });
+                  }
+                });
+              }
+
+              return (
+                <SuggestedProductCard
+                  key={product.id}
+                  id={product.id}
+                  name={product.name}
+                  imageUrl={product.image?.url}
+                  gallery={gallery.length > 0 ? gallery : null}
+                  tenantSlug={product.tenant?.slug || tenantSlug}
+                  price={product.price}
+                  priority={index < 2}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Loading state for suggested products */}
+      {isLoadingSuggested && (
+        <div className="mt-10">
+          <h2 className="text-2xl font-semibold mb-6">Suggested Products</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <SuggestedProductCardSkeleton key={index} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

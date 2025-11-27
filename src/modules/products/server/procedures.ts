@@ -781,4 +781,172 @@ export const productsRouter = createTRPCRouter({
         change: input.quantityChange,
       };
     }),
+
+  // Get suggested products (from current tenant and other tenants, excluding current product)
+  getSuggested: baseProcedure
+    .input(
+      z.object({
+        productId: z.string(),
+        tenantSlug: z.string().optional(),
+        limit: z.number().default(8),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      // First, get the current product to find its tenant
+      const currentProduct = await ctx.db.findByID({
+        collection: "products",
+        id: input.productId,
+        depth: 1,
+      });
+
+      const currentTenantId = typeof currentProduct.tenant === 'string'
+        ? currentProduct.tenant
+        : currentProduct.tenant?.id;
+
+      // Get all verified tenants
+      const allTenants = await ctx.db.find({
+        collection: "tenants",
+        where: {
+          isVerified: {
+            equals: true,
+          },
+        },
+        limit: 100,
+        pagination: false,
+      });
+
+      const tenantIds = allTenants.docs.map(t => t.id);
+
+      // First, try to get products from the current tenant
+      const currentTenantWhere: Where = {
+        and: [
+          {
+            id: {
+              not_equals: input.productId,
+            },
+          },
+          {
+            isArchived: {
+              not_equals: true,
+            },
+          },
+          {
+            isPrivate: {
+              not_equals: true,
+            },
+          },
+          ...(currentTenantId ? [{
+            tenant: {
+              equals: currentTenantId,
+            },
+          }] : []),
+        ],
+      };
+
+      const currentTenantProducts = await ctx.db.find({
+        collection: "products",
+        depth: 1,
+        where: currentTenantWhere,
+        sort: "-createdAt",
+        limit: input.limit,
+        select: {
+          content: false,
+        },
+      });
+
+      // If we need more products, get from other tenants
+      let allProducts = [...currentTenantProducts.docs];
+      const remainingLimit = input.limit - allProducts.length;
+
+      if (remainingLimit > 0) {
+        const otherTenantsWhere: Where = {
+          and: [
+            {
+              id: {
+                not_equals: input.productId,
+                ...(allProducts.length > 0 ? {
+                  not_in: allProducts.map(p => p.id),
+                } : {}),
+              },
+            },
+            {
+              isArchived: {
+                not_equals: true,
+              },
+            },
+            {
+              isPrivate: {
+                not_equals: true,
+              },
+            },
+            {
+              tenant: {
+                in: tenantIds.filter(id => id !== currentTenantId),
+              },
+            },
+          ],
+        };
+
+        const otherTenantsProducts = await ctx.db.find({
+          collection: "products",
+          depth: 1,
+          where: otherTenantsWhere,
+          sort: "-createdAt",
+          limit: remainingLimit,
+          select: {
+            content: false,
+          },
+        });
+
+        allProducts = [...allProducts, ...otherTenantsProducts.docs];
+      }
+
+      // Create a data-like structure for compatibility
+      const data = {
+        docs: allProducts,
+      };
+
+      // Fetch all reviews for all products in one query
+      const productIds = data.docs.map(doc => doc.id);
+      const allReviewsData = await ctx.db.find({
+        collection: "reviews",
+        pagination: false,
+        where: {
+          product: {
+            in: productIds,
+          },
+        },
+      });
+
+      // Group reviews by product ID
+      const reviewsByProduct = allReviewsData.docs.reduce((acc, review) => {
+        const productId = typeof review.product === 'string' ? review.product : review.product.id;
+        if (!acc[productId]) {
+          acc[productId] = [];
+        }
+        acc[productId].push(review);
+        return acc;
+      }, {} as Record<string, typeof allReviewsData.docs>);
+
+      // Calculate review stats for each product
+      const dataWithSummarizedReviews = data.docs.map((doc) => {
+        const productReviews = reviewsByProduct[doc.id] || [];
+        
+        return {
+          ...doc,
+          reviewCount: productReviews.length,
+          reviewRating: productReviews.length === 0
+            ? 0
+            : productReviews.reduce((acc, review) => acc + review.rating, 0) / productReviews.length
+        };
+      });
+
+      return {
+        docs: dataWithSummarizedReviews.map((doc) => ({
+          ...doc,
+          image: (doc as PopulatedProduct).image,
+          tenant: (doc as PopulatedProduct).tenant as Tenant & { image: Media | null },
+        }))
+      };
+    }),
 });
