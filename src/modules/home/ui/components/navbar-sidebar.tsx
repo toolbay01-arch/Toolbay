@@ -113,7 +113,7 @@ export const NavbarSidebar = ({
             <OptimizedLink
               key={item.href}
               href={item.href}
-              className="w-full text-left p-4 active:bg-black active:text-white flex items-center text-base font-medium touch-manipulation"
+              className="w-full text-left p-4 active:bg-black active:text-white flex items-center gap-2 text-base font-medium touch-manipulation"
                 onClick={handleClose}
             >
               {item.children}

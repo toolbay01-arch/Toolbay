@@ -51,7 +51,7 @@ const NavbarItemButton = ({
       asChild
       variant="outline"
       className={cn(
-        "bg-transparent hover:bg-transparent rounded-full hover:border-primary border-transparent px-2.5 text-sm whitespace-nowrap",
+        "bg-transparent hover:bg-transparent rounded-full hover:border-primary border-transparent px-2.5 text-sm whitespace-nowrap flex items-center gap-1.5",
         isActive && "bg-black text-white hover:bg-black hover:text-white",
       )}
     >
@@ -86,11 +86,17 @@ const myStoreBaseItems: NavbarItem[] = [
 const tenantNavbarItems: NavbarItem[] = [
   { href: "/", children: "Home" },
   { href: "/verify-payments", children: "Transactions" },
-  { 
-    href: "#", 
-    children: "My Store",
-    subItems: myStoreBaseItems,
-  },
+  { href: "/my-store", children: (
+    <>
+      <Store className="h-4 w-4" />
+      <span>My Store</span>
+    </>
+  ) },
+  // { 
+  //   href: "#", 
+  //   children: "Store Menu",
+  //   subItems: myStoreBaseItems,
+  // },
   { href: "/cart", children: "My Cart" },
 ];
 
@@ -418,26 +424,14 @@ export const Navbar = () => {
 
       {/* Mobile Icons - Right Side */}
         <div className="flex lg:hidden items-center gap-0.5 pr-2">
-        {mobileStoreItems.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation"
-              >
-                <Store className="h-5 w-5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {mobileStoreItems.map((item) => (
-                <DropdownMenuItem key={item.href} asChild>
-                  <Link href={item.href} className="cursor-pointer touch-manipulation">
-                    {item.children}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+        {isTenant && (
+          <Link
+            href="/my-store"
+            prefetch={true}
+            className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation"
+          >
+            <Store className="h-5 w-5" />
+          </Link>
         )}
         <Link
           href="/verify-payments"
