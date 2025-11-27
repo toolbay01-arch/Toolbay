@@ -77,7 +77,7 @@ export const NavbarSidebar = ({
               <div key={item.href}>
                 <button
                   onClick={() => toggleExpand(item.href)}
-                  className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center justify-between text-base font-medium"
+                  className="w-full text-left p-4 active:bg-black active:text-white flex items-center justify-between text-base font-medium touch-manipulation"
                 >
                   <span className="flex items-center gap-2">
                     <Store className="h-4 w-4" />
@@ -100,7 +100,7 @@ export const NavbarSidebar = ({
                     <OptimizedLink
                       key={subItem.href}
                       href={subItem.href}
-                      className="w-full text-left py-3 px-8 hover:bg-black hover:text-white flex items-center text-sm font-medium border-l-2 border-gray-200"
+                      className="w-full text-left py-3 px-8 active:bg-black active:text-white flex items-center text-sm font-medium border-l-2 border-gray-200 touch-manipulation"
                       onClick={handleClose}
                     >
                       {subItem.children}
@@ -113,7 +113,7 @@ export const NavbarSidebar = ({
             <OptimizedLink
               key={item.href}
               href={item.href}
-              className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
+              className="w-full text-left p-4 active:bg-black active:text-white flex items-center text-base font-medium touch-manipulation"
                 onClick={handleClose}
             >
               {item.children}
@@ -125,7 +125,7 @@ export const NavbarSidebar = ({
               <Button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="w-full text-left p-4 hover:bg-red-600 bg-transparent hover:text-white flex items-center text-base font-medium gap-2 rounded-none justify-start text-red-600"
+                className="w-full text-left p-4 active:bg-red-600 bg-transparent active:text-white flex items-center text-base font-medium gap-2 rounded-none justify-start text-red-600 touch-manipulation"
                 variant="ghost"
               >
                 <LogOut className="h-4 w-4" />
@@ -136,14 +136,14 @@ export const NavbarSidebar = ({
                 <OptimizedLink 
                   onClick={handleClose} 
                   href="/sign-in" 
-                  className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
+                  className="w-full text-left p-4 active:bg-black active:text-white flex items-center text-base font-medium touch-manipulation"
                 >
                   Log in
                 </OptimizedLink>
                 <OptimizedLink 
                   onClick={handleClose} 
                   href="/sign-up" 
-                  className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
+                  className="w-full text-left p-4 active:bg-black active:text-white flex items-center text-base font-medium touch-manipulation"
                 >
                   Sign Up
                 </OptimizedLink>

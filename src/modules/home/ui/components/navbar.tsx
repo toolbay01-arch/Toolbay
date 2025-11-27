@@ -236,7 +236,7 @@ export const Navbar = () => {
 
   if (!isLoggedIn) {
     return (
-      <nav className="h-16 flex border-b justify-between font-medium bg-white max-w-full overflow-hidden sticky top-0 z-50 lg:fixed lg:w-full">
+      <nav className="h-16 flex border-b justify-between font-medium bg-white max-w-full overflow-visible sticky top-0 z-50 lg:fixed lg:w-full">
         <Link href="/" className="pl-3 lg:pl-4 flex items-center flex-shrink-0">
           <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
             Toolboxx
@@ -283,16 +283,16 @@ export const Navbar = () => {
           </Button>
         </div>
         {/* Mobile Icons - Right Side: Sign In, Cart, Menu */}
-        <div className="flex lg:hidden items-center gap-1 pr-2">
+        <div className="flex lg:hidden items-center gap-0.5 pr-2">
           <Link
             href="/sign-in"
-            className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 touch-manipulation"
           >
             <LogIn className="h-5 w-5" />
           </Link>
           <Link
             href="/cart"
-            className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 touch-manipulation"
           >
             <ShoppingCart className="h-5 w-5" />
             {cartItemCount > 0 && (
@@ -306,7 +306,7 @@ export const Navbar = () => {
           </Link>
           <button
             type="button"
-            className="h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            className="h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 touch-manipulation"
             onClick={() => setIsSidebarOpen(true)}
           >
             <MenuIcon className="h-5 w-5" />
@@ -317,7 +317,7 @@ export const Navbar = () => {
   }
 
   return (
-    <nav className="h-16 flex border-b justify-between font-medium bg-white max-w-full overflow-hidden sticky top-0 z-50 lg:fixed lg:w-full">
+    <nav className="h-16 flex border-b justify-between font-medium bg-white max-w-full overflow-visible sticky top-0 z-50 lg:fixed lg:w-full">
       {/* Logo - Smaller, more compact */}
       <Link href="/" className="pl-3 lg:pl-4 flex items-center flex-shrink-0">
         <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
@@ -417,13 +417,13 @@ export const Navbar = () => {
       )}
 
       {/* Mobile Icons - Right Side */}
-      <div className="flex lg:hidden items-center gap-1 pr-2">
+        <div className="flex lg:hidden items-center gap-0.5 pr-2">
         {mobileStoreItems.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
+                className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation"
               >
                 <Store className="h-5 w-5" />
               </button>
@@ -431,7 +431,7 @@ export const Navbar = () => {
             <DropdownMenuContent align="end" className="w-48">
               {mobileStoreItems.map((item) => (
                 <DropdownMenuItem key={item.href} asChild>
-                  <Link href={item.href} className="cursor-pointer">
+                  <Link href={item.href} className="cursor-pointer touch-manipulation">
                     {item.children}
                   </Link>
                 </DropdownMenuItem>
@@ -442,7 +442,7 @@ export const Navbar = () => {
         <Link
           href="/verify-payments"
           prefetch={true}
-          className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
+          className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation"
         >
           <Wallet className="h-5 w-5" />
         </Link>
@@ -450,7 +450,7 @@ export const Navbar = () => {
           href="/chat"
           prefetch={true}
           className={cn(
-            "relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200",
+            "relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation",
             pathname.startsWith("/chat") && "bg-gray-200"
           )}
         >
@@ -466,7 +466,7 @@ export const Navbar = () => {
         </Link>
         <Link
           href="/cart"
-          className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
+          className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation"
         >
           <ShoppingCart className="h-5 w-5" />
           {cartItemCount > 0 && (
@@ -480,7 +480,7 @@ export const Navbar = () => {
         </Link>
         <button
           type="button"
-          className="h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
+          className="h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation"
           onClick={() => setIsSidebarOpen(true)}
         >
           <MenuIcon className="h-5 w-5" />
