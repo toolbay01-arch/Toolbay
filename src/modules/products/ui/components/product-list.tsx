@@ -96,6 +96,7 @@ export const ProductList = ({ category, tenantSlug, narrowView, viewMode = "grid
               stockStatus={product.stockStatus}
               viewMode={viewMode}
               priority={index < 2} // Only prioritize first 2 images to avoid unused preloads
+              totalSold={(product as any).totalSold || 0}
             />
           );
         })}

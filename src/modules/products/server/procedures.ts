@@ -215,6 +215,22 @@ export const productsRouter = createTRPCRouter({
         tenantOwnerId = null;
       }
 
+      // Calculate total sold for this product
+      const salesData = await ctx.db.find({
+        collection: "sales",
+        pagination: false,
+        where: {
+          product: {
+            equals: input.id,
+          },
+          status: {
+            not_in: ["cancelled", "refunded"],
+          },
+        },
+      });
+
+      const totalSold = salesData.docs.reduce((acc, sale) => acc + (sale.quantity || 0), 0);
+
       return {
         ...product,
         isPurchased,
@@ -224,6 +240,7 @@ export const productsRouter = createTRPCRouter({
         reviewCount: reviews.totalDocs,
         ratingDistribution,
         tenantOwnerId,
+        totalSold,
       }
     }),
   getMany: baseProcedure
@@ -371,6 +388,30 @@ export const productsRouter = createTRPCRouter({
         return acc;
       }, {} as Record<string, typeof allReviewsData.docs>);
 
+      // Fetch all sales for all products in one query to calculate total sold
+      const allSalesData = await ctx.db.find({
+        collection: "sales",
+        pagination: false,
+        where: {
+          product: {
+            in: productIds,
+          },
+          status: {
+            not_in: ["cancelled", "refunded"],
+          },
+        },
+      });
+
+      // Group sales by product ID and calculate total sold
+      const totalSoldByProduct = allSalesData.docs.reduce((acc, sale) => {
+        const productId = typeof sale.product === 'string' ? sale.product : sale.product.id;
+        if (!acc[productId]) {
+          acc[productId] = 0;
+        }
+        acc[productId] += sale.quantity || 0;
+        return acc;
+      }, {} as Record<string, number>);
+
       // Calculate review stats for each product
       const dataWithSummarizedReviews = data.docs.map((doc) => {
         const productReviews = reviewsByProduct[doc.id] || [];
@@ -380,7 +421,8 @@ export const productsRouter = createTRPCRouter({
           reviewCount: productReviews.length,
           reviewRating: productReviews.length === 0
             ? 0
-            : productReviews.reduce((acc, review) => acc + review.rating, 0) / productReviews.length
+            : productReviews.reduce((acc, review) => acc + review.rating, 0) / productReviews.length,
+          totalSold: totalSoldByProduct[doc.id] || 0,
         };
       });
 

@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { StarIcon, ShieldCheck, Package } from "lucide-react";
+import { StarIcon, ShieldCheck, Package, TrendingUp } from "lucide-react";
 
 import { formatCurrency } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
@@ -27,6 +27,7 @@ interface ProductCardProps {
   stockStatus?: "in_stock" | "low_stock" | "out_of_stock" | "pre_order";
   viewMode?: "grid" | "list";
   priority?: boolean; // For above-the-fold images
+  totalSold?: number;
 };
 
 export const ProductCard = ({
@@ -47,6 +48,7 @@ export const ProductCard = ({
   stockStatus = "in_stock",
   viewMode = "grid",
   priority = false,
+  totalSold = 0,
 }: ProductCardProps) => {
   const router = useRouter();
   
@@ -139,6 +141,16 @@ export const ProductCard = ({
               per {unit || "unit"}
             </p>
           </div>
+          
+          {/* Total Sold */}
+          {totalSold > 0 && (
+            <div className="flex items-center gap-1">
+              <TrendingUp className="size-3 sm:size-3.5 text-orange-600" />
+              <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground font-medium">
+                {totalSold} sold
+              </p>
+            </div>
+          )}
           
           {/* Seller Info */}
           <div className="flex flex-col gap-1">
@@ -241,6 +253,16 @@ export const ProductCard = ({
             per {unit || "unit"}
           </p>
         </div>
+        
+        {/* Total Sold */}
+        {totalSold > 0 && (
+          <div className="flex items-center gap-1">
+            <TrendingUp className="size-3.5 sm:size-4 text-orange-600" />
+            <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+              {totalSold} sold
+            </p>
+          </div>
+        )}
         
         {/* Seller Info */}
         <div className="flex flex-col gap-1.5 sm:gap-2 mt-auto">
