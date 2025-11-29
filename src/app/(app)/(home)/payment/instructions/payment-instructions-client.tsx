@@ -66,6 +66,11 @@ export function PaymentInstructionsClient() {
   };
 
   const handleSubmit = () => {
+    // Prevent double submission
+    if (submitMutation.isPending) {
+      return;
+    }
+
     if (!mtnTransactionId.trim()) {
       toast.error("Please enter your MTN Transaction ID");
       return;
@@ -281,6 +286,7 @@ export function PaymentInstructionsClient() {
             </div>
 
             <Button
+              type="button"
               onClick={handleSubmit}
               disabled={!mtnTransactionId.trim() || isExpired || submitMutation.isPending}
               className="w-full h-12 text-lg"

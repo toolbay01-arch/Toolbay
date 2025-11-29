@@ -46,20 +46,6 @@ export const CartButton = ({
     ? Math.min(maxOrderQuantity, quantity)
     : quantity;
 
-  if (isPurchased) {
-    return (
-      <Button
-        variant="elevated"
-        asChild
-        className="flex-1 font-medium bg-white"
-      >
-        <Link href={`${process.env.NEXT_PUBLIC_APP_URL}/library/${productId}`}>
-          View in Library
-        </Link>
-      </Button>
-    );
-  }
-
   if (isOutOfStock) {
     return (
       <Button
@@ -128,6 +114,19 @@ export const CartButton = ({
         <p className="text-xs text-blue-600 text-center">
           This item is available for pre-order
         </p>
+      )}
+      
+      {/* Show "View in Library" link if product is already purchased, but allow re-purchasing */}
+      {isPurchased && (
+        <Button
+          variant="outline"
+          asChild
+          className="w-full text-sm"
+        >
+          <Link href={`${process.env.NEXT_PUBLIC_APP_URL}/library/${productId}`}>
+            View in Library
+          </Link>
+        </Button>
       )}
     </div>
   );
