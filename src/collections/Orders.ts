@@ -318,6 +318,19 @@ export const Orders: CollectionConfig = {
       }
     },
     {
+      name: "deliveryType",
+      type: "select",
+      required: true,
+      defaultValue: "direct",
+      options: [
+        { label: "Direct Payment (Pickup)", value: "direct" },
+        { label: "Delivery", value: "delivery" },
+      ],
+      admin: {
+        description: "Delivery type inherited from transaction. Direct orders allow immediate pickup confirmation after payment verification.",
+      }
+    },
+    {
       name: "status",
       type: "select",
       defaultValue: "pending",
@@ -331,7 +344,7 @@ export const Orders: CollectionConfig = {
         { label: "Cancelled", value: "cancelled" },
       ],
       admin: {
-        description: "Order fulfillment status. Orders start as 'pending' after payment verification, then move through shipped → delivered → completed when customer confirms receipt.",
+        description: "Order fulfillment status. Direct orders: pending → completed (after pickup confirmation). Delivery orders: pending → shipped → delivered → completed (after delivery confirmation).",
         components: {
           Cell: '@/components/admin/OrderStatusCell#OrderStatusCell',
         },

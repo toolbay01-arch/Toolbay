@@ -353,7 +353,18 @@ function UnifiedTransactionRow({
           </div>
         </td>
         <td className="px-4 py-3 text-sm">
-          <TransactionStatusBadge status={transaction.status} />
+          <div className="flex flex-col gap-1">
+            <TransactionStatusBadge status={transaction.status} />
+            {transaction.deliveryType && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                transaction.deliveryType === 'direct' 
+                  ? 'bg-purple-100 text-purple-700' 
+                  : 'bg-blue-100 text-blue-700'
+              }`}>
+                {transaction.deliveryType === 'direct' ? '📦 Pickup' : '🚚 Delivery'}
+              </span>
+            )}
+          </div>
         </td>
         <td className="px-4 py-3 text-sm">
           <div className="flex gap-2">
@@ -493,44 +504,69 @@ function UnifiedTransactionRow({
                         <OrderStatusBadge status={order.status} />
                       </div>
                       <div className="flex gap-2 ml-4">
-                        {order.status === 'pending' && (
-                          <button
-                            onClick={() => {
-                              if (confirm('Mark this order as shipped?')) {
-                                updateOrderStatus.mutate({
-                                  orderId: order.id,
-                                  status: 'shipped',
-                                });
-                              }
-                            }}
-                            disabled={updateOrderStatus.isPending}
-                            className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded transition-colors"
-                          >
-                            🚚 Ship
-                          </button>
-                        )}
-                        {order.status === 'shipped' && (
-                          <button
-                            onClick={() => {
-                              if (confirm('Mark this order as delivered?')) {
-                                updateOrderStatus.mutate({
-                                  orderId: order.id,
-                                  status: 'delivered',
-                                });
-                              }
-                            }}
-                            disabled={updateOrderStatus.isPending}
-                            className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded transition-colors"
-                          >
-                            📦 Deliver
-                          </button>
-                        )}
-                        {order.status === 'delivered' && (
-                          <span className="text-xs text-purple-600 font-medium">⏳ Awaiting confirmation</span>
-                        )}
-                        {order.status === 'completed' && (
-                          <span className="text-xs text-green-600 font-medium">✅ Completed</span>
-                        )}
+                        {(() => {
+                          const deliveryType = order.deliveryType || 'delivery';
+                          
+                          if (order.status === 'pending') {
+                            if (deliveryType === 'direct') {
+                              return (
+                                <span className="text-xs text-purple-600 font-medium">
+                                  ✅ Ready for Pickup
+                                </span>
+                              );
+                            } else {
+                              return (
+                                <button
+                                  onClick={() => {
+                                    if (confirm('Mark this order as shipped?')) {
+                                      updateOrderStatus.mutate({
+                                        orderId: order.id,
+                                        status: 'shipped',
+                                      });
+                                    }
+                                  }}
+                                  disabled={updateOrderStatus.isPending}
+                                  className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded transition-colors"
+                                >
+                                  🚚 Ship
+                                </button>
+                              );
+                            }
+                          }
+                          
+                          if (order.status === 'shipped' && deliveryType === 'delivery') {
+                            return (
+                              <button
+                                onClick={() => {
+                                  if (confirm('Mark this order as delivered?')) {
+                                    updateOrderStatus.mutate({
+                                      orderId: order.id,
+                                      status: 'delivered',
+                                    });
+                                  }
+                                }}
+                                disabled={updateOrderStatus.isPending}
+                                className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded transition-colors"
+                              >
+                                📦 Deliver
+                              </button>
+                            );
+                          }
+                          
+                          if (order.status === 'delivered') {
+                            return (
+                              <span className="text-xs text-purple-600 font-medium">⏳ Awaiting confirmation</span>
+                            );
+                          }
+                          
+                          if (order.status === 'completed') {
+                            return (
+                              <span className="text-xs text-green-600 font-medium">✅ Completed</span>
+                            );
+                          }
+                          
+                          return null;
+                        })()}
                       </div>
                     </div>
                   );
@@ -600,7 +636,18 @@ function UnifiedTransactionCard({
       <div className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="font-mono text-xs text-blue-700">#{transaction.paymentReference}</div>
-          <TransactionStatusBadge status={transaction.status} />
+          <div className="flex flex-col gap-1 items-end">
+            <TransactionStatusBadge status={transaction.status} />
+            {transaction.deliveryType && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                transaction.deliveryType === 'direct' 
+                  ? 'bg-purple-100 text-purple-700' 
+                  : 'bg-blue-100 text-blue-700'
+              }`}>
+                {transaction.deliveryType === 'direct' ? '📦 Pickup' : '🚚 Delivery'}
+              </span>
+            )}
+          </div>
         </div>
         
         {productImageUrl && (
@@ -651,36 +698,55 @@ function UnifiedTransactionCard({
                       <div className="text-gray-500">#{order.orderNumber}</div>
                       <div className="flex items-center justify-between mt-2">
                         <OrderStatusBadge status={order.status} />
-                        {order.status === 'pending' && (
-                          <button
-                            onClick={() => {
-                              if (confirm('Mark as shipped?')) {
-                                updateOrderStatus.mutate({
-                                  orderId: order.id,
-                                  status: 'shipped',
-                                });
-                              }
-                            }}
-                            className="px-2 py-1 text-xs bg-blue-600 text-white rounded"
-                          >
-                            Ship
-                          </button>
-                        )}
-                        {order.status === 'shipped' && (
-                          <button
-                            onClick={() => {
-                              if (confirm('Mark as delivered?')) {
-                                updateOrderStatus.mutate({
-                                  orderId: order.id,
-                                  status: 'delivered',
-                                });
-                              }
-                            }}
-                            className="px-2 py-1 text-xs bg-green-600 text-white rounded"
-                          >
-                            Deliver
-                          </button>
-                        )}
+                        {(() => {
+                          const deliveryType = order.deliveryType || 'delivery';
+                          
+                          if (order.status === 'pending') {
+                            if (deliveryType === 'direct') {
+                              return (
+                                <span className="text-[10px] text-purple-600 font-medium">
+                                  ✅ Ready for Pickup
+                                </span>
+                              );
+                            } else {
+                              return (
+                                <button
+                                  onClick={() => {
+                                    if (confirm('Mark as shipped?')) {
+                                      updateOrderStatus.mutate({
+                                        orderId: order.id,
+                                        status: 'shipped',
+                                      });
+                                    }
+                                  }}
+                                  className="px-2 py-1 text-xs bg-blue-600 text-white rounded"
+                                >
+                                  Ship
+                                </button>
+                              );
+                            }
+                          }
+                          
+                          if (order.status === 'shipped' && deliveryType === 'delivery') {
+                            return (
+                              <button
+                                onClick={() => {
+                                  if (confirm('Mark as delivered?')) {
+                                    updateOrderStatus.mutate({
+                                      orderId: order.id,
+                                      status: 'delivered',
+                                    });
+                                  }
+                                }}
+                                className="px-2 py-1 text-xs bg-green-600 text-white rounded"
+                              >
+                                Deliver
+                              </button>
+                            );
+                          }
+                          
+                          return null;
+                        })()}
                       </div>
                     </div>
                   );

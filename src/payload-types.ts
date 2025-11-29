@@ -506,7 +506,11 @@ export interface Transaction {
    */
   customerPhone?: string | null;
   /**
-   * Customer shipping address
+   * Choose delivery or direct pickup. Direct orders skip shipping and allow immediate pickup confirmation after payment verification.
+   */
+  deliveryType: 'delivery' | 'direct';
+  /**
+   * Customer shipping address (required for delivery orders)
    */
   shippingAddress?: {
     /**
@@ -539,19 +543,19 @@ export interface Transaction {
     id?: string | null;
   }[];
   /**
-   * Total amount in RWF
+   * Total amount in RWF (tenant receives full amount)
    */
   totalAmount: number;
   /**
-   * Platform fee (10% of total)
+   * Platform fee (DEPRECATED - Always 0)
    */
-  platformFee: number;
+  platformFee?: number | null;
   /**
-   * Amount for tenant after platform fee
+   * Tenant amount (DEPRECATED - Same as totalAmount)
    */
-  tenantAmount: number;
+  tenantAmount?: number | null;
   /**
-   * MTN Mobile Money Transaction ID (from customer SMS)
+   * MTN Mobile Money Transaction ID (from customer SMS) - Read-only for verification
    */
   mtnTransactionId?: string | null;
   /**
@@ -614,9 +618,13 @@ export interface Order {
    */
   transaction?: (string | null) | Transaction;
   /**
-   * Order fulfillment status. Orders start as 'pending' after payment verification, then move through shipped → delivered → completed when customer confirms receipt.
+   * Delivery type inherited from transaction. Direct orders allow immediate pickup confirmation after payment verification.
    */
-  status: 'pending' | 'shipped' | 'delivered' | 'completed' | 'cancelled';
+  deliveryType: 'delivery' | 'direct';
+  /**
+   * Order fulfillment status. Direct orders: pending → completed (after pickup confirmation). Delivery orders: pending → shipped → delivered → completed (after delivery confirmation).
+   */
+  status: 'pending' | 'shipped' | 'delivered' | 'completed' | 'refunded' | 'cancelled';
   /**
    * Date when customer confirmed receipt of item
    */
@@ -718,17 +726,17 @@ export interface Sale {
    */
   pricePerUnit: number;
   /**
-   * Total sale amount before platform fee (RWF)
+   * Total sale amount (RWF) - Tenant receives full amount
    */
   totalAmount: number;
   /**
-   * Platform fee (10%)
+   * Platform fee (DEPRECATED - Always 0)
    */
-  platformFee: number;
+  platformFee?: number | null;
   /**
-   * Net amount for tenant (after platform fee)
+   * Net amount (DEPRECATED - Same as totalAmount)
    */
-  netAmount: number;
+  netAmount?: number | null;
   /**
    * Sale status (synced from order)
    */
@@ -844,8 +852,8 @@ export interface Message {
    * When the message was read
    */
   readAt?: string | null;
-  updatedAt: string;
   createdAt: string;
+  updatedAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1098,6 +1106,7 @@ export interface TransactionsSelect<T extends boolean = true> {
   customerName?: T;
   customerEmail?: T;
   customerPhone?: T;
+  deliveryType?: T;
   shippingAddress?:
     | T
     | {
@@ -1145,6 +1154,7 @@ export interface OrdersSelect<T extends boolean = true> {
   product?: T;
   totalAmount?: T;
   transaction?: T;
+  deliveryType?: T;
   status?: T;
   confirmedAt?: T;
   shippedAt?: T;
@@ -1230,8 +1240,8 @@ export interface MessagesSelect<T extends boolean = true> {
       };
   read?: T;
   readAt?: T;
-  updatedAt?: T;
   createdAt?: T;
+  updatedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

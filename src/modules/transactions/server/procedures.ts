@@ -188,6 +188,7 @@ export const transactionsRouter = createTRPCRouter({
               accountNumber: transaction.customerPhone,
               amount: item.price * item.quantity,
               currency: "RWF",
+              deliveryType: (transaction as any).deliveryType || 'delivery', // Copy delivery type from transaction
               status: "pending",
             }
           });

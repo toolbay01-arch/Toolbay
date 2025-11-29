@@ -58,11 +58,12 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
       customerEmail: formData.email,
       customerPhone: formData.phone,
       customerName: formData.name,
-      shippingAddress: {
+      deliveryType: formData.deliveryType,
+      shippingAddress: formData.deliveryType === 'delivery' ? {
         line1: formData.addressLine1,
         city: formData.city,
         country: formData.country,
-      },
+      } : undefined,
     });
   };
 

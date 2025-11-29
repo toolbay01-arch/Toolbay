@@ -18,6 +18,7 @@ interface OrderCardProps {
     totalAmount: number
     createdAt: string
     received?: boolean
+    deliveryType?: 'direct' | 'delivery'
     sellerUserId?: string | null
     storeName?: string | null
     // New flattened fields from API
@@ -86,8 +87,12 @@ export function OrderCard({ order, onConfirmReceiptAction }: OrderCardProps) {
   const imageSrc = order.productImage || order.products?.[0]?.image
   const productTitle = order.productName || order.products?.[0]?.title || 'Unknown Product'
   const quantity = order.quantity || order.products?.[0]?.quantity || 1
+  const deliveryType = order.deliveryType || 'delivery' // Default to delivery for backward compatibility
 
-  const canConfirmReceipt = order.status === 'delivered' && !order.received
+  // Determine if receipt can be confirmed based on delivery type
+  const canConfirmReceipt = deliveryType === 'direct' 
+    ? order.status === 'pending' && !order.received // Direct orders can confirm from pending
+    : order.status === 'delivered' && !order.received // Delivery orders must be delivered
 
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
@@ -115,6 +120,15 @@ export function OrderCard({ order, onConfirmReceiptAction }: OrderCardProps) {
                 {order.storeName && (
                   <p className="text-xs text-gray-500">from {order.storeName}</p>
                 )}
+                {deliveryType && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded mt-1 inline-block ${
+                    deliveryType === 'direct' 
+                      ? 'bg-purple-100 text-purple-700' 
+                      : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {deliveryType === 'direct' ? '📦 Pickup' : '🚚 Delivery'}
+                  </span>
+                )}
               </div>
               <OrderStatusBadge status={order.status} />
             </div>
@@ -131,11 +145,14 @@ export function OrderCard({ order, onConfirmReceiptAction }: OrderCardProps) {
 
               {/* Action Buttons */}
               <div className="flex gap-2">
-                {/* Confirm Receipt */}
+                {/* Confirm Receipt/Pickup */}
                 {canConfirmReceipt && (
                   <Button
                     onClick={() => {
-                      if (confirm('Confirm that you have received this order?')) {
+                      const message = deliveryType === 'direct'
+                        ? 'Confirm that you have picked up this order?'
+                        : 'Confirm that you have received this order?'
+                      if (confirm(message)) {
                         onConfirmReceiptAction(order.id)
                       }
                     }}
@@ -143,7 +160,7 @@ export function OrderCard({ order, onConfirmReceiptAction }: OrderCardProps) {
                     className="bg-green-600 hover:bg-green-700 text-white"
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
-                    Confirm
+                    {deliveryType === 'direct' ? 'Confirm Pickup' : 'Confirm Receipt'}
                   </Button>
                 )}
 
@@ -173,10 +190,15 @@ export function OrderCard({ order, onConfirmReceiptAction }: OrderCardProps) {
 
             {/* Status Indicators */}
             {order.status === 'pending' && (
-              <p className="text-xs text-yellow-600 mt-2">⏳ Awaiting shipment</p>
+              <p className="text-xs text-yellow-600 mt-2">
+                {deliveryType === 'direct' ? '✅ Ready for pickup' : '⏳ Awaiting shipment'}
+              </p>
             )}
-            {order.status === 'shipped' && (
+            {order.status === 'shipped' && deliveryType === 'delivery' && (
               <p className="text-xs text-blue-600 mt-2">🚚 On the way</p>
+            )}
+            {order.status === 'delivered' && deliveryType === 'delivery' && (
+              <p className="text-xs text-purple-600 mt-2">📦 Delivered - Please confirm receipt</p>
             )}
             {order.status === 'completed' && (
               <p className="text-xs text-green-600 mt-2">✅ Order completed</p>

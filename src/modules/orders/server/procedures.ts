@@ -136,6 +136,7 @@ export const ordersRouter = createTRPCRouter({
             : String(order.id),
           orderNumber: order.orderNumber || order.name || `Order-${order.id}`,
           status: order.status || 'pending',
+          deliveryType: (order as any).deliveryType || 'delivery', // Include delivery type
           totalAmount: order.totalAmount || order.amount || 0,
           createdAt: order.createdAt,
           confirmedAt: order.confirmedAt || null,
@@ -220,25 +221,40 @@ export const ordersRouter = createTRPCRouter({
       throw new Error('You can only confirm receipt for your own orders')
     }
 
-    // Check order status - must be delivered
-    if (order.status !== 'delivered') {
-      throw new Error('You can only confirm receipt for delivered orders')
-    }
-
     // Check if already confirmed
     if (order.received) {
       throw new Error('Receipt has already been confirmed for this order')
     }
 
+    // Check order status based on delivery type
+    const deliveryType = (order as any).deliveryType || 'delivery'; // Default to delivery for backward compatibility
+    
+    if (deliveryType === 'direct') {
+      // Direct orders can be confirmed when status is 'pending' (after payment verification)
+      if (order.status !== 'pending') {
+        throw new Error('You can only confirm pickup for orders that are ready (pending status)')
+      }
+    } else {
+      // Delivery orders must be delivered before confirmation
+      if (order.status !== 'delivered') {
+        throw new Error('You can only confirm receipt for delivered orders')
+      }
+    }
+
     // Update order - mark as received and completed
+    const updateData: any = {
+      received: true,
+      status: 'completed',
+      updatedAt: new Date().toISOString(),
+    }
+
+    // Set confirmedAt timestamp
+    updateData.confirmedAt = new Date().toISOString()
+
     const updatedOrder = await ctx.db.update({
       collection: 'orders',
       id: input.orderId,
-      data: {
-        received: true,
-        status: 'completed',
-        updatedAt: new Date().toISOString(),
-      },
+      data: updateData,
     })
 
     return {
