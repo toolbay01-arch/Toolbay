@@ -92,6 +92,7 @@ const tenantNavbarItems: NavbarItem[] = [
       <span>My Store</span>
     </>
   ) },
+  { href: "/orders", children: "My Purchases" },
   // { 
   //   href: "#", 
   //   children: "Store Menu",
