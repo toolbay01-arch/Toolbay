@@ -100,7 +100,9 @@ export async function POST(req: Request) {
                 bankName: 'Stripe',
                 accountNumber: 'N/A',
                 currency: 'RWF',
-              },
+                deliveryType: 'delivery', // Default to delivery for Stripe orders
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              } as any,
             });
           }
           break;

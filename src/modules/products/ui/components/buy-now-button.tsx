@@ -87,11 +87,12 @@ export const BuyNowButton = ({
       customerName: data.name,
       customerPhone: data.phone,
       customerEmail: data.email,
-      shippingAddress: {
+      deliveryType: data.deliveryType,
+      shippingAddress: data.deliveryType === 'delivery' ? {
         line1: data.addressLine1,
         city: data.city,
         country: data.country,
-      },
+      } : undefined,
     });
   };
 

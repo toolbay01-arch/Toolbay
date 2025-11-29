@@ -83,6 +83,7 @@ export const adminRouter = createTRPCRouter({
               id: order.id,
               orderNumber: order.orderNumber,
               status: order.status,
+              deliveryType: (order as any).deliveryType || 'delivery', // Include delivery type
               totalAmount: order.totalAmount,
               shippedAt: order.shippedAt,
               deliveredAt: order.deliveredAt,
@@ -197,6 +198,7 @@ export const adminRouter = createTRPCRouter({
               amount: item.price * quantity,
               currency: "RWF",
               transaction: transaction.id,
+              deliveryType: (transaction as any).deliveryType || 'delivery', // Copy delivery type from transaction
               status: "pending", // Orders start as pending after payment verification
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any,
@@ -257,7 +259,7 @@ export const adminRouter = createTRPCRouter({
         collection: "tenants",
         id: tenant.id,
         data: {
-          totalRevenue: (tenant.totalRevenue || 0) + transaction.tenantAmount,
+          totalRevenue: (tenant.totalRevenue || 0) + (transaction.tenantAmount || 0),
         },
       });
 

@@ -267,6 +267,16 @@ export const salesRouter = createTRPCRouter({
         });
       }
 
+      // Check delivery type - direct orders cannot be shipped
+      const deliveryType = (order as any).deliveryType || 'delivery'; // Default to delivery for backward compatibility
+      
+      if (deliveryType === 'direct' && input.status === 'shipped') {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Direct payment (pickup) orders cannot be marked as shipped. They are ready for pickup after payment verification.",
+        });
+      }
+
       // Update the order status
       const updateData: any = {
         status: input.status,
@@ -326,6 +336,7 @@ export const salesRouter = createTRPCRouter({
         orderNumber: sale.order?.orderNumber || '',
         saleNumber: sale.saleNumber,
         status: sale.status,
+        deliveryType: (sale.order as any)?.deliveryType || 'delivery', // Include delivery type
         customerName: sale.customerName,
         customerEmail: sale.customerEmail,
         productName: sale.product?.name || 'Unknown Product',

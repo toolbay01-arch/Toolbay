@@ -23,6 +23,7 @@ export interface CheckoutFormData {
   email: string
   phone: string
   name: string
+  deliveryType: 'direct' | 'delivery'
   addressLine1: string
   city: string
   country: string
@@ -38,6 +39,7 @@ export function CheckoutForm({
     email: "",
     phone: "",
     name: "",
+    deliveryType: "direct",
     addressLine1: "",
     city: "",
     country: "Rwanda",
@@ -52,6 +54,19 @@ export function CheckoutForm({
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }))
+    }
+  }
+
+  const handleDeliveryTypeChange = (deliveryType: 'direct' | 'delivery') => {
+    setFormData(prev => ({ ...prev, deliveryType }))
+    // Clear address errors when switching to direct
+    if (deliveryType === 'direct') {
+      setErrors(prev => ({ 
+        ...prev, 
+        addressLine1: undefined,
+        city: undefined,
+        country: undefined
+      }))
     }
   }
 
@@ -79,17 +94,19 @@ export function CheckoutForm({
       newErrors.name = "Name must be at least 3 characters"
     }
 
-    // Address validation
-    if (!formData.addressLine1.trim()) {
-      newErrors.addressLine1 = "Address is required"
-    }
+    // Address validation - only required for delivery
+    if (formData.deliveryType === 'delivery') {
+      if (!formData.addressLine1.trim()) {
+        newErrors.addressLine1 = "Address is required for delivery"
+      }
 
-    if (!formData.city.trim()) {
-      newErrors.city = "City is required"
-    }
+      if (!formData.city.trim()) {
+        newErrors.city = "City is required for delivery"
+      }
 
-    if (!formData.country.trim()) {
-      newErrors.country = "Country is required"
+      if (!formData.country.trim()) {
+        newErrors.country = "Country is required for delivery"
+      }
     }
 
     setErrors(newErrors)
@@ -181,66 +198,107 @@ export function CheckoutForm({
                 </div>
               </div>
 
-              {/* Shipping Address */}
+              {/* Delivery Type Selection */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">Shipping Address</h3>
+                <h3 className="text-lg font-semibold border-b pb-2">Delivery Option</h3>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="addressLine1">
-                    Address Line 1 <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="addressLine1"
-                    type="text"
-                    placeholder="123 Main Street"
-                    value={formData.addressLine1}
-                    onChange={handleChange("addressLine1")}
-                    className={errors.addressLine1 ? "border-red-500" : ""}
-                    disabled={isSubmitting}
-                  />
-                  {errors.addressLine1 && (
-                    <p className="text-sm text-red-500">{errors.addressLine1}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="city">
-                      City <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="city"
-                      type="text"
-                      placeholder="Kigali"
-                      value={formData.city}
-                      onChange={handleChange("city")}
-                      className={errors.city ? "border-red-500" : ""}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="direct"
+                      name="deliveryType"
+                      value="direct"
+                      checked={formData.deliveryType === 'direct'}
+                      onChange={() => handleDeliveryTypeChange('direct')}
+                      className="h-4 w-4 text-primary"
                       disabled={isSubmitting}
                     />
-                    {errors.city && (
-                      <p className="text-sm text-red-500">{errors.city}</p>
-                    )}
+                    <Label htmlFor="direct" className="font-normal cursor-pointer">
+                      Direct Payment (Pickup at store - No shipping)
+                    </Label>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="country">
-                      Country <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="country"
-                      type="text"
-                      placeholder="Rwanda"
-                      value={formData.country}
-                      onChange={handleChange("country")}
-                      className={errors.country ? "border-red-500" : ""}
+                  
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="delivery"
+                      name="deliveryType"
+                      value="delivery"
+                      checked={formData.deliveryType === 'delivery'}
+                      onChange={() => handleDeliveryTypeChange('delivery')}
+                      className="h-4 w-4 text-primary"
                       disabled={isSubmitting}
                     />
-                    {errors.country && (
-                      <p className="text-sm text-red-500">{errors.country}</p>
-                    )}
+                    <Label htmlFor="delivery" className="font-normal cursor-pointer">
+                      Delivery (Shipping required)
+                    </Label>
                   </div>
                 </div>
               </div>
+
+              {/* Shipping Address - Conditional */}
+              {formData.deliveryType === 'delivery' && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">Shipping Address</h3>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="addressLine1">
+                      Address Line 1 <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="addressLine1"
+                      type="text"
+                      placeholder="123 Main Street"
+                      value={formData.addressLine1}
+                      onChange={handleChange("addressLine1")}
+                      className={errors.addressLine1 ? "border-red-500" : ""}
+                      disabled={isSubmitting}
+                    />
+                    {errors.addressLine1 && (
+                      <p className="text-sm text-red-500">{errors.addressLine1}</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="city">
+                        City <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="city"
+                        type="text"
+                        placeholder="Kigali"
+                        value={formData.city}
+                        onChange={handleChange("city")}
+                        className={errors.city ? "border-red-500" : ""}
+                        disabled={isSubmitting}
+                      />
+                      {errors.city && (
+                        <p className="text-sm text-red-500">{errors.city}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="country">
+                        Country <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="country"
+                        type="text"
+                        placeholder="Rwanda"
+                        value={formData.country}
+                        onChange={handleChange("country")}
+                        className={errors.country ? "border-red-500" : ""}
+                        disabled={isSubmitting}
+                      />
+                      {errors.country && (
+                        <p className="text-sm text-red-500">{errors.country}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Submit Button */}
               <Button

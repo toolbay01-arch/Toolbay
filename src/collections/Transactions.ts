@@ -154,6 +154,19 @@ export const Transactions: CollectionConfig = {
       },
     },
     {
+      name: 'deliveryType',
+      type: 'select',
+      required: true,
+      defaultValue: 'direct',
+      options: [
+        { label: 'Direct Payment (Pickup)', value: 'direct' },
+        { label: 'Delivery', value: 'delivery' },
+      ],
+      admin: {
+        description: 'Choose delivery or direct pickup. Direct orders skip shipping and allow immediate pickup confirmation after payment verification.',
+      },
+    },
+    {
       name: 'shippingAddress',
       type: 'group',
       fields: [
@@ -180,7 +193,8 @@ export const Transactions: CollectionConfig = {
         },
       ],
       admin: {
-        description: 'Customer shipping address',
+        description: 'Customer shipping address (required for delivery orders)',
+        condition: (data) => data.deliveryType === 'delivery',
       },
     },
     {
