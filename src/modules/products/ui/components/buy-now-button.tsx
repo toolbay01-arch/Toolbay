@@ -96,10 +96,6 @@ export const BuyNowButton = ({
     });
   };
 
-  if (isPurchased) {
-    return null; // Don't show Buy Now for already purchased items
-  }
-
   if (isOutOfStock) {
     return null; // Don't show Buy Now for out of stock items
   }

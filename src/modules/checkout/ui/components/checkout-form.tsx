@@ -116,6 +116,11 @@ export function CheckoutForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Prevent double submission
+    if (isSubmitting) {
+      return
+    }
+    
     if (validateForm()) {
       onSubmitAction(formData)
     }

@@ -128,6 +128,11 @@ export function BuyNowDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Prevent double submission
+    if (isLoading) {
+      return;
+    }
+
     if (validateForm()) {
       onSubmit({ ...formData, quantity: selectedQuantity });
     }
