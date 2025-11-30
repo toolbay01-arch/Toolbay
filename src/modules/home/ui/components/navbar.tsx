@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle } from "lucide-react";
+import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -73,6 +73,12 @@ const publicNavbarItems: NavbarItem[] = [
 const customerNavbarItems: NavbarItem[] = [
   { href: "/", children: "Home" },
   { href: "/orders", children: "My Purchases" },
+  { href: "/library", children: (
+    <>
+      <BookmarkCheck className="h-4 w-4" />
+      <span>Library</span>
+    </>
+  ) },
   { href: "/cart", children: "My Cart" },
 ];
 
@@ -93,6 +99,12 @@ const tenantNavbarItems: NavbarItem[] = [
     </>
   ) },
   { href: "/orders", children: "My Purchases" },
+  { href: "/library", children: (
+    <>
+      <BookmarkCheck className="h-4 w-4" />
+      <span>Library</span>
+    </>
+  ) },
   // { 
   //   href: "#", 
   //   children: "Store Menu",

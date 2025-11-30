@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { format } from "date-fns";
 import { User, MessageCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -76,21 +77,19 @@ export function ChatList({
     gcTime: 5 * 60 * 1000,
   });
 
-  const handleConversationClick = (conversationId: string, e?: React.MouseEvent | React.TouchEvent) => {
+  const handleConversationClick = (conversationId: string, e: React.MouseEvent | React.TouchEvent) => {
     // Prevent double-clicks and multiple navigations
-    if (navigatingRef.current === conversationId || loadingConversationId === conversationId) {
+    if (navigatingRef.current === conversationId) {
+      e.preventDefault();
+      e.stopPropagation();
       return;
     }
     
-    // Prevent event propagation
-    e?.preventDefault();
-    e?.stopPropagation();
-    
-    // Mark as navigating and loading
+    // Mark as navigating (Link will handle the actual navigation)
     navigatingRef.current = conversationId;
     setLoadingConversationId(conversationId);
     
-    // Prefetch immediately for faster navigation
+    // Prefetch in background for faster navigation (non-blocking)
     router.prefetch(`/chat/${conversationId}`);
     queryClient.prefetchQuery(
       trpc.chat.getConversation.queryOptions({
@@ -98,16 +97,18 @@ export function ChatList({
         includeMessages: true,
         messageLimit: 50,
       })
-    );
+    ).catch(() => {
+      // Silently handle prefetch errors - they shouldn't block navigation
+    });
     
-    // Navigate immediately
-    router.push(`/chat/${conversationId}`);
-    
-    // Reset navigation flag after a short delay
+    // Reset navigation flag after navigation completes
+    // Use a shorter timeout and ensure Link navigation proceeds
     setTimeout(() => {
       navigatingRef.current = null;
       setLoadingConversationId(null);
-    }, 1000);
+    }, 300);
+    
+    // Don't prevent default - let Link handle navigation naturally
   };
   
   const handleMouseEnter = (conversationId: string) => {
@@ -124,16 +125,19 @@ export function ChatList({
     );
   };
   
-  const handleTouchStart = (conversationId: string) => {
-    // Prefetch on touch start for mobile (faster than waiting for click)
-    router.prefetch(`/chat/${conversationId}`);
-    queryClient.prefetchQuery(
-      trpc.chat.getConversation.queryOptions({
-        conversationId,
-        includeMessages: true,
-        messageLimit: 50,
-      })
-    );
+  const handleTouchStart = (conversationId: string, e: React.TouchEvent) => {
+    // Only prefetch, don't navigate - let onClick handle navigation
+    // This prevents interference with the click event
+    if (navigatingRef.current !== conversationId) {
+      router.prefetch(`/chat/${conversationId}`);
+      queryClient.prefetchQuery(
+        trpc.chat.getConversation.queryOptions({
+          conversationId,
+          includeMessages: true,
+          messageLimit: 50,
+        })
+      );
+    }
   };
 
   // Show loading while checking session or fetching conversations
@@ -183,17 +187,24 @@ export function ChatList({
           const isLoading = loadingConversationId === conversation.id;
 
           return (
-            <button
+            <Link
               key={conversation.id}
-              type="button"
-              onClick={(e) => handleConversationClick(conversation.id, e)}
-              onTouchStart={() => handleTouchStart(conversation.id)}
+              href={`/chat/${conversation.id}`}
+              onClick={(e) => {
+                // Only prevent if already navigating
+                if (navigatingRef.current === conversation.id) {
+                  e.preventDefault();
+                  return;
+                }
+                handleConversationClick(conversation.id, e);
+                // Let Link handle navigation - don't prevent default
+              }}
+              onTouchStart={(e) => handleTouchStart(conversation.id, e)}
               onMouseEnter={() => handleMouseEnter(conversation.id)}
-              disabled={isLoading}
               className={cn(
-                "w-full text-left p-2 rounded-md border transition-all cursor-pointer touch-manipulation",
+                "w-full text-left p-2 rounded-md border transition-all cursor-pointer touch-manipulation block",
                 "focus:outline-none focus:ring-2 focus:ring-primary/50",
-                "disabled:opacity-70 disabled:cursor-wait",
+                isLoading && "opacity-70",
                 isSelected 
                   ? "bg-primary/10 border-primary shadow-md" 
                   : "bg-card border-border hover:bg-accent/80 hover:border-primary/50 hover:shadow-sm active:bg-accent"
@@ -242,7 +253,7 @@ export function ChatList({
                   )}
                 </div>
               </div>
-            </button>
+            </Link>
           );
         })}
       </div>

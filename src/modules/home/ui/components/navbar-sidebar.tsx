@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LogOut, ChevronDown, ChevronRight, Store } from "lucide-react";
+import { LogOut, ChevronDown, ChevronRight, Store, BookmarkCheck } from "lucide-react";
 
 import {
   Sheet,

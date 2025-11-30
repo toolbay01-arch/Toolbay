@@ -129,13 +129,24 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden w-full max-w-full">
       {/* Header - Fixed at top */}
-      <div className="border-b p-2 sm:p-4 flex-shrink-0 overflow-hidden">
+      <div className="border-b p-2 sm:p-4 flex-shrink-0 overflow-hidden bg-background z-10">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden flex-shrink-0"
-            onClick={() => router.push("/chat")}
+            type="button"
+            className="lg:hidden flex-shrink-0 touch-manipulation"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // Use router.back() for better mobile navigation, fallback to /chat
+              // Check if we can go back in history
+              if (typeof window !== 'undefined' && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push("/chat");
+              }
+            }}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -168,15 +179,17 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
       </div>
 
       {/* Messages - Scrollable flex-1 */}
-      <ChatWindow
-        conversationId={conversationId}
-        currentUserId={currentUserId}
-        productUrl={productUrl}
-        onMessagesLoaded={handleMessageSent}
-      />
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <ChatWindow
+          conversationId={conversationId}
+          currentUserId={currentUserId}
+          productUrl={productUrl}
+          onMessagesLoaded={handleMessageSent}
+        />
+      </div>
 
       {/* Input - Fixed at bottom */}
-      <div className="border-t flex-shrink-0">
+      <div className="border-t flex-shrink-0 bg-background z-10">
         <MessageInput
           conversationId={conversationId}
           receiverId={otherUser?.id || ""}

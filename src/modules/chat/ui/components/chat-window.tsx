@@ -141,8 +141,8 @@ export function ChatWindow({
   const messages = messagesData?.docs || [];
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-hidden p-1.5 sm:p-3 md:p-4" ref={scrollRef}>
-      <div className="space-y-2 min-h-full w-full max-w-full">
+    <div className="h-full overflow-y-auto overflow-x-hidden p-1.5 sm:p-3 md:p-4" ref={scrollRef}>
+      <div className="space-y-2 min-h-full w-full max-w-full flex flex-col justify-end">
         {messages.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">
@@ -151,8 +151,6 @@ export function ChatWindow({
           </div>
         ) : (
           messages
-            .slice()
-            .reverse()
             .map((message) => {
               const sender =
                 typeof message.sender === "object"
