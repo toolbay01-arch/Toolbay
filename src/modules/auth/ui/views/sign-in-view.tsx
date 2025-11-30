@@ -54,11 +54,16 @@ export const SignInView = () => {
       // Also invalidate to ensure fresh data
       await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
       
+      // Navigate to the redirect URL if provided, otherwise go to homepage
+      const redirectUrl = redirect || "/";
+      
+      // Prefetch the redirect URL for instant navigation
+      router.prefetch(redirectUrl);
+      
       // Small delay to ensure cache is updated before navigation
       await new Promise(resolve => setTimeout(resolve, 50));
       
-      // Navigate to the redirect URL if provided, otherwise go to homepage
-      const redirectUrl = redirect || "/";
+      // Navigate smoothly
       router.push(redirectUrl);
       router.refresh();
     },

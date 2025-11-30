@@ -22,6 +22,21 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
+  // Check session to detect logout from other tabs
+  const sessionQuery = useQuery({
+    ...trpc.auth.session.queryOptions(),
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    staleTime: 0, // Always check fresh
+  });
+
+  // Redirect to homepage if user logs out in another tab
+  useEffect(() => {
+    if (sessionQuery.isFetched && !sessionQuery.data?.user) {
+      router.push("/");
+    }
+  }, [sessionQuery.isFetched, sessionQuery.data?.user, router]);
+
   // Fetch conversation WITH messages in a single request
   const { data: conversationData, isLoading, error } = useQuery(
     trpc.chat.getConversation.queryOptions(
@@ -59,12 +74,24 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
     });
   };
 
-  if (isLoading) {
+  // Show loading while checking session or fetching conversation
+  if (sessionQuery.isLoading || !sessionQuery.isFetched || isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <div className="animate-pulse mb-2">💬</div>
           <p className="text-muted-foreground">Loading conversation...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If not authenticated, show loading while redirect happens
+  if (!sessionQuery.data?.user) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <p className="text-muted-foreground">Redirecting...</p>
         </div>
       </div>
     );
