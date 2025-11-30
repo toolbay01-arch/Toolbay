@@ -26,7 +26,7 @@ const Layout = async ({ children }: Props) => {
   }
 
   return ( 
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen lg:pt-16">
       <HydrationBoundary state={dehydrate(queryClient)}>
        <Suspense fallback={<SearchFiltersSkeleton />}>
          <SearchFilters />

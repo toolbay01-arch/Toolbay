@@ -9,7 +9,7 @@ export const Footer = () => {
           <div className="space-y-3">
             <h3 className="text-xl font-bold">Toolboxx</h3>
             <p className="text-sm text-muted-foreground">
-              Rwanda&apos;s premier online marketplace for construction materials, tools, and engineering supplies.
+              East Africa&apos;s premier online marketplace for construction materials, tools, and engineering supplies.
             </p>
           </div>
 

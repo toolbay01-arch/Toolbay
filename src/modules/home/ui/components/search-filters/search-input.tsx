@@ -34,11 +34,11 @@ export const SearchInput = ({
     <>
       <CategoriesSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
       <FiltersSidebar open={isFiltersOpen} onOpenChange={setIsFiltersOpen} />
-      <div className="flex items-center gap-2 w-full">
-        <div className="relative w-full">
+      <div className="flex items-center gap-2 w-full min-w-0">
+        <div className="relative w-full min-w-0 flex-1">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-500" />
           <Input 
-            className="pl-8" 
+            className="pl-8 w-full min-w-0" 
             placeholder="Search products" 
             disabled={disabled}
             value={searchValue}
@@ -54,11 +54,12 @@ export const SearchInput = ({
         </Button>
         <Button
           variant="elevated"
-          className="shrink-0"
+          className="shrink-0 whitespace-nowrap"
           onClick={() => setIsFiltersOpen(!isFiltersOpen)}
         >
-          <FilterIcon className="mr-2" />
-          Filters
+          <FilterIcon className="mr-2 hidden sm:inline" />
+          <span className="hidden sm:inline">Filters</span>
+          <FilterIcon className="sm:hidden" />
         </Button>
       </div>
     </>

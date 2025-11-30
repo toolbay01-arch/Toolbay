@@ -85,7 +85,7 @@ export const SearchFilters = () => {
         ref={containerRef}
         className={cn(
           "px-4 lg:px-12 py-2 md:py-8 border-b flex flex-col gap-4 w-full transition-all",
-          isSticky && "fixed top-16 left-0 right-0 z-40 shadow-md"
+          isSticky && "fixed top-16 left-0 right-0 z-40 shadow-md lg:top-16"
         )}
         style={{
           backgroundColor: activeCategoryColor,
