@@ -441,9 +441,12 @@ export const Navbar = () => {
         >
           <Wallet className="h-5 w-5" />
         </Link>
-        <Link
-          href="/chat"
-          prefetch={true}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            router.push("/chat");
+          }}
           className={cn(
             "relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation",
             pathname.startsWith("/chat") && "bg-gray-200"
@@ -458,7 +461,7 @@ export const Navbar = () => {
               {(unreadData?.totalUnread || 0) > 99 ? "99+" : unreadData?.totalUnread}
             </Badge>
           )}
-        </Link>
+        </button>
         <Link
           href="/cart"
           className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { format } from "date-fns";
 import { User, MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -26,6 +26,7 @@ export function ChatList({
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isWindowVisible, setIsWindowVisible] = useState(true);
+  const navigatingRef = useRef<string | null>(null);
 
   // Track window visibility to pause polling when tab is not active
   useEffect(() => {
@@ -59,16 +60,55 @@ export function ChatList({
     gcTime: 5 * 60 * 1000,
   });
 
-  const handleConversationClick = (conversationId: string) => {
-    // Simple navigation like ProductCard does
+  const handleConversationClick = (conversationId: string, e?: React.MouseEvent | React.TouchEvent) => {
+    // Prevent double-clicks and multiple navigations
+    if (navigatingRef.current === conversationId) {
+      return;
+    }
+    
+    // Prevent event propagation
+    e?.preventDefault();
+    e?.stopPropagation();
+    
+    // Mark as navigating
+    navigatingRef.current = conversationId;
+    
+    // Prefetch immediately for faster navigation
+    router.prefetch(`/chat/${conversationId}`);
+    queryClient.prefetchQuery(
+      trpc.chat.getConversation.queryOptions({
+        conversationId,
+        includeMessages: true,
+        messageLimit: 50,
+      })
+    );
+    
+    // Navigate immediately
     router.push(`/chat/${conversationId}`);
+    
+    // Reset navigation flag after a short delay
+    setTimeout(() => {
+      navigatingRef.current = null;
+    }, 500);
   };
   
   const handleMouseEnter = (conversationId: string) => {
-    // Prefetch on hover for instant navigation
+    // Prefetch on hover for instant navigation (desktop)
     router.prefetch(`/chat/${conversationId}`);
     
     // Prefetch conversation data with messages using queryClient
+    queryClient.prefetchQuery(
+      trpc.chat.getConversation.queryOptions({
+        conversationId,
+        includeMessages: true,
+        messageLimit: 50,
+      })
+    );
+  };
+  
+  const handleTouchStart = (conversationId: string) => {
+    // Prefetch on touch start for mobile (faster than waiting for click)
+    router.prefetch(`/chat/${conversationId}`);
     queryClient.prefetchQuery(
       trpc.chat.getConversation.queryOptions({
         conversationId,
@@ -116,13 +156,14 @@ export function ChatList({
           return (
             <div
               key={conversation.id}
-              onClick={() => handleConversationClick(conversation.id)}
+              onClick={(e) => handleConversationClick(conversation.id, e)}
+              onTouchStart={() => handleTouchStart(conversation.id)}
               onMouseEnter={() => handleMouseEnter(conversation.id)}
               className={cn(
-                "p-3 rounded-md border transition-all cursor-pointer w-full max-w-md",
+                "p-3 rounded-md border transition-all cursor-pointer w-full max-w-md touch-manipulation",
                 isSelected 
                   ? "bg-primary/10 border-primary shadow-md" 
-                  : "bg-card border-border hover:bg-accent/80 hover:border-primary/50 hover:shadow-sm"
+                  : "bg-card border-border hover:bg-accent/80 hover:border-primary/50 hover:shadow-sm active:bg-accent"
               )}
             >
               <div className="flex gap-2.5 min-w-0 max-w-full">
