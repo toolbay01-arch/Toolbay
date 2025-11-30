@@ -5,7 +5,6 @@ import { Grid3x3, List } from "lucide-react";
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ProductSort } from "../components/product-sort"
-import { ProductFilters } from "../components/product-filters"
 import { ProductList, ProductListSkeleton } from "../components/product-list"
 
 interface Props {
@@ -56,15 +55,10 @@ export const ProductListView = ({ category, tenantSlug, narrowView }: Props) => 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-6 xl:grid-cols-8 gap-y-3 md:gap-y-6 gap-x-12">
-        <div className="lg:col-span-2 xl:col-span-2">
-          <ProductFilters />
-        </div>
-        <div className="lg:col-span-4 xl:col-span-6 overflow-x-hidden">
-          <Suspense fallback={<ProductListSkeleton narrowView={narrowView} viewMode={viewMode} />}>
-            <ProductList category={category} tenantSlug={tenantSlug} narrowView={narrowView} viewMode={viewMode} />
-          </Suspense>
-        </div>
+      <div className="w-full overflow-x-hidden">
+        <Suspense fallback={<ProductListSkeleton narrowView={narrowView} viewMode={viewMode} />}>
+          <ProductList category={category} tenantSlug={tenantSlug} narrowView={narrowView} viewMode={viewMode} />
+        </Suspense>
       </div>
     </div>
   );
