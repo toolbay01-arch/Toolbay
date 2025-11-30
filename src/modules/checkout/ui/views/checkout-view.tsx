@@ -23,6 +23,27 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
   
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  
+  // Check session to detect if user is logged out
+  const sessionQuery = useQuery({
+    ...trpc.auth.session.queryOptions(),
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    staleTime: 0, // Always check fresh
+  });
+
+  // Redirect to login if user is logged out
+  useEffect(() => {
+    if (sessionQuery.isFetched && !sessionQuery.data?.user) {
+      // Get current checkout path for redirect after login
+      const checkoutPath = `/tenants/${tenantSlug}/checkout`;
+      const loginUrl = `/sign-in?redirect=${encodeURIComponent(checkoutPath)}`;
+      // Prefetch for instant navigation
+      router.prefetch(loginUrl);
+      router.push(loginUrl);
+    }
+  }, [sessionQuery.isFetched, sessionQuery.data?.user, router, tenantSlug]);
+
   const { data, error, isLoading } = useQuery(trpc.checkout.getProducts.queryOptions({
     ids: productIds,
   }));
@@ -37,11 +58,16 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
     },
     onError: (error) => {
       if (error.data?.code === "UNAUTHORIZED") {
-        // Redirect to homepage
-        router.push("/");
+        // Redirect to login page with return URL immediately (no toast to avoid flash)
+        const checkoutPath = `/tenants/${tenantSlug}/checkout`;
+        const loginUrl = `/sign-in?redirect=${encodeURIComponent(checkoutPath)}`;
+        // Prefetch for instant navigation
+        router.prefetch(loginUrl);
+        router.push(loginUrl);
+        // Don't show toast - redirect happens immediately
+      } else {
+        toast.error(error.message);
       }
-
-      toast.error(error.message);
     },
   }));
 
@@ -90,11 +116,24 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
     }
   }, [error, clearCart]);
 
-  if (isLoading) {
+  // Show loading while checking session or fetching products
+  if (sessionQuery.isLoading || !sessionQuery.isFetched || isLoading) {
     return (
       <div className="lg:pt-16 pt-4 px-4 lg:px-12">
         <div className="border border-black border-dashed flex items-center justify-center p-8 flex-col gap-y-4 bg-white w-full rounded-lg">
           <LoaderIcon className="text-muted-foreground animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
+  // If not authenticated, show loading while redirect happens
+  if (!sessionQuery.data?.user) {
+    return (
+      <div className="lg:pt-16 pt-4 px-4 lg:px-12">
+        <div className="border border-black border-dashed flex items-center justify-center p-8 flex-col gap-y-4 bg-white w-full rounded-lg">
+          <LoaderIcon className="text-muted-foreground animate-spin" />
+          <p className="text-muted-foreground">Redirecting to login...</p>
         </div>
       </div>
     )

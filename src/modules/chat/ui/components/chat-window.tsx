@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useTRPC } from "@/trpc/client";
 import type { User as UserType } from "@/payload-types";
 import { ProductPreviewDialog } from "./product-preview-dialog";
+import { cn } from "@/lib/utils";
 
 interface ChatWindowProps {
   conversationId: string;
@@ -180,11 +181,12 @@ export function ChatWindow({
                     className={`flex flex-col gap-1 max-w-[85%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[65%] ${isSentByMe ? "items-end" : "items-start"}`}
                   >
                     <div
-                      className={`rounded-lg px-2.5 py-2 sm:px-3 ${
+                      className={cn(
+                        "rounded-lg px-2.5 py-2 sm:px-3 border shadow-sm",
                         isSentByMe
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
+                          ? "bg-primary text-primary-foreground border-primary/30"
+                          : "bg-muted border-border"
+                      )}
                       style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                     >
                       <p className="text-sm whitespace-pre-wrap" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>

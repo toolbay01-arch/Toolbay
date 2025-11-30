@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { format } from "date-fns";
-import { User, MessageCircle } from "lucide-react";
+import { User, MessageCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -27,6 +27,22 @@ export function ChatList({
   const queryClient = useQueryClient();
   const [isWindowVisible, setIsWindowVisible] = useState(true);
   const navigatingRef = useRef<string | null>(null);
+  const [loadingConversationId, setLoadingConversationId] = useState<string | null>(null);
+
+  // Check session to detect logout from other tabs
+  const sessionQuery = useQuery({
+    ...trpc.auth.session.queryOptions(),
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    staleTime: 0, // Always check fresh
+  });
+
+  // Redirect to homepage if user logs out in another tab
+  useEffect(() => {
+    if (sessionQuery.isFetched && !sessionQuery.data?.user) {
+      router.push("/");
+    }
+  }, [sessionQuery.isFetched, sessionQuery.data?.user, router]);
 
   // Track window visibility to pause polling when tab is not active
   useEffect(() => {
@@ -62,7 +78,7 @@ export function ChatList({
 
   const handleConversationClick = (conversationId: string, e?: React.MouseEvent | React.TouchEvent) => {
     // Prevent double-clicks and multiple navigations
-    if (navigatingRef.current === conversationId) {
+    if (navigatingRef.current === conversationId || loadingConversationId === conversationId) {
       return;
     }
     
@@ -70,8 +86,9 @@ export function ChatList({
     e?.preventDefault();
     e?.stopPropagation();
     
-    // Mark as navigating
+    // Mark as navigating and loading
     navigatingRef.current = conversationId;
+    setLoadingConversationId(conversationId);
     
     // Prefetch immediately for faster navigation
     router.prefetch(`/chat/${conversationId}`);
@@ -89,7 +106,8 @@ export function ChatList({
     // Reset navigation flag after a short delay
     setTimeout(() => {
       navigatingRef.current = null;
-    }, 500);
+      setLoadingConversationId(null);
+    }, 1000);
   };
   
   const handleMouseEnter = (conversationId: string) => {
@@ -118,10 +136,20 @@ export function ChatList({
     );
   };
 
-  if (isLoading) {
+  // Show loading while checking session or fetching conversations
+  if (sessionQuery.isLoading || !sessionQuery.isFetched || isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground text-sm">Loading conversations...</p>
+      </div>
+    );
+  }
+
+  // If not authenticated, show loading while redirect happens
+  if (!sessionQuery.data?.user) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground text-sm">Redirecting...</p>
       </div>
     );
   }
@@ -142,7 +170,7 @@ export function ChatList({
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-2 space-y-2 overflow-hidden">
+      <div className="p-1.5 space-y-1.5 overflow-hidden">
         {conversations.map((conversation) => {
           const participants = (conversation.participants || []) as UserType[];
           const otherUser = participants.find((p) => p.id !== currentUserId);
@@ -152,44 +180,54 @@ export function ChatList({
             ] || 0;
           
           const isSelected = selectedConversationId === conversation.id;
+          const isLoading = loadingConversationId === conversation.id;
 
           return (
-            <div
+            <button
               key={conversation.id}
+              type="button"
               onClick={(e) => handleConversationClick(conversation.id, e)}
               onTouchStart={() => handleTouchStart(conversation.id)}
               onMouseEnter={() => handleMouseEnter(conversation.id)}
+              disabled={isLoading}
               className={cn(
-                "p-3 rounded-md border transition-all cursor-pointer w-full max-w-md touch-manipulation",
+                "w-full text-left p-2 rounded-md border transition-all cursor-pointer touch-manipulation",
+                "focus:outline-none focus:ring-2 focus:ring-primary/50",
+                "disabled:opacity-70 disabled:cursor-wait",
                 isSelected 
                   ? "bg-primary/10 border-primary shadow-md" 
                   : "bg-card border-border hover:bg-accent/80 hover:border-primary/50 hover:shadow-sm active:bg-accent"
               )}
             >
-              <div className="flex gap-2.5 min-w-0 max-w-full">
-                <Avatar className="h-9 w-9 shrink-0">
+              <div className="flex gap-2 min-w-0 w-full">
+                <Avatar className="h-7 w-7 shrink-0">
                   <AvatarFallback>
-                    <User className="h-4 w-4" />
+                    <User className="h-3.5 w-3.5" />
                   </AvatarFallback>
                 </Avatar>
 
-                <div className="flex-1 min-w-0 max-w-full overflow-hidden">
-                  <div className="flex items-center justify-between mb-0.5 gap-2">
-                    <h4 className="font-semibold text-sm truncate">
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <h4 className="font-semibold text-xs truncate min-w-0 flex-1">
                       {otherUser?.username || "Unknown User"}
                     </h4>
-                    {conversation.lastMessageAt && (
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        {format(
-                          new Date(conversation.lastMessageAt),
-                          "MMM d"
-                        )}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isLoading && (
+                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                      )}
+                      {conversation.lastMessageAt && (
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          {format(
+                            new Date(conversation.lastMessageAt),
+                            "MMM d"
+                          )}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {conversation.product && (
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-[10px] text-muted-foreground truncate">
                       Re: {typeof conversation.product === "object" ? conversation.product.name : "Product"}
                     </p>
                   )}
@@ -197,14 +235,14 @@ export function ChatList({
                   {unreadCount > 0 && (
                     <Badge
                       variant="default"
-                      className="h-5 min-w-5 px-1.5 shrink-0 mt-1"
+                      className="h-4 min-w-4 px-1 shrink-0 mt-0.5 text-[10px]"
                     >
                       {unreadCount}
                     </Badge>
                   )}
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

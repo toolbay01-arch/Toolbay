@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -38,6 +38,7 @@ export const BuyNowButton = ({
   allowBackorder = false,
 }: BuyNowButtonProps) => {
   const router = useRouter();
+  const pathname = usePathname();
   const trpc = useTRPC();
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -59,10 +60,13 @@ export const BuyNowButton = ({
       },
       onError: (error) => {
         if (error.data?.code === "UNAUTHORIZED") {
-          // Redirect to homepage
+          // Redirect to login page with return URL immediately (no toast to avoid flash)
           setDialogOpen(false);
-          toast.error("Please sign in to continue");
-          router.push("/");
+          const loginUrl = `/sign-in?redirect=${encodeURIComponent(pathname)}`;
+          // Prefetch for instant navigation
+          router.prefetch(loginUrl);
+          router.push(loginUrl);
+          // Don't show toast - redirect happens immediately
         } else {
           toast.error(error.message);
         }

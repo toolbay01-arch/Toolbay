@@ -243,7 +243,7 @@ export const Navbar = () => {
 
   if (!isLoggedIn) {
     return (
-      <nav className="h-16 flex border-b justify-between font-medium bg-white max-w-full overflow-visible sticky top-0 z-50 lg:fixed lg:w-full">
+      <nav className="h-16 flex border-b justify-between font-medium bg-white w-full overflow-x-auto overflow-y-visible sticky top-0 z-50 lg:fixed">
         <Link href="/" className="pl-3 lg:pl-4 flex items-center flex-shrink-0">
           <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
             Toolboxx
@@ -276,27 +276,31 @@ export const Navbar = () => {
             variant="secondary"
             className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-white hover:bg-pink-400 transition-colors text-sm"
           >
-            <OptimizedLink prefetch={true} href="/sign-in">
+            <Link href="/sign-in" prefetch={true}>
               Log in
-            </OptimizedLink>
+            </Link>
           </Button>
           <Button
             asChild
             className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-sm"
           >
-            <OptimizedLink prefetch={true} href="/sign-up">
+            <Link href="/sign-up" prefetch={true}>
               Sign Up
-            </OptimizedLink>
+            </Link>
           </Button>
         </div>
         {/* Mobile Icons - Right Side: Sign In, Cart, Menu */}
-        <div className="flex lg:hidden items-center gap-0.5 pr-2">
-          <Link
-            href="/sign-in"
-            className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 touch-manipulation"
+        <div className="flex lg:hidden items-center gap-0.5 pr-2 flex-shrink-0">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              router.push("/sign-in");
+            }}
+            className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 touch-manipulation outline-none focus:outline-none"
           >
             <LogIn className="h-5 w-5" />
-          </Link>
+          </button>
           <Link
             href="/cart"
             className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 touch-manipulation"
@@ -324,7 +328,7 @@ export const Navbar = () => {
   }
 
   return (
-    <nav className="h-16 flex border-b justify-between font-medium bg-white max-w-full overflow-visible sticky top-0 z-50 lg:fixed lg:w-full">
+    <nav className="h-16 flex border-b justify-between font-medium bg-white w-full overflow-x-auto overflow-y-visible sticky top-0 z-50 lg:fixed">
       {/* Logo - Smaller, more compact */}
       <Link href="/" className="pl-3 lg:pl-4 flex items-center flex-shrink-0">
         <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
@@ -408,23 +412,23 @@ export const Navbar = () => {
             variant="secondary"
             className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-white hover:bg-pink-400 transition-colors text-sm"
           >
-            <OptimizedLink prefetch={true} href="/sign-in">
+            <Link href="/sign-in" prefetch={true}>
               Log in
-            </OptimizedLink>
+            </Link>
           </Button>
           <Button
             asChild
             className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-sm"
           >
-            <OptimizedLink prefetch={true} href="/sign-up">
+            <Link href="/sign-up" prefetch={true}>
               Sign Up
-            </OptimizedLink>
+            </Link>
           </Button>
         </div>
       )}
 
       {/* Mobile Icons - Right Side */}
-        <div className="flex lg:hidden items-center gap-0.5 pr-2">
+        <div className="flex lg:hidden items-center gap-0.5 pr-2 flex-shrink-0">
         {isTenant && (
           <Link
             href="/my-store"
@@ -441,16 +445,10 @@ export const Navbar = () => {
         >
           <Wallet className="h-5 w-5" />
         </Link>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            router.push("/chat");
-          }}
-          className={cn(
-            "relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation",
-            pathname.startsWith("/chat") && "bg-gray-200"
-          )}
+        <Link
+          href="/chat"
+          prefetch={true}
+          className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation"
         >
           <MessageCircle className="h-5 w-5" />
           {(unreadData?.totalUnread || 0) > 0 && (
@@ -461,7 +459,7 @@ export const Navbar = () => {
               {(unreadData?.totalUnread || 0) > 99 ? "99+" : unreadData?.totalUnread}
             </Badge>
           )}
-        </button>
+        </Link>
         <Link
           href="/cart"
           className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation"
