@@ -116,7 +116,7 @@ export const libraryRouter = createTRPCRouter({
         docs: dataWithSummarizedReviews.map((doc) => ({
           ...doc,
           image: doc.image as Media | null,
-          tenant: doc.tenant as Tenant & { image: Media | null },
+          tenant: doc.tenant as Tenant & { image: Media | null; location?: string | null },
         }))
       }
     }),

@@ -235,7 +235,7 @@ export const productsRouter = createTRPCRouter({
         ...product,
         isPurchased,
         image: (product as PopulatedProduct).image,
-        tenant: (product as PopulatedProduct).tenant as Tenant & { image: Media | null },
+        tenant: (product as PopulatedProduct).tenant as Tenant & { image: Media | null; location?: string | null },
         reviewRating,
         reviewCount: reviews.totalDocs,
         ratingDistribution,
@@ -461,7 +461,7 @@ export const productsRouter = createTRPCRouter({
         docs: dataWithSummarizedReviews.map((doc) => ({
           ...doc,
           image: (doc as PopulatedProduct).image,
-          tenant: (doc as PopulatedProduct).tenant as Tenant & { image: Media | null },
+          tenant: (doc as PopulatedProduct).tenant as Tenant & { image: Media | null; location?: string | null },
         }))
       }
     }),
@@ -564,7 +564,7 @@ export const productsRouter = createTRPCRouter({
         docs: dataWithSummarizedReviews.map((doc) => ({
           ...doc,
           image: (doc as PopulatedProduct).image,
-          tenant: (doc as PopulatedProduct).tenant as Tenant & { image: Media | null },
+          tenant: (doc as PopulatedProduct).tenant as Tenant & { image: Media | null; location?: string | null },
         }))
       };
     }),
@@ -1017,7 +1017,7 @@ export const productsRouter = createTRPCRouter({
         docs: dataWithSummarizedReviews.map((doc) => ({
           ...doc,
           image: (doc as PopulatedProduct).image,
-          tenant: (doc as PopulatedProduct).tenant as Tenant & { image: Media | null },
+          tenant: (doc as PopulatedProduct).tenant as Tenant & { image: Media | null; location?: string | null },
         }))
       };
     }),

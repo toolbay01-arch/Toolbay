@@ -370,7 +370,7 @@ export const checkoutRouter = createTRPCRouter({
         docs: data.docs.map((doc) => ({
           ...doc,
           image: doc.image as Media | null,
-          tenant: doc.tenant as Tenant & { image: Media | null },
+          tenant: doc.tenant as Tenant & { image: Media | null; location?: string | null },
         }))
       }
     }),

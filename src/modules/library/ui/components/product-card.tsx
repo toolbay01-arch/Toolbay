@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { StarIcon, ShieldCheck, Package } from "lucide-react";
+import { StarIcon, ShieldCheck, Package, MapPin } from "lucide-react";
 
 interface ProductCardProps {
   id: string;
@@ -10,6 +10,7 @@ interface ProductCardProps {
   tenantSlug: string;
   tenantName?: string;
   tenantImageUrl?: string | null;
+  tenantLocation?: string | null;
   tenantIsVerified?: boolean;
   tenantSuccessfulOrders?: number;
   reviewRating: number;
@@ -25,6 +26,7 @@ export const ProductCard = ({
   tenantSlug,
   tenantName,
   tenantImageUrl,
+  tenantLocation,
   tenantIsVerified = false,
   tenantSuccessfulOrders = 0,
   reviewRating,
@@ -94,6 +96,16 @@ export const ProductCard = ({
                 <Package className="size-3.5 sm:size-4 text-blue-600" />
                 <p className="text-xs sm:text-sm text-muted-foreground">
                   {tenantSuccessfulOrders} successful order{tenantSuccessfulOrders !== 1 ? 's' : ''}
+                </p>
+              </div>
+            )}
+            
+            {/* Tenant Location */}
+            {tenantLocation && (
+              <div className="flex items-center gap-1">
+                <MapPin className="size-3.5 sm:size-4 text-gray-600" />
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  {tenantLocation}
                 </p>
               </div>
             )}

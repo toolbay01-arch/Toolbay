@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { StarIcon, ShieldCheck, Package, TrendingUp } from "lucide-react";
+import { StarIcon, ShieldCheck, Package, TrendingUp, MapPin } from "lucide-react";
 
 import { formatCurrency } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
@@ -17,6 +17,7 @@ interface ProductCardProps {
   tenantSlug: string;
   tenantName?: string;
   tenantImageUrl?: string | null;
+  tenantLocation?: string | null;
   tenantIsVerified?: boolean;
   tenantSuccessfulOrders?: number;
   reviewRating: number;
@@ -38,6 +39,7 @@ export const ProductCard = ({
   tenantSlug,
   tenantName,
   tenantImageUrl,
+  tenantLocation,
   tenantIsVerified = false,
   tenantSuccessfulOrders = 0,
   reviewRating,
@@ -193,6 +195,16 @@ export const ProductCard = ({
                 </div>
               )}
             </div>
+            
+            {/* Tenant Location */}
+            {tenantLocation && (
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                <MapPin className="size-3 sm:size-3.5 text-gray-600" />
+                <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground truncate">
+                  {tenantLocation}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -301,6 +313,16 @@ export const ProductCard = ({
               <Package className="size-3.5 sm:size-4 text-blue-600" />
               <p className="text-xs sm:text-sm text-muted-foreground">
                 {tenantSuccessfulOrders} successful order{tenantSuccessfulOrders !== 1 ? 's' : ''}
+              </p>
+            </div>
+          )}
+          
+          {/* Tenant Location */}
+          {tenantLocation && (
+            <div className="flex items-center gap-1">
+              <MapPin className="size-3.5 sm:size-4 text-gray-600" />
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                {tenantLocation}
               </p>
             </div>
           )}

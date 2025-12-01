@@ -49,6 +49,7 @@ export const ProductList = () => {
             tenantSlug={product.tenant?.slug}
             tenantName={product.tenant?.name}
             tenantImageUrl={product.tenant?.image?.url}
+            tenantLocation={product.tenant?.location || null}
             tenantIsVerified={product.tenant?.isVerified || false}
             tenantSuccessfulOrders={0} // TODO: Add successful orders count
             reviewRating={product.reviewRating}
