@@ -127,6 +127,7 @@ export const SignUpView = () => {
       tinNumber: "",
       storeManagerId: "",
       category: "retailer" as const,
+      location: "",
       paymentMethod: "bank_transfer" as const,
       bankName: "",
       bankAccountNumber: "",
@@ -627,6 +628,22 @@ export const SignUpView = () => {
                     <FormControl>
                       <Input {...field} placeholder="ID or Passport Number" />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base">Business Location *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g., Kigali, Nyarugenge District" />
+                    </FormControl>
+                    <FormDescription>
+                      Enter your business address or location
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -215,8 +215,20 @@ export const Navbar = () => {
       
       return { previousSession };
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Logged out successfully");
+      
+      // Invalidate all session-related queries to ensure clean state
+      await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
+      
+      // Clear session cache completely
+      queryClient.setQueryData(
+        trpc.auth.session.queryKey(),
+        { user: null, permissions: {} }
+      );
+      
+      // Remove query from cache to force fresh fetch on next login
+      queryClient.removeQueries(trpc.auth.session.queryFilter());
       
       // Navigate to home and refresh any server-side data
       router.push("/");
@@ -461,7 +473,7 @@ export const Navbar = () => {
           </Link>
         )}
         <Link
-          href="/verify-payments"
+          href={isTenant ? "/verify-payments" : "/orders"}
           prefetch={true}
           className="relative h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation transition-colors"
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}

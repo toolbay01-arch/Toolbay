@@ -140,6 +140,14 @@ export const Tenants: CollectionConfig = {
       },
     },
     {
+      name: "location",
+      type: "text",
+      required: true,
+      admin: {
+        description: "Business location/address - Required for seller registration",
+      },
+    },
+    {
       name: "rdbCertificate",
       type: "upload",
       relationTo: "media",

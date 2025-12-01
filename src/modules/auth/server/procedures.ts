@@ -68,6 +68,7 @@ export const authRouter = createTRPCRouter({
           tinNumber: input.tinNumber,
           storeManagerId: input.storeManagerId,
           category: input.category,
+          location: input.location,
           paymentMethod: input.paymentMethod,
           ...(input.paymentMethod === "bank_transfer" && {
             bankName: input.bankName,
