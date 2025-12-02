@@ -198,7 +198,7 @@ export function TransactionVerificationCard({ transaction, viewMode = 'grid' }: 
                 <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <AlertCircle className="h-4 w-4 text-blue-600 shrink-0" />
-                    <span className="text-xs font-semibold text-blue-900">MTN Transaction ID</span>
+                    <span className="text-xs font-semibold text-blue-900">Mobile Money Transaction ID</span>
                   </div>
                   <p className="text-lg font-mono font-bold text-blue-900 truncate">
                     {transaction.mtnTransactionId || "Not provided"}
@@ -369,13 +369,13 @@ export function TransactionVerificationCard({ transaction, viewMode = 'grid' }: 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <AlertCircle className="h-5 w-5 text-blue-600" />
-              <h4 className="font-semibold text-blue-900">MTN Transaction ID</h4>
+              <h4 className="font-semibold text-blue-900">Mobile Money Transaction ID</h4>
             </div>
             <p className="text-2xl font-mono font-bold text-blue-900 tracking-wide">
               {transaction.mtnTransactionId || "Not provided"}
             </p>
             <p className="text-sm text-blue-700 mt-2">
-              ⚠️ Verify this ID matches the payment in your MTN MoMo dashboard
+              ⚠️ Verify this ID matches the payment in your Mobile Money dashboard
             </p>
           </div>
 
@@ -528,7 +528,7 @@ function VerifyDialog({
             <p>You are about to approve this payment:</p>
             <div className="bg-gray-100 p-3 rounded space-y-1 text-sm">
               <p><strong>Payment Ref:</strong> {transaction.paymentReference}</p>
-              <p><strong>MTN TX ID:</strong> {transaction.mtnTransactionId}</p>
+              <p><strong>MoMo TX ID:</strong> {transaction.mtnTransactionId}</p>
               <p><strong>Total Amount:</strong> {formatCurrency(transaction.totalAmount)}</p>
             </div>
             <p className="text-green-600 font-semibold">
@@ -537,7 +537,7 @@ function VerifyDialog({
             <p className="text-orange-600 font-semibold">
               ⚠️ This will create {transaction.products.length} order(s) and cannot be undone.
             </p>
-            <p>Have you verified this payment in your MTN MoMo account?</p>
+            <p>Have you verified this payment in your Mobile Money account?</p>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -575,7 +575,7 @@ function RejectDialog({
             <Textarea
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="e.g., Transaction ID not found in MTN MoMo dashboard, incorrect amount, etc."
+              placeholder="e.g., Transaction ID not found in Mobile Money dashboard, incorrect amount, etc."
               rows={4}
               className="mt-2"
             />

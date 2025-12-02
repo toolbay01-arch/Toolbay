@@ -408,7 +408,7 @@ export const Orders: CollectionConfig = {
       name: "bankName",
       type: "text",
       admin: {
-        description: "Bank name or mobile money provider (MTN, Airtel, etc.)",
+        description: "Bank name or mobile money provider",
         condition: (data) => data.paymentMethod === 'bank_transfer' || data.paymentMethod === 'mobile_money'
       }
     },

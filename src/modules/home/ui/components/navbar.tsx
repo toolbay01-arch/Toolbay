@@ -39,24 +39,34 @@ interface NavbarItemProps {
   href: string;
   children: React.ReactNode;
   isActive?: boolean;
+  badgeCount?: number;
 };
 
 const NavbarItemButton = ({
   href,
   children,
   isActive,
+  badgeCount,
 }: NavbarItemProps) => {
   return (
     <Button
       asChild
       variant="outline"
       className={cn(
-        "bg-transparent hover:bg-transparent rounded-full hover:border-primary border-transparent px-2.5 text-sm whitespace-nowrap flex items-center gap-1.5",
+        "bg-transparent hover:bg-transparent rounded-full hover:border-primary border-transparent px-2.5 text-sm whitespace-nowrap flex items-center gap-1.5 relative",
         isActive && "bg-black text-white hover:bg-black hover:text-white",
       )}
     >
       <OptimizedLink href={href}>
         {children}
+        {badgeCount && badgeCount > 0 && (
+          <Badge
+            variant="destructive"
+            className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
+          >
+            {badgeCount > 99 ? "99+" : badgeCount}
+          </Badge>
+        )}
       </OptimizedLink>
     </Button>
   );
@@ -198,6 +208,15 @@ export const Navbar = () => {
     refetchInterval: 60000, // Increased from 30s to 60s
     staleTime: 30000,
   });
+
+  // Get unviewed transaction count for tenants
+  const isTenant = session.data?.user?.roles?.includes('tenant');
+  const { data: unviewedTransactions } = useQuery({
+    ...trpc.transactions.getUnviewedCount.queryOptions(),
+    enabled: !!isTenant,
+    refetchInterval: 30000, // Check every 30 seconds
+    staleTime: 10000,
+  });
   
   const logout = useMutation(trpc.auth.logout.mutationOptions({
     onMutate: async () => {
@@ -252,7 +271,6 @@ export const Navbar = () => {
   
   // Show tenant items if user is a tenant, customer items if logged in, otherwise show public items
   // While loading, use the cached data to prevent flash
-  const isTenant = session.data?.user?.roles?.includes('tenant');
   const navbarItems = session.data?.user
     ? isTenant
       ? tenantNavbarItems
@@ -388,6 +406,7 @@ export const Navbar = () => {
               key={item.href}
               href={item.href}
               isActive={pathname === item.href}
+              badgeCount={item.href === "/verify-payments" ? unviewedTransactions?.count : undefined}
             >
               {item.children}
             </NavbarItemButton>
@@ -479,6 +498,14 @@ export const Navbar = () => {
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         >
           <Wallet className="h-5 w-5" />
+          {isTenant && unviewedTransactions?.count && unviewedTransactions.count > 0 && (
+            <Badge
+              variant="destructive"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
+            >
+              {unviewedTransactions.count > 99 ? "99+" : unviewedTransactions.count}
+            </Badge>
+          )}
         </Link>
         <Link
           href="/chat"

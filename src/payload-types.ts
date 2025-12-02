@@ -195,6 +195,14 @@ export interface Tenant {
    */
   storeManagerId: string;
   /**
+   * Business category - selected during registration
+   */
+  category: 'retailer' | 'wholesale' | 'industry' | 'renter' | 'logistics';
+  /**
+   * Business location/address - Required for seller registration
+   */
+  location: string;
+  /**
    * Rwanda Development Board (RDB) Registration Certificate (required for verification)
    */
   rdbCertificate?: (string | null) | Media;
@@ -508,7 +516,7 @@ export interface Transaction {
   /**
    * Choose delivery or direct pickup. Direct orders skip shipping and allow immediate pickup confirmation after payment verification.
    */
-  deliveryType: 'delivery' | 'direct';
+  deliveryType: 'direct' | 'delivery';
   /**
    * Customer shipping address (required for delivery orders)
    */
@@ -555,7 +563,7 @@ export interface Transaction {
    */
   tenantAmount?: number | null;
   /**
-   * MTN Mobile Money Transaction ID (from customer SMS) - Read-only for verification
+   * Mobile Money Transaction ID (from customer SMS) - Read-only for verification
    */
   mtnTransactionId?: string | null;
   /**
@@ -578,6 +586,10 @@ export interface Transaction {
    * Internal notes about this transaction
    */
   notes?: string | null;
+  /**
+   * Whether the tenant has viewed this transaction
+   */
+  viewedByTenant?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -620,7 +632,7 @@ export interface Order {
   /**
    * Delivery type inherited from transaction. Direct orders allow immediate pickup confirmation after payment verification.
    */
-  deliveryType: 'delivery' | 'direct';
+  deliveryType: 'direct' | 'delivery';
   /**
    * Order fulfillment status. Direct orders: pending → completed (after pickup confirmation). Delivery orders: pending → shipped → delivered → completed (after delivery confirmation).
    */
@@ -650,7 +662,7 @@ export interface Order {
    */
   paymentMethod: 'mobile_money' | 'bank_transfer';
   /**
-   * Bank name or mobile money provider (MTN, Airtel, etc.)
+   * Bank name or mobile money provider
    */
   bankName?: string | null;
   /**
@@ -1066,6 +1078,8 @@ export interface TenantsSelect<T extends boolean = true> {
   image?: T;
   tinNumber?: T;
   storeManagerId?: T;
+  category?: T;
+  location?: T;
   rdbCertificate?: T;
   paymentMethod?: T;
   bankName?: T;
@@ -1132,6 +1146,7 @@ export interface TransactionsSelect<T extends boolean = true> {
   verifiedBy?: T;
   rejectionReason?: T;
   notes?: T;
+  viewedByTenant?: T;
   updatedAt?: T;
   createdAt?: T;
 }

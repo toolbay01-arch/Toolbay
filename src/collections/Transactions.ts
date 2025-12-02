@@ -292,7 +292,7 @@ export const Transactions: CollectionConfig = {
         update: ({ req }) => isSuperAdmin(req.user),
       },
       admin: {
-        description: 'MTN Mobile Money Transaction ID (from customer SMS) - Read-only for verification',
+        description: 'Mobile Money Transaction ID (from customer SMS) - Read-only for verification',
         placeholder: 'e.g., MP241021.1234.A56789',
         // Use condition to hide from edit, tenants view only in custom component
       },
@@ -357,6 +357,14 @@ export const Transactions: CollectionConfig = {
       },
     },
     {
+      name: 'viewedByTenant',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Whether the tenant has viewed this transaction',
+      },
+    },
+    {
       name: 'relatedOrders',
       type: 'ui',
       admin: {
@@ -388,12 +396,12 @@ export const Transactions: CollectionConfig = {
     ],
     afterChange: [
       async ({ doc, previousDoc, operation, req }) => {
-        // Notify tenant when customer submits MTN Transaction ID
+        // Notify tenant when customer submits Mobile Money Transaction ID
         if (operation === 'update' && doc.status === 'awaiting_verification' && previousDoc.status === 'pending') {
           // TODO: Send notification to tenant
           // For now, just log it (can be enhanced with email/SMS later)
           req.payload.logger.info(
-            `🔔 Payment awaiting verification: ${doc.paymentReference} - Customer ${doc.customerName} submitted MTN TX: ${doc.mtnTransactionId}`
+            `🔔 Payment awaiting verification: ${doc.paymentReference} - Customer ${doc.customerName} submitted Mobile Money TX: ${doc.mtnTransactionId}`
           );
           
           // You can add email notification here:

@@ -287,7 +287,7 @@ export const CartView = ({ tenantSlug }: CartViewProps) => {
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-xs text-blue-800">
-                  🔒 Secure payment via MTN Mobile Money
+                  🔒 Secure payment via Mobile Money
                 </p>
               </div>
 

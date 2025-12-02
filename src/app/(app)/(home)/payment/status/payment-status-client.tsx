@@ -71,7 +71,7 @@ export function PaymentStatusClient() {
           icon: <Clock className="h-16 w-16 text-orange-500" />,
           color: "border-orange-200 bg-orange-50",
           title: "Payment Pending",
-          description: "Please complete the MTN Mobile Money payment to continue",
+          description: "Please complete the Mobile Money payment to continue",
           message: "You haven't submitted your Transaction ID yet. Go back to enter it.",
         };
       case "awaiting_verification":
@@ -162,7 +162,7 @@ export function PaymentStatusClient() {
               </div>
               {transaction.mtnTransactionId && (
                 <div className="bg-white/80 p-4 rounded-lg border">
-                  <p className="text-sm text-muted-foreground mb-1">MTN Transaction ID</p>
+                  <p className="text-sm text-muted-foreground mb-1">Mobile Money Transaction ID</p>
                   <code className="text-sm font-mono break-all">
                     {transaction.mtnTransactionId}
                   </code>

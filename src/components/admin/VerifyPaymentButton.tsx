@@ -36,7 +36,7 @@ export function VerifyPaymentButton({
 
   const handleVerify = async () => {
     if (!verifiedTxId.trim()) {
-      setError('Please enter MTN Transaction ID')
+      setError('Please enter Mobile Money Transaction ID')
       return
     }
 
@@ -94,7 +94,7 @@ export function VerifyPaymentButton({
       <div className="flex items-center gap-2">
         <input
           type="text"
-          placeholder="Enter MTN Transaction ID"
+          placeholder="Enter Mobile Money Transaction ID"
           value={verifiedTxId}
           onChange={(e) => setVerifiedTxId(e.target.value)}
           className="flex-1 px-3 py-1 border border-gray-300 rounded-md text-sm"
@@ -122,7 +122,7 @@ export function VerifyPaymentButton({
         <p className="text-sm text-red-600">{error}</p>
       )}
       <p className="text-xs text-gray-600">
-        Check your MTN MoMo dashboard to confirm this payment
+        Check your Mobile Money dashboard to confirm this payment
       </p>
     </div>
   )
