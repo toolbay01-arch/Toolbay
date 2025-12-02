@@ -184,7 +184,7 @@ export const transactionsRouter = createTRPCRouter({
               transaction: input.transactionId,
               transactionId: transaction.mtnTransactionId || transaction.paymentReference,
               paymentMethod: "mobile_money",
-              bankName: "MTN Mobile Money",
+              bankName: "Mobile Money",
               accountNumber: transaction.customerPhone,
               amount: item.price * item.quantity,
               currency: "RWF",
@@ -278,7 +278,7 @@ export const transactionsRouter = createTRPCRouter({
       };
     }),
 
-  // Customer submits MTN Transaction ID
+  // Customer submits Mobile Money Transaction ID
   submitTransactionId: protectedProcedure
     .input(
       z.object({
@@ -459,5 +459,114 @@ export const transactionsRouter = createTRPCRouter({
         hasNextPage: transactions.hasNextPage,
         hasPrevPage: transactions.hasPrevPage,
       };
+    }),
+
+  // Get count of unviewed transactions for tenant
+  getUnviewedCount: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Get current user's tenant
+      const userData = await ctx.db.findByID({
+        collection: "users",
+        id: ctx.session.user.id,
+        depth: 1,
+      });
+
+      if (!userData.tenants?.[0]) {
+        return { count: 0 };
+      }
+
+      const tenantId = typeof userData.tenants[0].tenant === 'string' 
+        ? userData.tenants[0].tenant 
+        : userData.tenants[0].tenant.id;
+
+      // Count unviewed transactions (awaiting_verification and not viewed)
+      const unviewedTransactions = await ctx.db.find({
+        collection: "transactions",
+        where: {
+          and: [
+            {
+              tenant: {
+                equals: tenantId,
+              },
+            },
+            {
+              status: {
+                equals: 'awaiting_verification',
+              },
+            },
+            {
+              viewedByTenant: {
+                not_equals: true,
+              },
+            },
+          ],
+        },
+        limit: 0, // Just count, don't fetch
+        pagination: false,
+      });
+
+      return { count: unviewedTransactions.totalDocs };
+    }),
+
+  // Mark transactions as viewed
+  markTransactionsAsViewed: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      // Get current user's tenant
+      const userData = await ctx.db.findByID({
+        collection: "users",
+        id: ctx.session.user.id,
+        depth: 1,
+      });
+
+      if (!userData.tenants?.[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No tenant found for user",
+        });
+      }
+
+      const tenantId = typeof userData.tenants[0].tenant === 'string' 
+        ? userData.tenants[0].tenant 
+        : userData.tenants[0].tenant.id;
+
+      // Find all unviewed transactions for this tenant
+      const unviewedTransactions = await ctx.db.find({
+        collection: "transactions",
+        where: {
+          and: [
+            {
+              tenant: {
+                equals: tenantId,
+              },
+            },
+            {
+              status: {
+                equals: 'awaiting_verification',
+              },
+            },
+            {
+              viewedByTenant: {
+                not_equals: true,
+              },
+            },
+          ],
+        },
+        pagination: false,
+      });
+
+      // Mark all as viewed
+      const updatePromises = unviewedTransactions.docs.map((transaction) =>
+        ctx.db.update({
+          collection: "transactions",
+          id: transaction.id,
+          data: {
+            viewedByTenant: true,
+          },
+        })
+      );
+
+      await Promise.all(updatePromises);
+
+      return { marked: unviewedTransactions.docs.length };
     }),
 });

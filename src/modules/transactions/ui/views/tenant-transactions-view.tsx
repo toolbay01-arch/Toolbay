@@ -137,7 +137,7 @@ export function TenantTransactionsView() {
               <div className="text-sm text-blue-900 space-y-1">
                 <p className="font-semibold">How to verify payments and create orders:</p>
                 <ol className="list-decimal list-inside space-y-1 ml-2">
-                  <li>Check the <strong>MTN Transaction ID</strong> in your MTN MoMo account/dashboard</li>
+                  <li>Check the <strong>Mobile Money Transaction ID</strong> in your Mobile Money account/dashboard</li>
                   <li>Verify the <strong>amount</strong> matches what you received</li>
                   <li>Click <strong>"Approve Payment"</strong> to verify transaction and auto-create orders</li>
                   <li>Approved orders will appear in your <strong>Sales Dashboard</strong> for fulfillment</li>

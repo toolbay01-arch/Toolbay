@@ -21,6 +21,23 @@ export default function VerifyPaymentsPage() {
   });
   const isTenant = session.data?.user?.roles?.includes('tenant');
 
+  // Get unviewed transaction count
+  const { data: unviewedData, refetch: refetchUnviewed } = useQuery({
+    ...trpc.transactions.getUnviewedCount.queryOptions(),
+    enabled: !!isTenant,
+    refetchInterval: 30000, // Check every 30 seconds
+    staleTime: 10000,
+  });
+
+  // Mark transactions as viewed when page loads
+  const markAsViewed = useMutation(
+    trpc.transactions.markTransactionsAsViewed.mutationOptions({
+      onSuccess: () => {
+        refetchUnviewed();
+      },
+    })
+  );
+
   useEffect(() => {
     // Wait until session is fetched before redirecting
     if (!session.isFetched) return;
@@ -36,7 +53,13 @@ export default function VerifyPaymentsPage() {
       router.push('/');
       return;
     }
-  }, [session.isFetched, session.data, router]);
+
+    // Mark transactions as viewed when page loads
+    if (isTenant && unviewedData?.count && unviewedData.count > 0) {
+      markAsViewed.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.isFetched, session.data, router, isTenant, unviewedData?.count]);
 
   // Show loading while session is being fetched
   if (session.isLoading || !session.isFetched) {
@@ -48,14 +71,28 @@ export default function VerifyPaymentsPage() {
     return <LoadingState />;
   }
 
+  const unviewedCount = unviewedData?.count || 0;
+
   return (
     <div className="container mx-auto px-4 py-8 mt-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Transactions & Orders</h1>
         <p className="text-gray-600">
-          Verify customer payments and manage order fulfillment in one unified view
+          Verify customer payments and manage order fulfillments
         </p>
       </div>
+
+      {/* Notification message for new transactions */}
+      {unviewedCount > 0 && (
+        <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
+          <div className="h-2 w-2 bg-blue-600 rounded-full animate-pulse"></div>
+          <p className="text-sm text-blue-900 font-medium">
+            {unviewedCount === 1 
+              ? "You have 1 new transaction awaiting verification"
+              : `You have ${unviewedCount} new transactions awaiting verification`}
+          </p>
+        </div>
+      )}
 
       <UnifiedTransactionsView enabled={!!isTenant} />
     </div>
@@ -126,15 +163,6 @@ function UnifiedTransactionsView({ enabled }: { enabled: boolean }) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">
-          Unified View: Payments & Orders ({transactions.length})
-        </h2>
-        <p className="text-sm text-gray-700">
-          View transactions with their related orders. Verify payments and manage fulfillment all in one place.
-        </p>
-      </div>
-
       {/* View & Auto-Refresh Toggle */}
       <div className="flex flex-wrap justify-end gap-2 pb-2">
         <button
@@ -167,7 +195,7 @@ function UnifiedTransactionsView({ enabled }: { enabled: boolean }) {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Product</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Payment Ref</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Customer</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">MTN TX ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">MoMo TX ID</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Amount</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Payment Status</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
@@ -258,11 +286,11 @@ function UnifiedTransactionRow({
 
   const handleVerify = () => {
     if (!verifiedTxId.trim()) {
-      alert('Please enter the MTN Transaction ID from your dashboard')
+      alert('Please enter the Mobile Money Transaction ID from your dashboard')
       return
     }
 
-    if (confirm('Confirm that you have verified this payment in your MTN MoMo dashboard?')) {
+    if (confirm('Confirm that you have verified this payment in your Mobile Money dashboard?')) {
       verifyMutation.mutate({
         transactionId: transaction.id,
         verifiedMtnTransactionId: verifiedTxId,
@@ -420,7 +448,7 @@ function UnifiedTransactionRow({
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  MTN Transaction ID (from your dashboard):
+                  Mobile Money Transaction ID (from your dashboard):
                 </label>
                 <input
                   type="text"
@@ -430,17 +458,12 @@ function UnifiedTransactionRow({
                   className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
                 />
               </div>
-
+{/* 
               <div className="text-xs text-gray-600">
-                <a
-                  href="https://www.mtn.rw/momo-dashboard"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  📱 Open MTN MoMo Dashboard ↗
-                </a>
-              </div>
+                <p className="text-gray-600">
+                  📱 Check your Mobile Money dashboard to verify the transaction
+                </p>
+              </div> */}
 
               <div className="flex gap-2">
                 <button
@@ -613,11 +636,11 @@ function UnifiedTransactionCard({
 
   const handleVerify = () => {
     if (!verifiedTxId.trim()) {
-      alert('Please enter the MTN Transaction ID from your dashboard')
+      alert('Please enter the Mobile Money Transaction ID from your dashboard')
       return
     }
 
-    if (confirm('Confirm that you have verified this payment in your MTN MoMo dashboard?')) {
+    if (confirm('Confirm that you have verified this payment in your Mobile Money dashboard?')) {
       verifyMutation.mutate({
         transactionId: transaction.id,
         verifiedMtnTransactionId: verifiedTxId,
@@ -768,7 +791,7 @@ function UnifiedTransactionCard({
               type="text"
               value={verifiedTxId}
               onChange={(e) => setVerifiedTxId(e.target.value)}
-              placeholder="MTN Transaction ID"
+              placeholder="Mobile Money Transaction ID"
               className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
             />
             <div className="flex gap-2">

@@ -72,7 +72,7 @@ export function PaymentInstructionsClient() {
     }
 
     if (!mtnTransactionId.trim()) {
-      toast.error("Please enter your MTN Transaction ID");
+      toast.error("Please enter your Mobile Money Transaction ID");
       return;
     }
 
@@ -133,7 +133,7 @@ export function PaymentInstructionsClient() {
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold">Complete Your Payment</h1>
           <p className="text-muted-foreground">
-            Follow the instructions below to pay via MTN Mobile Money
+            Follow the instructions below to pay via Mobile Money
           </p>
         </div>
 
@@ -142,7 +142,7 @@ export function PaymentInstructionsClient() {
           <CardHeader className="bg-primary/5">
             <CardTitle className="text-2xl">📱 Step 1: Dial This Code</CardTitle>
             <CardDescription className="text-base">
-              On your MTN Mobile Money phone
+              On your Mobile Money phone
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
@@ -172,7 +172,7 @@ export function PaymentInstructionsClient() {
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border-2 border-green-200">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <p className="text-sm text-muted-foreground mb-2">Dial on your MTN phone:</p>
+                  <p className="text-sm text-muted-foreground mb-2">Dial on your phone:</p>
                   <code className="text-2xl md:text-3xl font-bold text-green-700 break-all">
                     {dialCode}
                   </code>
@@ -228,7 +228,7 @@ export function PaymentInstructionsClient() {
                   <AlertDescription>
                     <p className="font-semibold mb-2">Alternative: Manual Dial Steps</p>
                     <ol className="list-decimal list-inside space-y-1 text-sm">
-                      <li>Dial *182*8*1# on your MTN phone</li>
+                      <li>Dial *182*8*1# on your phone</li>
                       <li>Enter MoMo Code: <strong>{momoCode}</strong></li>
                       <li>Enter Amount: <strong>{transaction.totalAmount}</strong></li>
                       <li>Enter your PIN to confirm</li>
@@ -264,13 +264,13 @@ export function PaymentInstructionsClient() {
           <CardHeader>
             <CardTitle className="text-xl">💳 Step 2: Enter Transaction ID</CardTitle>
             <CardDescription>
-              After completing the payment, you&apos;ll receive an SMS from MTN with your Transaction ID
+              After completing the payment, you&apos;ll receive an SMS from Mobile Money with your Transaction ID
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="mtnTxId" className="text-base">
-                MTN Transaction ID *
+                Mobile Money Transaction ID *
               </Label>
               <Input
                 id="mtnTxId"
@@ -281,7 +281,7 @@ export function PaymentInstructionsClient() {
                 disabled={isExpired || submitMutation.isPending}
               />
               <p className="text-sm text-muted-foreground">
-                Check your SMS from MTN Mobile Money for the transaction ID
+                Check your SMS from Mobile Money for the transaction ID
               </p>
             </div>
 
@@ -310,8 +310,8 @@ export function PaymentInstructionsClient() {
             <CardTitle className="text-lg">❓ Need Help?</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>• Make sure you have enough balance in your MTN Mobile Money account</p>
-            <p>• The amount will be deducted from your MTN Mobile Money balance</p>
+            <p>• Make sure you have enough balance in your Mobile Money account</p>
+            <p>• The amount will be deducted from your Mobile Money balance</p>
             <p>• You&apos;ll receive a confirmation SMS with the Transaction ID</p>
             <p>• Keep your Transaction ID safe for future reference</p>
           </CardContent>

@@ -104,7 +104,7 @@ export const adminRouter = createTRPCRouter({
     .input(
       z.object({
         transactionId: z.string(),
-        verifiedMtnTransactionId: z.string().min(1, "MTN Transaction ID is required"),
+        verifiedMtnTransactionId: z.string().min(1, "Mobile Money Transaction ID is required"),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -193,7 +193,7 @@ export const adminRouter = createTRPCRouter({
               totalAmount: transaction.totalAmount,
               transactionId: input.verifiedMtnTransactionId,
               paymentMethod: "mobile_money",
-              bankName: "MTN Mobile Money",
+              bankName: "Mobile Money",
               accountNumber: transaction.customerPhone || "N/A",
               amount: item.price * quantity,
               currency: "RWF",
