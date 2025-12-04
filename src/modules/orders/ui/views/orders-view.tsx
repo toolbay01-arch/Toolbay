@@ -39,7 +39,7 @@ export function OrdersView() {
   // Redirect if not authenticated
   useEffect(() => {
     if (sessionQuery.isFetched && !sessionQuery.data?.user) {
-      router.push('/');
+      router.push('/sign-in?redirect=/orders');
     }
   }, [sessionQuery.isFetched, sessionQuery.data?.user, router]);
 

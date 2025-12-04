@@ -331,6 +331,37 @@ export const Orders: CollectionConfig = {
       }
     },
     {
+      name: "shippingAddress",
+      type: "group",
+      fields: [
+        {
+          name: "line1",
+          type: "text",
+          admin: {
+            description: "Address line 1"
+          }
+        },
+        {
+          name: "city",
+          type: "text",
+          admin: {
+            description: "City"
+          }
+        },
+        {
+          name: "country",
+          type: "text",
+          admin: {
+            description: "Country"
+          }
+        },
+      ],
+      admin: {
+        description: "Customer shipping address (inherited from transaction for delivery orders)",
+        condition: (data) => data.deliveryType === 'delivery',
+      }
+    },
+    {
       name: "status",
       type: "select",
       defaultValue: "pending",

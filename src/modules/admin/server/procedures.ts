@@ -77,8 +77,12 @@ export const adminRouter = createTRPCRouter({
             sort: '-createdAt',
           });
 
+          // Explicitly include all transaction fields including shippingAddress
           return {
             ...transaction,
+            // Ensure these fields are present even if undefined
+            deliveryType: transaction.deliveryType || 'delivery',
+            shippingAddress: transaction.shippingAddress || null,
             orders: ordersResult.docs.map((order: any) => ({
               id: order.id,
               orderNumber: order.orderNumber,
@@ -199,6 +203,11 @@ export const adminRouter = createTRPCRouter({
               currency: "RWF",
               transaction: transaction.id,
               deliveryType: (transaction as any).deliveryType || 'delivery', // Copy delivery type from transaction
+              shippingAddress: (transaction as any).shippingAddress ? {
+                line1: (transaction as any).shippingAddress.line1,
+                city: (transaction as any).shippingAddress.city,
+                country: (transaction as any).shippingAddress.country,
+              } : undefined, // Copy shipping address from transaction for delivery orders
               status: "pending", // Orders start as pending after payment verification
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any,

@@ -211,6 +211,23 @@ export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => 
                       {sale.customerName}
                     </p>
                     
+                    {/* Shipping Address for Delivery Orders */}
+                    {sale.deliveryType === 'delivery' && sale.shippingAddress && (
+                      <div className="bg-blue-50 border border-blue-200 rounded p-1.5 mt-1">
+                        <div className="text-[10px] font-semibold text-blue-900 mb-0.5 flex items-center gap-1">
+                          <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          Ship to:
+                        </div>
+                        <div className="text-[9px] xs:text-[10px] text-blue-800">
+                          {sale.shippingAddress.line1}<br />
+                          {sale.shippingAddress.city}, {sale.shippingAddress.country}
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Date & Message Button */}
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                       <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground">
@@ -302,6 +319,23 @@ export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => 
                   <p className="text-xs sm:text-sm font-semibold truncate">
                     {sale.customerName}
                   </p>
+                  
+                  {/* Shipping Address for Delivery Orders */}
+                  {sale.deliveryType === 'delivery' && sale.shippingAddress && (
+                    <div className="bg-blue-50 border border-blue-200 rounded p-2">
+                      <div className="text-[10px] font-semibold text-blue-900 mb-1 flex items-center gap-1">
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Ship to:
+                      </div>
+                      <div className="text-[10px] text-blue-800">
+                        {sale.shippingAddress.line1}<br />
+                        {sale.shippingAddress.city}, {sale.shippingAddress.country}
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Date */}
                   <div className="flex items-center gap-1">
