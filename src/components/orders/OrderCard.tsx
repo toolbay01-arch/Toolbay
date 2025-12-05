@@ -19,6 +19,11 @@ interface OrderCardProps {
     createdAt: string
     received?: boolean
     deliveryType?: 'direct' | 'delivery'
+    shippingAddress?: {
+      line1?: string
+      city?: string
+      country?: string
+    }
     sellerUserId?: string | null
     storeName?: string | null
     // New flattened fields from API
@@ -187,6 +192,23 @@ export function OrderCard({ order, onConfirmReceiptAction }: OrderCardProps) {
                 )}
               </div>
             </div>
+
+            {/* Shipping Address for Delivery Orders */}
+            {order.deliveryType === 'delivery' && order.shippingAddress && (
+              <div className="mt-2 bg-blue-50 border border-blue-200 rounded p-2">
+                <div className="text-xs font-semibold text-blue-900 mb-1 flex items-center gap-1">
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Shipping to:
+                </div>
+                <div className="text-xs text-blue-800">
+                  {order.shippingAddress.line1}<br />
+                  {order.shippingAddress.city}, {order.shippingAddress.country}
+                </div>
+              </div>
+            )}
 
             {/* Status Indicators */}
             {order.status === 'pending' && (

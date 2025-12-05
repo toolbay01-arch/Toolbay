@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,11 @@ export function PaymentInstructionsClient() {
   const trpc = useTRPC();
   const clearCart = useCartStore((state) => state.clearCart);
 
+  // Prefetch orders page for instant navigation
+  useEffect(() => {
+    router.prefetch("/orders");
+  }, [router]);
+
   // Get transaction details
   const { data: transaction, isLoading } = useQuery(
     trpc.transactions.getStatus.queryOptions(
@@ -48,9 +53,12 @@ export function PaymentInstructionsClient() {
           clearCart(tenantSlug);
         }
         
-        toast.success("Transaction ID submitted successfully! Your cart has been cleared.");
-        // Redirect to orders page
-        router.push("/orders");
+        toast.success("Transaction ID submitted! Redirecting to your orders...");
+        
+        // Immediate redirect to orders page with from=payment parameter
+        setTimeout(() => {
+          router.push("/orders?from=payment");
+        }, 500); // Brief delay to show success message
       },
       onError: (error) => {
         toast.error(error.message);
@@ -295,10 +303,13 @@ export function PaymentInstructionsClient() {
               {submitMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Submitting...
+                  Submitting & Redirecting...
                 </>
               ) : (
-                "Submit Transaction ID"
+                <>
+                  <CheckCircle2 className="mr-2 h-5 w-5" />
+                  Submit & Go to My Orders
+                </>
               )}
             </Button>
           </CardContent>

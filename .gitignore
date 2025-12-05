@@ -35,6 +35,9 @@ Thumbs.db
 
 # Sensitive documentation
 
+# Test scripts with credentials (use .env for passwords instead)
+test-*.sh
+test-*.mjs
 
 # Media
 media/

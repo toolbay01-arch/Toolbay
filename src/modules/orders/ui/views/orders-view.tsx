@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useTRPC } from '@/trpc/client'
 import { OrderCard } from '@/components/orders/OrderCard'
 import { Button } from '@/components/ui/button'
@@ -14,12 +14,16 @@ import { cn } from '@/lib/utils'
 export function OrdersView() {
   const trpc = useTRPC()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'shipped' | 'delivered' | 'completed' | 'cancelled'>('all')
   // Responsive view mode: list on mobile, grid on desktop by default
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   // Auto-refresh toggle
   const [autoRefresh, setAutoRefresh] = useState(false)
+  // Track if we've already refetched for payment redirect
+  const hasRefetchedRef = useRef(false)
+  const latestOrderRef = useRef<HTMLDivElement>(null)
 
   // Check session first - refetch on mount and window focus to catch logouts from other tabs
   const sessionQuery = useQuery({
@@ -39,7 +43,7 @@ export function OrdersView() {
   // Redirect if not authenticated
   useEffect(() => {
     if (sessionQuery.isFetched && !sessionQuery.data?.user) {
-      router.push('/');
+      router.push('/sign-in?redirect=/orders');
     }
   }, [sessionQuery.isFetched, sessionQuery.data?.user, router]);
 
@@ -52,6 +56,40 @@ export function OrdersView() {
     refetchInterval: autoRefresh ? 5000 : false,
     enabled: isAuthenticated, // Only fetch if authenticated
   });
+
+  // Check if redirected from payment submission
+  const fromPayment = searchParams.get('from') === 'payment'
+
+  // Auto-refetch when redirected from payment
+  useEffect(() => {
+    if (fromPayment && isAuthenticated && !hasRefetchedRef.current) {
+      hasRefetchedRef.current = true
+      
+      // Show loading toast
+      const refetchToast = toast.loading('Loading your latest order...')
+      
+      // Refetch orders to get the latest one
+      refetch().then(() => {
+        toast.dismiss(refetchToast)
+        toast.success('Latest order loaded!', { duration: 2000 })
+        
+        // Scroll to latest order after a brief delay
+        setTimeout(() => {
+          latestOrderRef.current?.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          })
+        }, 300)
+      }).catch(() => {
+        toast.dismiss(refetchToast)
+      })
+
+      // Clean up URL parameter
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('from')
+      router.replace(`/orders${params.toString() ? `?${params.toString()}` : ''}`, { scroll: false })
+    }
+  }, [fromPayment, isAuthenticated, refetch, searchParams, router])
 
   const confirmReceiptMutation = useMutation(trpc.orders.confirmReceipt.mutationOptions({
     onSuccess: () => {
@@ -136,12 +174,20 @@ export function OrdersView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {orders.map((order: any) => (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    onConfirmReceiptAction={handleConfirmReceipt}
-                  />
+                {orders.map((order: any, index: number) => (
+                  <div 
+                    key={order.id} 
+                    ref={index === 0 ? latestOrderRef : null}
+                    className={cn(
+                      "transition-all duration-300",
+                      index === 0 && fromPayment && "ring-2 ring-green-500 ring-opacity-50 bg-green-50"
+                    )}
+                  >
+                    <OrderCard
+                      order={order}
+                      onConfirmReceiptAction={handleConfirmReceipt}
+                    />
+                  </div>
                 ))}
               </tbody>
             </table>
@@ -149,12 +195,20 @@ export function OrdersView() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-          {orders.map((order: any) => (
-            <OrderCard
-              key={order.id}
-              order={order}
-              onConfirmReceiptAction={handleConfirmReceipt}
-            />
+          {orders.map((order: any, index: number) => (
+            <div 
+              key={order.id} 
+              ref={index === 0 ? latestOrderRef : null}
+              className={cn(
+                "transition-all duration-300",
+                index === 0 && fromPayment && "ring-2 ring-green-500 rounded-lg"
+              )}
+            >
+              <OrderCard
+                order={order}
+                onConfirmReceiptAction={handleConfirmReceipt}
+              />
+            </div>
           ))}
         </div>
       )}

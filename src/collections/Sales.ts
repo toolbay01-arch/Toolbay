@@ -44,8 +44,15 @@ export const Sales: CollectionConfig = {
         },
       };
     },
-    // No one can create sales manually - they are created by the system
-    create: () => false,
+    // Only system (bypassing access control) can create sales
+    create: ({ req }) => {
+      // Allow system-level creates (req.user might be undefined for system creates)
+      if (!req.user) return true;
+      // Allow super admin
+      if (isSuperAdmin(req.user)) return true;
+      // Deny manual creation
+      return false;
+    },
     // No one can update sales - read-only
     update: () => false,
     // Only super admin can delete sales

@@ -77,8 +77,12 @@ export const adminRouter = createTRPCRouter({
             sort: '-createdAt',
           });
 
+          // Explicitly include all transaction fields including shippingAddress
           return {
             ...transaction,
+            // Ensure these fields are present even if undefined
+            deliveryType: transaction.deliveryType || 'delivery',
+            shippingAddress: transaction.shippingAddress || null,
             orders: ordersResult.docs.map((order: any) => ({
               id: order.id,
               orderNumber: order.orderNumber,
@@ -114,6 +118,23 @@ export const adminRouter = createTRPCRouter({
         id: input.transactionId,
         depth: 1,
       });
+
+      console.log('🔍 Transaction fetched:', JSON.stringify({
+        id: transaction?.id,
+        status: transaction?.status,
+        tenant: typeof transaction?.tenant === 'string' ? transaction?.tenant : {
+          id: (transaction?.tenant as any)?.id,
+          hasCategory: 'category' in (transaction?.tenant || {}),
+          hasLocation: 'location' in (transaction?.tenant || {}),
+          category: (transaction?.tenant as any)?.category,
+          location: (transaction?.tenant as any)?.location,
+        },
+        products: transaction?.products?.map((p: any) => ({
+          product: typeof p.product === 'string' ? p.product : p.product?.id,
+          quantity: p.quantity,
+          price: p.price,
+        })),
+      }, null, 2));
 
       if (!transaction) {
         throw new TRPCError({ 
@@ -178,31 +199,55 @@ export const adminRouter = createTRPCRouter({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         transaction.products.map(async (item: any) => {
           const quantity = item.quantity || 1;
-          return await ctx.db.create({
-            collection: "orders",
-            data: {
-              name: `Order ${transaction.paymentReference}`,
-              user: transaction.customer,
-              product: typeof item.product === 'string' ? item.product : item.product.id,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              products: transaction.products.map((p: any) => ({
-                product: typeof p.product === 'string' ? p.product : p.product.id,
-                quantity: p.quantity || 1,
-                priceAtPurchase: p.price,
-              })),
-              totalAmount: transaction.totalAmount,
-              transactionId: input.verifiedMtnTransactionId,
-              paymentMethod: "mobile_money",
-              bankName: "Mobile Money",
-              accountNumber: transaction.customerPhone || "N/A",
-              amount: item.price * quantity,
-              currency: "RWF",
-              transaction: transaction.id,
-              deliveryType: (transaction as any).deliveryType || 'delivery', // Copy delivery type from transaction
-              status: "pending", // Orders start as pending after payment verification
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any,
-          });
+          const productId = typeof item.product === 'string' ? item.product : item.product.id;
+          const userId = typeof transaction.customer === 'string' ? transaction.customer : transaction.customer.id;
+          
+          // Log product data to debug "Category, Location" error
+          console.log('🔍 Product item:', JSON.stringify(item, null, 2));
+          console.log('🔍 Product ID:', productId);
+          console.log('🔍 User ID:', userId);
+          console.log('🔍 Transaction tenant:', JSON.stringify((transaction as any).tenant, null, 2));
+          
+          try {
+            const order = await ctx.db.create({
+              collection: "orders",
+              data: {
+                name: `Order ${transaction.paymentReference}`,
+                user: userId,
+                product: productId,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                products: transaction.products.map((p: any) => ({
+                  product: typeof p.product === 'string' ? p.product : p.product.id,
+                  quantity: p.quantity || 1,
+                  priceAtPurchase: p.price,
+                })),
+                totalAmount: transaction.totalAmount,
+                transactionId: input.verifiedMtnTransactionId,
+                paymentMethod: "mobile_money",
+                bankName: "Mobile Money",
+                accountNumber: transaction.customerPhone || "N/A",
+                amount: item.price * quantity,
+                currency: "RWF",
+                transaction: transaction.id,
+                deliveryType: (transaction as any).deliveryType || 'delivery', // Copy delivery type from transaction
+                shippingAddress: (transaction as any).shippingAddress ? {
+                  line1: (transaction as any).shippingAddress.line1,
+                  city: (transaction as any).shippingAddress.city,
+                  country: (transaction as any).shippingAddress.country,
+                } : undefined, // Copy shipping address from transaction for delivery orders
+                status: "pending", // Orders start as pending after payment verification
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              } as any,
+              overrideAccess: true, // Bypass access control for system-level creation
+            });
+            
+            return order;
+          } catch (error: any) {
+            console.error('❌ Error creating order:', error);
+            console.error('Error message:', error.message);
+            console.error('Error data:', JSON.stringify(error.data, null, 2));
+            throw error;
+          }
         })
       );
 

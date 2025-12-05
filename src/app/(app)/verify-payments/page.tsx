@@ -1,12 +1,13 @@
 "use client"
 
 import { useTRPC } from '@/trpc/client'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { formatDistance } from 'date-fns'
 import type { Transaction } from '@/payload-types'
 import { useRouter } from 'next/navigation'
 import { PackageIcon, Grid3x3, List, CreditCard, Truck, ChevronDown, ChevronUp } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function VerifyPaymentsPage() {
   const router = useRouter();
@@ -110,6 +111,7 @@ function LoadingState() {
 
 function UnifiedTransactionsView({ enabled }: { enabled: boolean }) {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [expandedTransactions, setExpandedTransactions] = useState<Set<string>>(new Set());
   const { data: transactions, isLoading, refetch } = useQuery({
@@ -121,12 +123,13 @@ function UnifiedTransactionsView({ enabled }: { enabled: boolean }) {
 
   const updateOrderStatus = useMutation(
     trpc.sales.updateOrderStatus.mutationOptions({
-      onSuccess: () => {
-        alert('✅ Order status updated successfully!');
-        refetch();
+      onSuccess: async () => {
+        toast.success('Order status updated successfully!');
+        await queryClient.invalidateQueries(trpc.admin.getPendingTransactions.queryFilter());
+        await queryClient.refetchQueries(trpc.admin.getPendingTransactions.queryFilter());
       },
       onError: (error) => {
-        alert(`❌ Error: ${error.message}`);
+        toast.error(error.message || 'Failed to update order status');
       },
     })
   );
@@ -256,46 +259,63 @@ function UnifiedTransactionRow({
   updateOrderStatus
 }: UnifiedTransactionRowProps) {
   const trpc = useTRPC()
+  const queryClient = useQueryClient()
   const [showVerifyModal, setShowVerifyModal] = useState(false)
   const [verifiedTxId, setVerifiedTxId] = useState(transaction.mtnTransactionId || '')
 
+  // Debug: Log transaction data to see if shippingAddress is present
+  useEffect(() => {
+    console.log('Transaction data:', {
+      id: transaction.id,
+      paymentReference: transaction.paymentReference,
+      status: transaction.status,
+      deliveryType: transaction.deliveryType,
+      mtnTransactionId: transaction.mtnTransactionId,
+      hasShippingAddress: !!transaction.shippingAddress,
+      shippingAddress: transaction.shippingAddress,
+    });
+  }, [transaction]);
+
   const verifyMutation = useMutation(
     trpc.admin.verifyPayment.mutationOptions({
-      onSuccess: () => {
-        alert('✅ Payment verified successfully! Orders have been created.')
+      onSuccess: async () => {
+        toast.success('✅ Payment verified successfully! Orders have been created.')
         setShowVerifyModal(false)
-        onVerified()
+        // Invalidate and refetch the transactions query
+        await queryClient.invalidateQueries(trpc.admin.getPendingTransactions.queryFilter())
+        // Force immediate refetch
+        await queryClient.refetchQueries(trpc.admin.getPendingTransactions.queryFilter())
       },
       onError: (error) => {
-        alert(`❌ Error: ${error.message}`)
+        toast.error(error.message || 'Failed to verify payment')
       },
     })
   )
 
   const rejectMutation = useMutation(
     trpc.admin.rejectPayment.mutationOptions({
-      onSuccess: () => {
-        alert('❌ Payment rejected. Customer will be notified.')
-        onVerified()
+      onSuccess: async () => {
+        toast.success('Payment rejected. Customer will be notified.')
+        await queryClient.invalidateQueries(trpc.admin.getPendingTransactions.queryFilter())
+        await queryClient.refetchQueries(trpc.admin.getPendingTransactions.queryFilter())
       },
       onError: (error) => {
-        alert(`❌ Error: ${error.message}`)
+        toast.error(error.message || 'Failed to reject payment')
       },
     })
   )
 
   const handleVerify = () => {
-    if (!verifiedTxId.trim()) {
-      alert('Please enter the Mobile Money Transaction ID from your dashboard')
+    if (!verifiedTxId || !verifiedTxId.trim()) {
+      toast.error('Transaction ID is missing. Please contact support.')
+      console.error('Missing mtnTransactionId for transaction:', transaction.id)
       return
     }
 
-    if (confirm('Confirm that you have verified this payment in your Mobile Money dashboard?')) {
-      verifyMutation.mutate({
-        transactionId: transaction.id,
-        verifiedMtnTransactionId: verifiedTxId,
-      })
-    }
+    verifyMutation.mutate({
+      transactionId: transaction.id,
+      verifiedMtnTransactionId: verifiedTxId,
+    })
   }
 
   const firstProduct = transaction.products?.[0]
@@ -396,6 +416,11 @@ function UnifiedTransactionRow({
         </td>
         <td className="px-4 py-3 text-sm">
           <div className="flex gap-2">
+            {transaction.status === 'pending' && (
+              <span className="text-xs text-orange-600 font-medium">
+                ⏳ Waiting for customer to submit TX ID
+              </span>
+            )}
             {transaction.status === 'awaiting_verification' && (
               <>
                 <button
@@ -448,22 +473,15 @@ function UnifiedTransactionRow({
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mobile Money Transaction ID (from your dashboard):
+                  Mobile Money Transaction ID (from customer):
                 </label>
-                <input
-                  type="text"
-                  value={verifiedTxId}
-                  onChange={(e) => setVerifiedTxId(e.target.value)}
-                  placeholder="e.g., MP241122.1045.B3K7Y9"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-                />
-              </div>
-{/* 
-              <div className="text-xs text-gray-600">
-                <p className="text-gray-600">
-                  📱 Check your Mobile Money dashboard to verify the transaction
+                <div className="w-full border-2 border-blue-300 bg-blue-50 rounded px-3 py-2 text-sm font-mono font-semibold text-blue-900">
+                  {verifiedTxId || 'Not provided'}
+                </div>
+                <p className="text-xs text-gray-600 mt-1">
+                  📱 Please verify this transaction ID matches what you received in your Mobile Money account
                 </p>
-              </div> */}
+              </div>
 
               <div className="flex gap-2">
                 <button
@@ -479,6 +497,27 @@ function UnifiedTransactionRow({
                 >
                   Cancel
                 </button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+
+      {/* Shipping Address Section - Expanded */}
+      {isExpanded && transaction.deliveryType === 'delivery' && transaction.shippingAddress && (
+        <tr>
+          <td colSpan={8} className="px-4 py-3 bg-blue-50 border-t border-blue-200">
+            <div className="space-y-2">
+              <h4 className="font-semibold text-blue-900 flex items-center gap-2 text-sm">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Shipping Address
+              </h4>
+              <div className="text-sm text-blue-900 bg-white rounded p-2 border border-blue-200">
+                <div>{transaction.shippingAddress.line1}</div>
+                <div>{transaction.shippingAddress.city}, {transaction.shippingAddress.country}</div>
               </div>
             </div>
           </td>
@@ -620,32 +659,35 @@ function UnifiedTransactionCard({
   const [showOrders, setShowOrders] = useState(false);
   const [verifiedTxId, setVerifiedTxId] = useState(transaction.mtnTransactionId || '');
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
 
   const verifyMutation = useMutation(
     trpc.admin.verifyPayment.mutationOptions({
-      onSuccess: () => {
-        alert('✅ Payment verified successfully! Orders have been created.')
+      onSuccess: async () => {
+        toast.success('✅ Payment verified successfully! Orders have been created.')
         setShowVerifyModal(false)
-        onVerified()
+        // Invalidate and refetch the transactions query
+        await queryClient.invalidateQueries(trpc.admin.getPendingTransactions.queryFilter())
+        // Force immediate refetch
+        await queryClient.refetchQueries(trpc.admin.getPendingTransactions.queryFilter())
       },
       onError: (error) => {
-        alert(`❌ Error: ${error.message}`)
+        toast.error(error.message || 'Failed to verify payment')
       },
     })
   )
 
   const handleVerify = () => {
-    if (!verifiedTxId.trim()) {
-      alert('Please enter the Mobile Money Transaction ID from your dashboard')
+    if (!verifiedTxId || !verifiedTxId.trim()) {
+      toast.error('Transaction ID is missing. Please contact support.')
+      console.error('Missing mtnTransactionId for transaction:', transaction.id)
       return
     }
 
-    if (confirm('Confirm that you have verified this payment in your Mobile Money dashboard?')) {
-      verifyMutation.mutate({
-        transactionId: transaction.id,
-        verifiedMtnTransactionId: verifiedTxId,
-      })
-    }
+    verifyMutation.mutate({
+      transactionId: transaction.id,
+      verifiedMtnTransactionId: verifiedTxId,
+    })
   }
 
   const firstProduct = transaction.products?.[0]
@@ -684,6 +726,31 @@ function UnifiedTransactionCard({
             {transaction.totalAmount?.toLocaleString()} RWF
           </div>
         </div>
+
+        {/* Shipping Address for Delivery Orders */}
+        {transaction.deliveryType === 'delivery' && transaction.shippingAddress && (
+          <div className="bg-blue-50 border border-blue-200 rounded p-2">
+            <div className="text-xs font-semibold text-blue-900 mb-1 flex items-center gap-1">
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Ship to:
+            </div>
+            <div className="text-xs text-blue-800">
+              {transaction.shippingAddress.line1}<br />
+              {transaction.shippingAddress.city}, {transaction.shippingAddress.country}
+            </div>
+          </div>
+        )}
+
+        {transaction.status === 'pending' && (
+          <div className="bg-orange-50 border border-orange-200 rounded p-3 text-center">
+            <p className="text-xs text-orange-700 font-medium">
+              ⏳ Waiting for customer to submit Transaction ID
+            </p>
+          </div>
+        )}
 
         {transaction.status === 'awaiting_verification' && (
           <div className="flex gap-2">
@@ -787,13 +854,17 @@ function UnifiedTransactionCard({
               <h4 className="font-semibold text-sm text-gray-900">Verify Payment</h4>
               <button onClick={() => setShowVerifyModal(false)} className="text-gray-500">✕</button>
             </div>
-            <input
-              type="text"
-              value={verifiedTxId}
-              onChange={(e) => setVerifiedTxId(e.target.value)}
-              placeholder="Mobile Money Transaction ID"
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-            />
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Mobile Money Transaction ID (from customer):
+              </label>
+              <div className="w-full border-2 border-blue-300 bg-blue-100 rounded px-3 py-2 text-sm font-mono font-semibold text-blue-900">
+                {verifiedTxId || 'Not provided'}
+              </div>
+              <p className="text-xs text-gray-600 mt-1">
+                📱 Verify this matches your Mobile Money account
+              </p>
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={handleVerify}

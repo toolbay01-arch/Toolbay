@@ -126,7 +126,7 @@ export const Tenants: CollectionConfig = {
     {
       name: "category",
       type: "select",
-      required: true,
+      required: true, // Changed back to required to reproduce error
       options: [
         { label: "Retailer", value: "retailer" },
         { label: "Wholesale", value: "wholesale" },
@@ -142,7 +142,7 @@ export const Tenants: CollectionConfig = {
     {
       name: "location",
       type: "text",
-      required: true,
+      required: true, // Changed back to required to reproduce error
       admin: {
         description: "Business location/address - Required for seller registration",
       },

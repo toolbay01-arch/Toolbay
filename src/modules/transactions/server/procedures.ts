@@ -189,6 +189,11 @@ export const transactionsRouter = createTRPCRouter({
               amount: item.price * item.quantity,
               currency: "RWF",
               deliveryType: (transaction as any).deliveryType || 'delivery', // Copy delivery type from transaction
+              shippingAddress: (transaction as any).shippingAddress ? {
+                line1: (transaction as any).shippingAddress.line1,
+                city: (transaction as any).shippingAddress.city,
+                country: (transaction as any).shippingAddress.country,
+              } : undefined, // Copy shipping address from transaction for delivery orders
               status: "pending",
             }
           });

@@ -634,6 +634,23 @@ export interface Order {
    */
   deliveryType: 'direct' | 'delivery';
   /**
+   * Customer shipping address (inherited from transaction for delivery orders)
+   */
+  shippingAddress?: {
+    /**
+     * Address line 1
+     */
+    line1?: string | null;
+    /**
+     * City
+     */
+    city?: string | null;
+    /**
+     * Country
+     */
+    country?: string | null;
+  };
+  /**
    * Order fulfillment status. Direct orders: pending → completed (after pickup confirmation). Delivery orders: pending → shipped → delivered → completed (after delivery confirmation).
    */
   status: 'pending' | 'shipped' | 'delivered' | 'completed' | 'refunded' | 'cancelled';
@@ -1170,6 +1187,13 @@ export interface OrdersSelect<T extends boolean = true> {
   totalAmount?: T;
   transaction?: T;
   deliveryType?: T;
+  shippingAddress?:
+    | T
+    | {
+        line1?: T;
+        city?: T;
+        country?: T;
+      };
   status?: T;
   confirmedAt?: T;
   shippedAt?: T;
