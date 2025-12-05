@@ -122,7 +122,7 @@ export default function VerifyPaymentsPage() {
 
   // Determine how many notifications to show
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  const visibleCount = isMobile ? 3 : 5;
+  const visibleCount = isMobile ? 2 : 5;
   const visibleNotifications = showAllNotifications 
     ? notifications 
     : notifications.slice(0, visibleCount);
@@ -157,17 +157,17 @@ export default function VerifyPaymentsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 mt-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Transactions & Orders</h1>
-        <p className="text-gray-600">
+    <div className="container mx-auto px-4 py-4 md:py-8">
+      <div className="mb-4 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">Transactions & Orders</h1>
+        <p className="text-sm md:text-base text-gray-600">
           Verify customer payments and manage order fulfillments
         </p>
       </div>
 
       {/* Enhanced Notifications Section */}
       {notifications.length > 0 && (
-        <div className="mb-6 space-y-2">
+        <div className="mb-3 md:mb-6 space-y-1.5 md:space-y-2">
           {visibleNotifications.map((notification) => (
             <div 
               key={notification.id}
@@ -281,11 +281,26 @@ function UnifiedTransactionsView({
       setTimeout(() => {
         const element = document.getElementById(`transaction-${selectedTransactionId}`);
         if (element) {
-          element.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start',
-            inline: 'nearest'
-          });
+          // For mobile, use a better scroll approach
+          const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+          
+          if (isMobile) {
+            // On mobile, scroll to top of element with offset for notifications/header
+            const yOffset = -100; // Offset for fixed elements
+            const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+            
+            window.scrollTo({
+              top: y,
+              behavior: 'smooth'
+            });
+          } else {
+            // On desktop, use standard scrollIntoView
+            element.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start',
+              inline: 'nearest'
+            });
+          }
           
           // Add visual feedback
           element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
@@ -293,7 +308,7 @@ function UnifiedTransactionsView({
             element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
           }, 2000);
         }
-      }, 200);
+      }, 300); // Increased delay to ensure DOM is ready
       
       // Clear the selected transaction
       onTransactionExpanded();
@@ -372,12 +387,12 @@ function UnifiedTransactionsView({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2 md:space-y-4">
       {/* Filter Tabs - Simple Click Toggle */}
-      <div className="flex flex-wrap gap-2 pb-2">
+      <div className="flex flex-wrap gap-1.5 sm:gap-2 pb-1 md:pb-2">
         <button
           onClick={() => setFilterStatus('all')}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+          className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-all ${
             filterStatus === 'all'
               ? 'bg-blue-600 text-white shadow-md'
               : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -387,7 +402,7 @@ function UnifiedTransactionsView({
         </button>
         <button
           onClick={() => setFilterStatus('unverified')}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+          className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-all ${
             filterStatus === 'unverified'
               ? 'bg-red-500 text-white shadow-md'
               : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -397,7 +412,7 @@ function UnifiedTransactionsView({
         </button>
         <button
           onClick={() => setFilterStatus('delivered')}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+          className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-all ${
             filterStatus === 'delivered'
               ? 'bg-green-600 text-white shadow-md'
               : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -407,7 +422,7 @@ function UnifiedTransactionsView({
         </button>
         <button
           onClick={() => setFilterStatus('undelivered')}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+          className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-all ${
             filterStatus === 'undelivered'
               ? 'bg-orange-500 text-white shadow-md'
               : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -418,21 +433,21 @@ function UnifiedTransactionsView({
       </div>
 
       {/* View & Auto-Refresh Toggle */}
-      <div className="flex flex-wrap justify-end gap-2 pb-2">
+      <div className="flex flex-wrap justify-end gap-2 pb-1 md:pb-2">
         <button
-          className={`gap-2 px-3 py-1 rounded border flex items-center ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'}`}
+          className={`gap-2 px-3 py-1 rounded border flex items-center text-xs md:text-sm ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'}`}
           onClick={() => setViewMode('grid')}
         >
           <Grid3x3 className="h-4 w-4" /> Grid
         </button>
         <button
-          className={`gap-2 px-3 py-1 rounded border flex items-center ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'}`}
+          className={`gap-2 px-3 py-1 rounded border flex items-center text-xs md:text-sm ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'}`}
           onClick={() => setViewMode('list')}
         >
           <List className="h-4 w-4" /> List
         </button>
         <button
-          className={`gap-2 px-3 py-1 rounded border flex items-center ${autoRefresh ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
+          className={`gap-2 px-3 py-1 rounded border flex items-center text-xs md:text-sm ${autoRefresh ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
           onClick={() => setAutoRefresh((v) => !v)}
         >
           {autoRefresh ? 'Auto-Refresh: On' : 'Auto-Refresh: Off'}
