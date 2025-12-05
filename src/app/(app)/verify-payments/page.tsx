@@ -2,16 +2,32 @@
 
 import { useTRPC } from '@/trpc/client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { formatDistance } from 'date-fns'
 import type { Transaction } from '@/payload-types'
 import { useRouter } from 'next/navigation'
-import { PackageIcon, Grid3x3, List, CreditCard, Truck, ChevronDown, ChevronUp } from 'lucide-react';
+import { PackageIcon, Grid3x3, List, CreditCard, Truck, ChevronDown, ChevronUp, Bell, X } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Notification type
+type NotificationItem = {
+  id: string;
+  type: 'unverified' | 'undelivered';
+  transactionId: string;
+  orderId?: string;
+  title: string;
+  message: string;
+  timestamp: Date;
+  viewed: boolean;
+};
 
 export default function VerifyPaymentsPage() {
   const router = useRouter();
   const trpc = useTRPC();
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(new Set());
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
 
   // Refetch on mount and window focus to catch logouts from other tabs
   const session = useQuery({
@@ -22,22 +38,95 @@ export default function VerifyPaymentsPage() {
   });
   const isTenant = session.data?.user?.roles?.includes('tenant');
 
-  // Get unviewed transaction count
-  const { data: unviewedData, refetch: refetchUnviewed } = useQuery({
-    ...trpc.transactions.getUnviewedCount.queryOptions(),
+  // Generate notifications from transactions
+  const { data: allTransactions } = useQuery({
+    ...trpc.admin.getPendingTransactions.queryOptions(),
     enabled: !!isTenant,
     refetchInterval: 30000, // Check every 30 seconds
-    staleTime: 10000,
   });
 
-  // Mark transactions as viewed when page loads
-  const markAsViewed = useMutation(
-    trpc.transactions.markTransactionsAsViewed.mutationOptions({
-      onSuccess: () => {
-        refetchUnviewed();
-      },
-    })
-  );
+  useEffect(() => {
+    if (!allTransactions || !isTenant) return;
+
+    const newNotifications: NotificationItem[] = [];
+
+    // Check for unverified transactions
+    allTransactions.forEach((transaction: any) => {
+      if (transaction.status === 'awaiting_verification' || transaction.status === 'pending') {
+        const notifId = `unverified-${transaction.id}`;
+        if (!dismissedNotifications.has(notifId)) {
+          const productNames = transaction.products?.map((p: any) => {
+            const product = typeof p.product === 'string' ? null : p.product;
+            return product?.name || 'Product';
+          }).join(', ') || 'Products';
+
+          newNotifications.push({
+            id: notifId,
+            type: 'unverified',
+            transactionId: transaction.id,
+            title: transaction.status === 'pending' 
+              ? '⏳ Waiting for TX ID' 
+              : '🔔 Payment Awaiting',
+            message: `${transaction.customerName} - ${productNames} - ${transaction.totalAmount?.toLocaleString()} RWF`,
+            timestamp: new Date(transaction.createdAt),
+            viewed: false,
+          });
+        }
+      }
+
+      // Check for undelivered orders (only delivery type, not pickup)
+      transaction.orders?.forEach((order: any) => {
+        const isDeliveryOrder = order.deliveryType === 'delivery';
+        const isUndelivered = order.status === 'pending' || order.status === 'shipped';
+        
+        if (isDeliveryOrder && isUndelivered) {
+          const notifId = `undelivered-${order.id}`;
+          if (!dismissedNotifications.has(notifId)) {
+            const product = typeof order.product === 'string' ? null : order.product;
+            const productName = product?.name || 'Product';
+
+            newNotifications.push({
+              id: notifId,
+              type: 'undelivered',
+              transactionId: transaction.id,
+              orderId: order.id,
+              title: order.status === 'pending' 
+                ? '📦 Order Ready to Ship' 
+                : '🚚 Order In Transit',
+              message: `${transaction.customerName} - ${productName} - ${
+                order.status === 'pending' 
+                  ? 'Needs to be shipped' 
+                  : 'Awaiting delivery'
+              }`,
+              timestamp: new Date(order.status === 'shipped' && order.shippedAt ? order.shippedAt : transaction.createdAt),
+              viewed: false,
+            });
+          }
+        }
+      });
+    });
+
+    // Sort by timestamp (newest first)
+    newNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    setNotifications(newNotifications);
+  }, [allTransactions, dismissedNotifications, isTenant]);
+
+  const handleDismissNotification = (notifId: string) => {
+    setDismissedNotifications(prev => new Set([...prev, notifId]));
+  };
+
+  const handleNotificationClick = (transactionId: string) => {
+    // Just set the selected transaction, the useEffect will handle scrolling and expanding
+    setSelectedTransactionId(transactionId);
+  };
+
+  // Determine how many notifications to show
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const visibleCount = isMobile ? 3 : 5;
+  const visibleNotifications = showAllNotifications 
+    ? notifications 
+    : notifications.slice(0, visibleCount);
+  const hasMoreNotifications = notifications.length > visibleCount;
 
   useEffect(() => {
     // Wait until session is fetched before redirecting
@@ -54,13 +143,8 @@ export default function VerifyPaymentsPage() {
       router.push('/');
       return;
     }
-
-    // Mark transactions as viewed when page loads
-    if (isTenant && unviewedData?.count && unviewedData.count > 0) {
-      markAsViewed.mutate();
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session.isFetched, session.data, router, isTenant, unviewedData?.count]);
+  }, [session.isFetched, session.data, router, isTenant]);
 
   // Show loading while session is being fetched
   if (session.isLoading || !session.isFetched) {
@@ -72,8 +156,6 @@ export default function VerifyPaymentsPage() {
     return <LoadingState />;
   }
 
-  const unviewedCount = unviewedData?.count || 0;
-
   return (
     <div className="container mx-auto px-4 py-8 mt-6">
       <div className="mb-8">
@@ -83,19 +165,77 @@ export default function VerifyPaymentsPage() {
         </p>
       </div>
 
-      {/* Notification message for new transactions */}
-      {unviewedCount > 0 && (
-        <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
-          <div className="h-2 w-2 bg-blue-600 rounded-full animate-pulse"></div>
-          <p className="text-sm text-blue-900 font-medium">
-            {unviewedCount === 1 
-              ? "You have 1 new transaction awaiting verification"
-              : `You have ${unviewedCount} new transactions awaiting verification`}
-          </p>
+      {/* Enhanced Notifications Section */}
+      {notifications.length > 0 && (
+        <div className="mb-6 space-y-2">
+          {visibleNotifications.map((notification) => (
+            <div 
+              key={notification.id}
+              className={`${
+                notification.type === 'unverified' 
+                  ? 'bg-blue-50 border-blue-200' 
+                  : 'bg-amber-50 border-amber-200'
+              } border rounded-lg px-3 py-2 flex items-center gap-2 hover:shadow-md transition-shadow cursor-pointer`}
+              onClick={() => handleNotificationClick(notification.transactionId)}
+            >
+              <div className="flex-shrink-0">
+                {notification.type === 'unverified' ? (
+                  <Bell className="h-4 w-4 text-blue-600" />
+                ) : (
+                  <Truck className="h-4 w-4 text-amber-600" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className={`text-xs ${
+                  notification.type === 'unverified' ? 'text-blue-900' : 'text-amber-900'
+                } truncate`}>
+                  <span className="font-semibold">{notification.title}</span>
+                  <span className="mx-1">-</span>
+                  <span>{notification.message}</span>
+                </div>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDismissNotification(notification.id);
+                }}
+                className={`flex-shrink-0 p-1 rounded-full hover:bg-gray-200 transition-colors ${
+                  notification.type === 'unverified' ? 'text-blue-600' : 'text-amber-600'
+                }`}
+                title="Dismiss"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+
+          {/* Show More/Less Button */}
+          {hasMoreNotifications && (
+            <button
+              onClick={() => setShowAllNotifications(!showAllNotifications)}
+              className="w-full py-2 text-sm text-gray-600 hover:text-gray-900 font-medium border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+            >
+              {showAllNotifications ? (
+                <>
+                  <ChevronUp className="h-4 w-4" />
+                  Show Less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4" />
+                  Show {notifications.length - visibleCount} More Notifications
+                </>
+              )}
+            </button>
+          )}
         </div>
       )}
 
-      <UnifiedTransactionsView enabled={!!isTenant} />
+      <UnifiedTransactionsView 
+        enabled={!!isTenant} 
+        selectedTransactionId={selectedTransactionId}
+        onTransactionExpanded={() => setSelectedTransactionId(null)}
+      />
     </div>
   )
 }
@@ -109,7 +249,15 @@ function LoadingState() {
   )
 }
 
-function UnifiedTransactionsView({ enabled }: { enabled: boolean }) {
+function UnifiedTransactionsView({ 
+  enabled, 
+  selectedTransactionId,
+  onTransactionExpanded 
+}: { 
+  enabled: boolean;
+  selectedTransactionId: string | null;
+  onTransactionExpanded: () => void;
+}) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -122,6 +270,35 @@ function UnifiedTransactionsView({ enabled }: { enabled: boolean }) {
     enabled,
   });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+
+  // Auto-expand selected transaction from notification
+  useEffect(() => {
+    if (selectedTransactionId) {
+      // Expand the transaction
+      setExpandedTransactions(prev => new Set([...prev, selectedTransactionId]));
+      
+      // Wait for the DOM to update, then scroll
+      setTimeout(() => {
+        const element = document.getElementById(`transaction-${selectedTransactionId}`);
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+          
+          // Add visual feedback
+          element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+          }, 2000);
+        }
+      }, 200);
+      
+      // Clear the selected transaction
+      onTransactionExpanded();
+    }
+  }, [selectedTransactionId, onTransactionExpanded]);
 
   // Filter transactions based on selected filter
   const filteredTransactions = transactions?.filter((transaction: any) => {
@@ -290,6 +467,7 @@ function UnifiedTransactionsView({ enabled }: { enabled: boolean }) {
                     onVerified={() => refetch()}
                     onOrderStatusUpdate={() => refetch()}
                     updateOrderStatus={updateOrderStatus}
+                    transactionId={transaction.id}
                   />
                 ))}
               </tbody>
@@ -320,6 +498,7 @@ function UnifiedTransactionsView({ enabled }: { enabled: boolean }) {
                       onVerified={() => refetch()}
                       onOrderStatusUpdate={() => refetch()}
                       updateOrderStatus={updateOrderStatus}
+                      transactionId={transaction.id}
                     />
                   ))}
                 </tbody>
@@ -353,6 +532,7 @@ interface UnifiedTransactionRowProps {
   onVerified: () => void;
   onOrderStatusUpdate: () => void;
   updateOrderStatus: any;
+  transactionId: string;
 }
 
 function UnifiedTransactionRow({ 
@@ -362,7 +542,8 @@ function UnifiedTransactionRow({
   onToggleExpand,
   onVerified,
   onOrderStatusUpdate,
-  updateOrderStatus
+  updateOrderStatus,
+  transactionId
 }: UnifiedTransactionRowProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
@@ -491,7 +672,7 @@ function UnifiedTransactionRow({
 
   return (
     <>
-      <tr className={`hover:bg-opacity-70 transition-colors ${getRowBgColor()}`}>
+      <tr id={`transaction-${transactionId}`} className={`hover:bg-opacity-70 transition-colors ${getRowBgColor()}`}>
         <td className="px-4 py-3">
           {canExpand && (
             <button
@@ -789,7 +970,8 @@ function UnifiedTransactionRowMobile({
   onToggleExpand,
   onVerified,
   onOrderStatusUpdate,
-  updateOrderStatus
+  updateOrderStatus,
+  transactionId
 }: UnifiedTransactionRowProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
@@ -881,7 +1063,7 @@ function UnifiedTransactionRowMobile({
 
   return (
     <>
-      <tr className={`${getRowBgColor()}`}>
+      <tr id={`transaction-${transactionId}`} className={`${getRowBgColor()}`}>
         <td className="px-2 py-3">
           {canExpand && (
             <button
