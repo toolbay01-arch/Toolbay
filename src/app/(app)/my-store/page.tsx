@@ -330,7 +330,7 @@ function PurchasesSection() {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'shipped' | 'delivered' | 'completed' | 'cancelled'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     ...trpc.orders.getMyOrders.queryOptions({

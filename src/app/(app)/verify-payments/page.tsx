@@ -112,14 +112,44 @@ function LoadingState() {
 function UnifiedTransactionsView({ enabled }: { enabled: boolean }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const [expandedTransactions, setExpandedTransactions] = useState<Set<string>>(new Set());
+  const [filterStatus, setFilterStatus] = useState<'all' | 'unverified' | 'delivered' | 'undelivered'>('all');
+  
   const { data: transactions, isLoading, refetch } = useQuery({
     ...trpc.admin.getPendingTransactions.queryOptions(),
     refetchInterval: autoRefresh ? 5000 : false,
     enabled,
   });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+
+  // Filter transactions based on selected filter
+  const filteredTransactions = transactions?.filter((transaction: any) => {
+    if (filterStatus === 'all') return true;
+    
+    if (filterStatus === 'unverified') {
+      return transaction.status === 'awaiting_verification' || transaction.status === 'pending';
+    }
+    
+    if (filterStatus === 'delivered') {
+      const orders = transaction.orders || [];
+      return orders.some((order: any) => 
+        order.status === 'delivered' || order.status === 'completed'
+      );
+    }
+    
+    if (filterStatus === 'undelivered') {
+      const orders = transaction.orders || [];
+      // Only show delivery orders (not direct pickup) that are undelivered
+      return orders.some((order: any) => {
+        const isDeliveryOrder = order.deliveryType === 'delivery';
+        const isUndelivered = order.status === 'pending' || order.status === 'shipped';
+        return isDeliveryOrder && isUndelivered;
+      });
+    }
+    
+    return true;
+  }) || [];
 
   const updateOrderStatus = useMutation(
     trpc.sales.updateOrderStatus.mutationOptions({
@@ -166,6 +196,50 @@ function UnifiedTransactionsView({ enabled }: { enabled: boolean }) {
 
   return (
     <div className="space-y-4">
+      {/* Filter Tabs - Simple Click Toggle */}
+      <div className="flex flex-wrap gap-2 pb-2">
+        <button
+          onClick={() => setFilterStatus('all')}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            filterStatus === 'all'
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => setFilterStatus('unverified')}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            filterStatus === 'unverified'
+              ? 'bg-red-500 text-white shadow-md'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          Unverified
+        </button>
+        <button
+          onClick={() => setFilterStatus('delivered')}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            filterStatus === 'delivered'
+              ? 'bg-green-600 text-white shadow-md'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          Delivered
+        </button>
+        <button
+          onClick={() => setFilterStatus('undelivered')}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            filterStatus === 'undelivered'
+              ? 'bg-orange-500 text-white shadow-md'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          Undelivered
+        </button>
+      </div>
+
       {/* View & Auto-Refresh Toggle */}
       <div className="flex flex-wrap justify-end gap-2 pb-2">
         <button
@@ -190,7 +264,8 @@ function UnifiedTransactionsView({ enabled }: { enabled: boolean }) {
 
       {viewMode === 'list' ? (
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Desktop View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -205,7 +280,7 @@ function UnifiedTransactionsView({ enabled }: { enabled: boolean }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {transactions.map((transaction: any) => (
+                {filteredTransactions.map((transaction: any) => (
                   <UnifiedTransactionRow 
                     key={transaction.id} 
                     transaction={transaction}
@@ -220,10 +295,41 @@ function UnifiedTransactionsView({ enabled }: { enabled: boolean }) {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile View */}
+          <div className="md:hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"></th>
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">Product</th>
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">Client</th>
+                    <th className="px-2 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">Amount</th>
+                    <th className="px-2 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredTransactions.map((transaction: any) => (
+                    <UnifiedTransactionRowMobile 
+                      key={transaction.id} 
+                      transaction={transaction}
+                      orders={transaction.orders || []}
+                      isExpanded={expandedTransactions.has(transaction.id)}
+                      onToggleExpand={() => toggleExpand(transaction.id)}
+                      onVerified={() => refetch()}
+                      onOrderStatusUpdate={() => refetch()}
+                      updateOrderStatus={updateOrderStatus}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {transactions.map((transaction: any) => (
+          {filteredTransactions.map((transaction: any) => (
             <UnifiedTransactionCard
               key={transaction.id}
               transaction={transaction}
@@ -328,6 +434,11 @@ function UnifiedTransactionRow({
       : product?.image?.url
   const productName = product?.name || "Product"
   const productQuantity = firstProduct?.quantity || 0
+  const totalProducts = transaction.products?.length || 0
+  const additionalProductsCount = totalProducts > 1 ? totalProducts - 1 : 0
+  
+  // Shorten product name if too long
+  const shortProductName = productName.length > 20 ? productName.substring(0, 17) + '...' : productName
 
   const handleReject = () => {
     const reason = prompt('Why are you rejecting this payment?')
@@ -342,12 +453,47 @@ function UnifiedTransactionRow({
   }
 
   const hasOrders = orders && orders.length > 0;
+  
+  // Determine row background color based on payment and delivery status
+  const getRowBgColor = () => {
+    // Unverified payment - pale red/pink
+    if (transaction.status === 'awaiting_verification' || transaction.status === 'pending') {
+      return 'bg-red-100';
+    }
+    
+    // Check delivery status from orders
+    if (hasOrders) {
+      const allDelivered = orders.every((order: any) => 
+        order.status === 'delivered' || order.status === 'completed'
+      );
+      const someUndelivered = orders.some((order: any) => {
+        const isDeliveryOrder = order.deliveryType === 'delivery';
+        const isUndelivered = order.status === 'pending' || order.status === 'shipped';
+        return isDeliveryOrder && isUndelivered;
+      });
+      
+      // All delivered - default/white
+      if (allDelivered) {
+        return 'bg-white';
+      }
+      
+      // Some delivery orders undelivered - pale yellow/amber
+      if (someUndelivered) {
+        return 'bg-amber-100';
+      }
+    }
+    
+    return 'bg-white'; // Default
+  };
+
+  // Only show dropdown if transaction is verified AND has orders
+  const canExpand = hasOrders;
 
   return (
     <>
-      <tr className="hover:bg-gray-50">
+      <tr className={`hover:bg-opacity-70 transition-colors ${getRowBgColor()}`}>
         <td className="px-4 py-3">
-          {hasOrders && (
+          {canExpand && (
             <button
               onClick={onToggleExpand}
               className="text-gray-500 hover:text-gray-700"
@@ -357,24 +503,17 @@ function UnifiedTransactionRow({
           )}
         </td>
         <td className="px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 overflow-hidden rounded border bg-gray-100 flex items-center justify-center">
-              {productImageUrl ? (
-                <img
-                  src={productImageUrl}
-                  alt={productName}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
-              ) : (
-                <span className="text-[0.6rem] uppercase tracking-widest text-gray-500">
-                  No image
-                </span>
-              )}
-            </div>
+          <div className="flex items-center gap-2">
             <div>
-              <p className="text-sm font-medium truncate">{productName}</p>
-              <p className="text-xs text-gray-500">Qty: {productQuantity}</p>
+              <p className="text-sm font-medium">{shortProductName}</p>
+              <p className="text-xs text-gray-500">
+                Qty: {productQuantity}
+                {additionalProductsCount > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-semibold">
+                    +{additionalProductsCount}
+                  </span>
+                )}
+              </p>
             </div>
           </div>
         </td>
@@ -642,6 +781,370 @@ function UnifiedTransactionRow({
   )
 }
 
+// Mobile-optimized transaction row
+function UnifiedTransactionRowMobile({ 
+  transaction, 
+  orders, 
+  isExpanded, 
+  onToggleExpand,
+  onVerified,
+  onOrderStatusUpdate,
+  updateOrderStatus
+}: UnifiedTransactionRowProps) {
+  const trpc = useTRPC()
+  const queryClient = useQueryClient()
+  const [showVerifyModal, setShowVerifyModal] = useState(false)
+  const [verifiedTxId, setVerifiedTxId] = useState(transaction.mtnTransactionId || '')
+
+  const verifyMutation = useMutation(
+    trpc.admin.verifyPayment.mutationOptions({
+      onSuccess: async () => {
+        toast.success('✅ Payment verified successfully! Orders have been created.')
+        setShowVerifyModal(false)
+        await queryClient.invalidateQueries(trpc.admin.getPendingTransactions.queryFilter())
+        await queryClient.refetchQueries(trpc.admin.getPendingTransactions.queryFilter())
+      },
+      onError: (error) => {
+        toast.error(error.message || 'Failed to verify payment')
+      },
+    })
+  )
+
+  const rejectMutation = useMutation(
+    trpc.admin.rejectPayment.mutationOptions({
+      onSuccess: async () => {
+        toast.success('Payment rejected. Customer will be notified.')
+        await queryClient.invalidateQueries(trpc.admin.getPendingTransactions.queryFilter())
+        await queryClient.refetchQueries(trpc.admin.getPendingTransactions.queryFilter())
+      },
+      onError: (error) => {
+        toast.error(error.message || 'Failed to reject payment')
+      },
+    })
+  )
+
+  const handleVerify = () => {
+    if (!verifiedTxId || !verifiedTxId.trim()) {
+      toast.error('Transaction ID is missing. Please contact support.')
+      return
+    }
+
+    verifyMutation.mutate({
+      transactionId: transaction.id,
+      verifiedMtnTransactionId: verifiedTxId,
+    })
+  }
+
+  const handleReject = () => {
+    const reason = prompt('Why are you rejecting this payment?')
+    if (reason) {
+      if (confirm('Are you sure you want to reject this payment?')) {
+        rejectMutation.mutate({
+          transactionId: transaction.id,
+          reason: reason,
+        })
+      }
+    }
+  }
+
+  const firstProduct = transaction.products?.[0]
+  const product = typeof firstProduct?.product === "string" ? undefined : firstProduct?.product
+  const productImageUrl = typeof product?.image === "string" ? product.image : product?.image?.url
+  const productName = product?.name || "Product"
+  const totalProducts = transaction.products?.length || 0
+  const additionalProductsCount = totalProducts > 1 ? totalProducts - 1 : 0
+  const shortProductName = productName.length > 15 ? productName.substring(0, 12) + '...' : productName
+  const hasOrders = orders && orders.length > 0
+  
+  // Determine row background color - same as desktop
+  const getRowBgColor = () => {
+    // Unverified payment - pale red/pink
+    if (transaction.status === 'awaiting_verification' || transaction.status === 'pending') {
+      return 'bg-red-100';
+    }
+    
+    if (hasOrders) {
+      const someUndelivered = orders.some((order: any) => {
+        const isDeliveryOrder = order.deliveryType === 'delivery';
+        const isUndelivered = order.status === 'pending' || order.status === 'shipped';
+        return isDeliveryOrder && isUndelivered;
+      });
+      if (someUndelivered) return 'bg-amber-100';
+    }
+    
+    return 'bg-white';
+  };
+
+  // Show dropdown if: needs verification OR has orders
+  const needsVerification = transaction.status === 'awaiting_verification';
+  const canExpand = needsVerification || hasOrders;
+
+  return (
+    <>
+      <tr className={`${getRowBgColor()}`}>
+        <td className="px-2 py-3">
+          {canExpand && (
+            <button
+              onClick={onToggleExpand}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </button>
+          )}
+        </td>
+        <td className="px-2 py-3">
+          <div className="text-xs font-medium">{shortProductName}</div>
+          {additionalProductsCount > 0 && (
+            <span className="inline-block mt-0.5 px-1 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-semibold">
+              +{additionalProductsCount}
+            </span>
+          )}
+        </td>
+        <td className="px-2 py-3">
+          <div className="text-xs font-medium truncate max-w-[80px]">{transaction.customerName}</div>
+        </td>
+        <td className="px-2 py-3 text-right">
+          <div className="text-xs font-semibold text-green-600 whitespace-nowrap">
+            {(transaction.totalAmount || 0).toLocaleString()}
+          </div>
+          <div className="text-[9px] text-gray-500">RWF</div>
+        </td>
+        <td className="px-2 py-3">
+          <TransactionStatusBadge status={transaction.status} />
+        </td>
+      </tr>
+
+      {/* Expanded details for mobile */}
+      {isExpanded && (
+        <tr>
+          <td colSpan={5} className="px-2 py-3 bg-gray-50 border-t border-gray-200">
+            <div className="space-y-3 text-xs">
+              {/* Product images in dropdown */}
+              {transaction.products && transaction.products.length > 0 && (
+                <div>
+                  <div className="font-semibold text-gray-700 mb-2">Products:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {transaction.products.map((item: any, idx: number) => {
+                      const prod = typeof item?.product === "string" ? null : item?.product;
+                      const imgUrl = typeof prod?.image === "string" ? prod.image : prod?.image?.url;
+                      const prodName = prod?.name || "Product";
+                      
+                      return (
+                        <div key={idx} className="flex items-center gap-2 bg-white p-2 rounded border">
+                          {imgUrl && (
+                            <img 
+                              src={imgUrl} 
+                              alt={prodName}
+                              className="w-10 h-10 object-cover rounded"
+                            />
+                          )}
+                          <div>
+                            <div className="font-medium text-[11px]">{prodName}</div>
+                            <div className="text-[10px] text-gray-500">Qty: {item.quantity}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Reference */}
+              <div>
+                <span className="font-semibold text-gray-700">Ref:</span> #{transaction.paymentReference}
+              </div>
+
+              {/* MTN TX ID */}
+              <div>
+                <span className="font-semibold text-gray-700">MTN TX:</span>{' '}
+                <span className="font-mono bg-gray-100 px-1 rounded">
+                  {transaction.mtnTransactionId || 'Not submitted'}
+                </span>
+              </div>
+
+              {/* Customer Email */}
+              <div>
+                <span className="font-semibold text-gray-700">Email:</span> {transaction.customerEmail}
+              </div>
+
+              {/* Delivery Type */}
+              {transaction.deliveryType && (
+                <div>
+                  <span className="font-semibold text-gray-700">Delivery:</span>{' '}
+                  <span className={`px-2 py-1 rounded text-[10px] ${
+                    transaction.deliveryType === 'direct' 
+                      ? 'bg-purple-100 text-purple-700' 
+                      : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {transaction.deliveryType === 'direct' ? '📦 Pickup' : '🚚 Delivery'}
+                  </span>
+                </div>
+              )}
+
+              {/* Shipping Address */}
+              {transaction.deliveryType === 'delivery' && transaction.shippingAddress && (
+                <div>
+                  <div className="font-semibold text-gray-700 mb-1">Address:</div>
+                  <div className="bg-white p-2 rounded border text-[11px]">
+                    <div>{transaction.shippingAddress.line1}</div>
+                    <div>{transaction.shippingAddress.city}, {transaction.shippingAddress.country}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="pt-2 border-t">
+                {transaction.status === 'awaiting_verification' && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowVerifyModal(true)}
+                      className="flex-1 px-3 py-2 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded"
+                    >
+                      ✅ Verify
+                    </button>
+                    <button
+                      onClick={handleReject}
+                      className="flex-1 px-3 py-2 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded"
+                    >
+                      ❌ Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Orders */}
+              {hasOrders && (
+                <div className="pt-2 border-t">
+                  <div className="font-semibold text-gray-700 mb-2">Orders ({orders.length}):</div>
+                  <div className="space-y-2">
+                    {orders.map((order: any) => {
+                      const deliveryType = order.deliveryType || 'delivery';
+                      
+                      return (
+                        <div key={order.id} className="bg-white p-3 rounded border space-y-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="font-medium text-[11px]">#{order.orderNumber}</div>
+                              <div className="text-[10px] text-gray-600 mt-0.5">
+                                {(order.totalAmount || 0).toLocaleString()} RWF
+                              </div>
+                            </div>
+                            <OrderStatusBadge status={order.status} />
+                          </div>
+                          
+                          {/* Action Buttons - Prominent Display */}
+                          {order.status === 'pending' && deliveryType === 'delivery' && (
+                            <button
+                              onClick={() => {
+                                if (confirm('Mark this order as shipped?')) {
+                                  updateOrderStatus.mutate({
+                                    orderId: order.id,
+                                    status: 'shipped',
+                                  });
+                                }
+                              }}
+                              disabled={updateOrderStatus.isPending}
+                              className="w-full px-3 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded flex items-center justify-center gap-1"
+                            >
+                              🚚 Mark as Shipped
+                            </button>
+                          )}
+                          
+                          {order.status === 'shipped' && deliveryType === 'delivery' && (
+                            <button
+                              onClick={() => {
+                                if (confirm('Mark this order as delivered?')) {
+                                  updateOrderStatus.mutate({
+                                    orderId: order.id,
+                                    status: 'delivered',
+                                  });
+                                }
+                              }}
+                              disabled={updateOrderStatus.isPending}
+                              className="w-full px-3 py-2 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded flex items-center justify-center gap-1"
+                            >
+                              📦 Mark as Delivered
+                            </button>
+                          )}
+                          
+                          {order.status === 'pending' && deliveryType === 'direct' && (
+                            <div className="text-center text-[10px] text-purple-600 font-medium py-1">
+                              ✅ Ready for Pickup
+                            </div>
+                          )}
+                          
+                          {order.status === 'delivered' && (
+                            <div className="text-center text-[10px] text-purple-600 font-medium py-1">
+                              ⏳ Awaiting customer confirmation
+                            </div>
+                          )}
+                          
+                          {order.status === 'completed' && (
+                            <div className="text-center text-[10px] text-green-600 font-medium py-1">
+                              ✅ Completed
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+
+      {/* Verify Modal */}
+      {showVerifyModal && (
+        <tr>
+          <td colSpan={5} className="px-2 py-3 bg-blue-50 border-t-2 border-blue-300">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-sm text-blue-900">Verify Payment</h4>
+                <button
+                  onClick={() => setShowVerifyModal(false)}
+                  className="text-gray-500 hover:text-gray-700 text-lg font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Mobile Money Transaction ID:
+                </label>
+                <div className="w-full border-2 border-blue-400 bg-white rounded px-3 py-2 text-sm font-mono font-semibold text-blue-900">
+                  {verifiedTxId || 'Not provided'}
+                </div>
+                <p className="text-[10px] text-gray-600 mt-1">
+                  📱 Verify this matches your Mobile Money receipt
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleVerify}
+                  disabled={verifyMutation.isPending}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded-lg shadow-sm"
+                >
+                  {verifyMutation.isPending ? 'Verifying...' : '✅ Confirm Verification'}
+                </button>
+                <button
+                  onClick={() => setShowVerifyModal(false)}
+                  className="px-4 py-2.5 text-sm font-medium border-2 border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  )
+}
+
 function UnifiedTransactionCard({ 
   transaction, 
   orders,
@@ -696,8 +1199,27 @@ function UnifiedTransactionCard({
   const productName = product?.name || "Product"
   const hasOrders = orders && orders.length > 0;
 
+  // Determine card background color
+  const getCardBgColor = () => {
+    // Unverified payment - pale red/pink
+    if (transaction.status === 'awaiting_verification' || transaction.status === 'pending') {
+      return 'bg-red-100';
+    }
+    
+    if (hasOrders) {
+      const someUndelivered = orders.some((order: any) => {
+        const isDeliveryOrder = order.deliveryType === 'delivery';
+        const isUndelivered = order.status === 'pending' || order.status === 'shipped';
+        return isDeliveryOrder && isUndelivered;
+      });
+      if (someUndelivered) return 'bg-amber-100';
+    }
+    
+    return 'bg-white';
+  };
+
   return (
-    <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
+    <div className={`border border-gray-200 rounded-lg overflow-hidden ${getCardBgColor()}`}>
       <div className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="font-mono text-xs text-blue-700">#{transaction.paymentReference}</div>

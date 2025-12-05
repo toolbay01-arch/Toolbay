@@ -19,8 +19,8 @@ export function OrdersView() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'shipped' | 'delivered' | 'completed' | 'cancelled'>('all')
   // Responsive view mode: list on mobile, grid on desktop by default
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  // Auto-refresh toggle
-  const [autoRefresh, setAutoRefresh] = useState(false)
+  // Auto-refresh toggle - ON by default
+  const [autoRefresh, setAutoRefresh] = useState(true)
   // Track if we've already refetched for payment redirect
   const hasRefetchedRef = useRef(false)
   const latestOrderRef = useRef<HTMLDivElement>(null)
