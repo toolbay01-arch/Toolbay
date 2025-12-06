@@ -128,14 +128,14 @@ export const ProductCard = ({
         </div>
         
         {/* Product details */}
-        <div className="flex-1 p-3 xs:p-4 sm:p-5 flex flex-col justify-between gap-2 xs:gap-3 min-w-0">
+        <div className="flex-1 p-2 xs:p-3 sm:p-4 flex flex-col justify-between gap-1 xs:gap-1.5 min-w-0">
           {/* Product Name */}
           <h2 className="text-sm xs:text-base sm:text-lg font-semibold line-clamp-2 group-hover:text-pink-600 transition-colors">
             {name}
           </h2>
           
           {/* Price with unit */}
-          <div className="flex items-baseline gap-2">
+          <div className="flex items-baseline gap-1.5">
             <span className="text-xl xs:text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">
               {formatCurrency(price)}
             </span>
@@ -145,7 +145,7 @@ export const ProductCard = ({
           </div>
           
           {/* Stats Row */}
-          <div className="flex items-center gap-2 xs:gap-3 text-xs sm:text-sm text-gray-600">
+          <div className="flex items-center gap-2 xs:gap-2.5 text-xs sm:text-sm text-gray-600">
             {/* Rating */}
             <div className="flex items-center gap-1">
               <StarIcon className="size-3.5 sm:size-4 fill-yellow-400 text-yellow-400" />
@@ -166,10 +166,10 @@ export const ProductCard = ({
           </div>
           
           {/* Divider */}
-          <div className="border-t border-gray-100"></div>
+          <div className="border-t border-gray-100 my-0.5"></div>
           
           {/* Seller Info */}
-          <div className="flex flex-col gap-1.5 xs:gap-2">
+          <div className="flex flex-col gap-1">
             <button 
               type="button"
               className="flex items-center gap-1.5 sm:gap-2 hover:opacity-70 w-fit cursor-pointer z-10 transition-opacity"
@@ -192,10 +192,10 @@ export const ProductCard = ({
             </button>
             
             {/* Badges Row */}
-            <div className="flex flex-wrap items-center gap-1.5 xs:gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               {/* Verification Badge */}
               {tenantIsVerified && (
-                <div className="flex items-center gap-1 px-2 py-1 bg-green-50 rounded-full">
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-green-50 rounded-full">
                   <ShieldCheck className="size-2.5 sm:size-3 text-green-600" />
                   <span className="text-[10px] xs:text-xs font-medium text-green-700">Verified</span>
                 </div>
@@ -203,7 +203,7 @@ export const ProductCard = ({
               
               {/* Successful Orders */}
               {tenantSuccessfulOrders > 0 && (
-                <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-full">
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 rounded-full">
                   <Package className="size-2.5 sm:size-3 text-blue-600" />
                   <span className="text-[10px] xs:text-xs text-blue-700">{tenantSuccessfulOrders} orders</span>
                 </div>
@@ -262,14 +262,14 @@ export const ProductCard = ({
       </div>
       
       {/* Product Details */}
-      <div className="p-4 sm:p-5 flex flex-col gap-3 flex-1">
+      <div className="p-3 sm:p-4 flex flex-col gap-2 flex-1">
         {/* Product Name */}
         <h2 className="text-sm sm:text-base font-semibold line-clamp-2 group-hover:text-pink-600 transition-colors min-h-[2.5rem]">
           {name}
         </h2>
         
         {/* Price with unit */}
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-baseline gap-1.5">
           <span className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">
             {formatCurrency(price)}
           </span>
@@ -279,7 +279,7 @@ export const ProductCard = ({
         </div>
         
         {/* Stats Row */}
-        <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-600">
+        <div className="flex items-center gap-2.5 text-xs sm:text-sm text-gray-600">
           {/* Rating */}
           <div className="flex items-center gap-1">
             <StarIcon className="size-4 fill-yellow-400 text-yellow-400" />
@@ -300,13 +300,13 @@ export const ProductCard = ({
         </div>
         
         {/* Divider */}
-        <div className="border-t border-gray-100 my-1"></div>
+        <div className="border-t border-gray-100 my-0.5"></div>
         
         {/* Seller Info */}
-        <div className="flex flex-col gap-2 mt-auto">
+        <div className="flex flex-col gap-1.5 mt-auto">
           <button 
             type="button"
-            className="flex items-center gap-2 hover:opacity-70 w-fit cursor-pointer z-10 transition-opacity"
+            className="flex items-center gap-1.5 hover:opacity-70 w-fit cursor-pointer z-10 transition-opacity"
             onClick={handleTenantClick}
           >
             {tenantImageUrl && (
@@ -326,10 +326,10 @@ export const ProductCard = ({
           </button>
           
           {/* Badges Row */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             {/* Verification Badge */}
             {tenantIsVerified && (
-              <div className="flex items-center gap-1 px-2 py-1 bg-green-50 rounded-full">
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-green-50 rounded-full">
                 <ShieldCheck className="size-3 text-green-600" />
                 <span className="text-xs font-medium text-green-700">Verified</span>
               </div>
@@ -337,7 +337,7 @@ export const ProductCard = ({
             
             {/* Successful Orders */}
             {tenantSuccessfulOrders > 0 && (
-              <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-full">
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 rounded-full">
                 <Package className="size-3 text-blue-600" />
                 <span className="text-xs text-blue-700">{tenantSuccessfulOrders} orders</span>
               </div>

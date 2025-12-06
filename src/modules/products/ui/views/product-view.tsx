@@ -175,11 +175,11 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
             {/* RIGHT SIDE - Product Details (Desktop: right, Mobile: bottom) */}
             <div className="order-2 lg:order-2">
               {/* Product Title */}
-              <div className="p-6 lg:p-8">
-                <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">{data.name}</h1>
+              <div className="p-4 lg:p-6">
+                <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">{data.name}</h1>
                 
                 {/* Price and Rating Row */}
-                <div className="flex flex-wrap items-center gap-6 mb-6">
+                <div className="flex flex-wrap items-center gap-4 mb-4">
                   <div className="flex items-baseline gap-2">
                     <span className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">
                       {formatCurrency(data.price)}
@@ -187,15 +187,15 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                     <span className="text-sm text-gray-500">/ {data.unit || "unit"}</span>
                   </div>
                   
-                  <div className="flex items-center gap-2 bg-yellow-50 px-4 py-2 rounded-full">
-                    <StarIcon className="size-5 fill-yellow-400 text-yellow-400" />
+                  <div className="flex items-center gap-2 bg-yellow-50 px-3 py-1.5 rounded-full">
+                    <StarIcon className="size-4 fill-yellow-400 text-yellow-400" />
                     <span className="font-semibold text-gray-900">{data.reviewRating.toFixed(1)}</span>
-                    <span className="text-sm text-gray-600">({data.reviewCount} reviews)</span>
+                    <span className="text-sm text-gray-600">({data.reviewCount})</span>
                   </div>
                 </div>
                 
                 {/* Stock Status */}
-                <div className="mb-6">
+                <div className="mb-4">
                   <StockStatusBadge 
                     stockStatus={data.stockStatus || "in_stock"} 
                     quantity={data.stockStatus === "low_stock" ? data.quantity : undefined}
@@ -204,22 +204,22 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
               </div>
 
               {/* Seller Info Card */}
-              <div className="px-6 lg:px-8 pb-6">
-                <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-4 border border-gray-200">
+              <div className="px-4 lg:px-6 pb-4">
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-3 border border-gray-200">
                   <div className="flex items-center justify-between">
-                    <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                    <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
                       {data.tenant.image?.url && (
                         <Image
                           src={data.tenant.image.url}
                           alt={data.tenant.name}
-                          width={48}
-                          height={48}
-                          className="rounded-full ring-4 ring-white shadow-md"
+                          width={40}
+                          height={40}
+                          className="rounded-full ring-3 ring-white shadow-md"
                         />
                       )}
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">Sold by</p>
-                        <p className="text-lg font-semibold text-gray-900">{data.tenant.name}</p>
+                        <p className="text-xs text-gray-500 mb-0.5">Sold by</p>
+                        <p className="text-base font-semibold text-gray-900">{data.tenant.name}</p>
                       </div>
                     </Link>
                     
@@ -231,7 +231,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                       onClick={handleContactSeller}
                       disabled={startConversation.isPending || !data?.tenant}
                     >
-                      <MessageCircle className="mr-2 h-4 w-4" />
+                      <MessageCircle className="mr-1.5 h-4 w-4" />
                       {startConversation.isPending ? "..." : "Chat"}
                     </Button>
                   </div>
@@ -240,16 +240,16 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
               {/* Description - Expandable */}
               {data.description && (
-                <div className="px-6 lg:px-8 pb-6">
-                  <div className="border-t border-gray-200 pt-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
+                <div className="px-4 lg:px-6 pb-4">
+                  <div className="border-t border-gray-200 pt-4">
+                    <h3 className="text-base font-semibold text-gray-900 mb-2">Description</h3>
                     <div className={`prose prose-sm max-w-none ${!isDescriptionExpanded ? 'line-clamp-3' : ''}`}>
                       <RichText data={data.description} />
                     </div>
                     {!isDescriptionExpanded && (
                       <button
                         onClick={() => setIsDescriptionExpanded(true)}
-                        className="mt-2 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+                        className="mt-1.5 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
                       >
                         View more <ChevronDown className="size-4" />
                       </button>
@@ -257,7 +257,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                     {isDescriptionExpanded && (
                       <button
                         onClick={() => setIsDescriptionExpanded(false)}
-                        className="mt-2 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+                        className="mt-1.5 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
                       >
                         View less <ChevronUp className="size-4" />
                       </button>
@@ -267,56 +267,56 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
               )}
 
               {/* Ratings Summary - Compact */}
-              <div className="px-6 lg:px-8 pb-6">
-                <div className="border-t border-gray-200 pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Customer Reviews</h3>
-                    <div className="flex items-center gap-2 text-sm">
+              <div className="px-4 lg:px-6 pb-4">
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-semibold text-gray-900">Reviews</h3>
+                    <div className="flex items-center gap-1.5 text-sm">
                       <StarIcon className="size-4 fill-yellow-400 text-yellow-400" />
                       <span className="font-semibold">{data.reviewRating.toFixed(1)}</span>
-                      <span className="text-gray-500">• {data.reviewCount} total</span>
+                      <span className="text-gray-500">• {data.reviewCount}</span>
                     </div>
                   </div>
                   
                   {!showAllRatings ? (
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {/* Show only top 2 ratings */}
                       {[5, 4].map((stars) => (
-                        <div key={stars} className="grid grid-cols-[auto_1fr_auto] gap-3 items-center">
-                          <span className="text-sm font-medium text-gray-700 w-16">{stars} star{stars !== 1 ? 's' : ''}</span>
+                        <div key={stars} className="grid grid-cols-[auto_1fr_auto] gap-2.5 items-center">
+                          <span className="text-sm font-medium text-gray-700 w-14">{stars} star{stars !== 1 ? 's' : ''}</span>
                           <Progress
                             value={data.ratingDistribution[stars]}
                             className="h-2"
                           />
-                          <span className="text-sm font-medium text-gray-600 w-12 text-right">
+                          <span className="text-sm font-medium text-gray-600 w-10 text-right">
                             {data.ratingDistribution[stars]}%
                           </span>
                         </div>
                       ))}
                       <button
                         onClick={() => setShowAllRatings(true)}
-                        className="mt-3 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+                        className="mt-2 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
                       >
                         View all ratings <ChevronDown className="size-4" />
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {[5, 4, 3, 2, 1].map((stars) => (
-                        <div key={stars} className="grid grid-cols-[auto_1fr_auto] gap-3 items-center">
-                          <span className="text-sm font-medium text-gray-700 w-16">{stars} star{stars !== 1 ? 's' : ''}</span>
+                        <div key={stars} className="grid grid-cols-[auto_1fr_auto] gap-2.5 items-center">
+                          <span className="text-sm font-medium text-gray-700 w-14">{stars} star{stars !== 1 ? 's' : ''}</span>
                           <Progress
                             value={data.ratingDistribution[stars]}
                             className="h-2"
                           />
-                          <span className="text-sm font-medium text-gray-600 w-12 text-right">
+                          <span className="text-sm font-medium text-gray-600 w-10 text-right">
                             {data.ratingDistribution[stars]}%
                           </span>
                         </div>
                       ))}
                       <button
                         onClick={() => setShowAllRatings(false)}
-                        className="mt-3 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+                        className="mt-2 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
                       >
                         Show less <ChevronUp className="size-4" />
                       </button>
@@ -326,10 +326,10 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
               </div>
 
               {/* Action Buttons */}
-              <div className="px-6 lg:px-8 pb-6 lg:pb-8">
-                <div className="border-t border-gray-200 pt-6 space-y-3">
+              <div className="px-4 lg:px-6 pb-4 lg:pb-6">
+                <div className="border-t border-gray-200 pt-4 space-y-2.5">
                   {/* Cart and Buy Now Buttons */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                     <CartButton
                       isPurchased={data.isPurchased}
                       productId={productId}
@@ -382,7 +382,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                     )}
                   </Button>
 
-                  <p className="text-center text-sm font-medium text-gray-600 mt-4">
+                  <p className="text-center text-sm font-medium text-gray-600 mt-2">
                     {data.refundPolicy === "no-refunds"
                       ? "⚠️ No refunds available"
                       : `✓ ${data.refundPolicy} money back guarantee`
