@@ -225,6 +225,15 @@ export const Navbar = () => {
     refetchInterval: 60000, // Check every 60 seconds
     staleTime: 30000,
   });
+
+  // Get order notification count for buyers (customers)
+  const isCustomer = session.data?.user?.roles?.includes('client');
+  const { data: orderNotifications } = useQuery({
+    ...trpc.orders.getOrderNotificationCount.queryOptions(),
+    enabled: !!isCustomer,
+    refetchInterval: 30000, // Check every 30 seconds
+    staleTime: 10000,
+  });
   
   const logout = useMutation(trpc.auth.logout.mutationOptions({
     onMutate: async () => {
@@ -413,6 +422,8 @@ export const Navbar = () => {
             badgeCount = transactionNotifications?.count;
           } else if (item.href === "/my-store") {
             badgeCount = productNotifications?.count;
+          } else if (item.href === "/orders") {
+            badgeCount = orderNotifications?.count;
           }
 
           return item.subItems ? (
@@ -528,6 +539,14 @@ export const Navbar = () => {
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
             >
               {transactionNotifications.count > 99 ? "99+" : transactionNotifications.count}
+            </Badge>
+          )}
+          {!isTenant && orderNotifications?.count && orderNotifications.count > 0 && (
+            <Badge
+              variant="destructive"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
+            >
+              {orderNotifications.count > 99 ? "99+" : orderNotifications.count}
             </Badge>
           )}
         </Link>

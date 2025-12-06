@@ -7,9 +7,18 @@ import { useTRPC } from '@/trpc/client'
 import { OrderCard } from '@/components/orders/OrderCard'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Loader2, PackageX, RefreshCw, Grid3x3, List } from 'lucide-react'
+import { Loader2, PackageX, RefreshCw, Grid3x3, List, Package, CheckCircle, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+
+type OrderNotification = {
+  id: string;
+  type: 'shipped' | 'delivered';
+  orderId: string;
+  orderNumber: string;
+  productName: string;
+  message: string;
+}
 
 export function OrdersView() {
   const trpc = useTRPC()
@@ -24,6 +33,23 @@ export function OrdersView() {
   // Track if we've already refetched for payment redirect
   const hasRefetchedRef = useRef(false)
   const latestOrderRef = useRef<HTMLDivElement>(null)
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+
+  // Dismissed notifications tracking
+  const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('dismissedOrderNotifications');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    }
+    return new Set();
+  });
+
+  // Save dismissed notifications to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dismissedOrderNotifications', JSON.stringify([...dismissedNotifications]));
+    }
+  }, [dismissedNotifications]);
 
   // Check session first - refetch on mount and window focus to catch logouts from other tabs
   const sessionQuery = useQuery({
@@ -105,6 +131,95 @@ export function OrdersView() {
     await confirmReceiptMutation.mutateAsync({ orderId })
   }
 
+  // Generate notifications from orders
+  const orders = data?.orders || []
+  const notifications: OrderNotification[] = [];
+
+  orders.forEach((order: any) => {
+    // Shipped notification - order has been shipped
+    if (order.status === 'shipped') {
+      const productName = typeof order.product === 'string' 
+        ? order.product 
+        : order.product?.name || 'Unknown Product';
+      
+      notifications.push({
+        id: `shipped-${order.id}`,
+        type: 'shipped',
+        orderId: order.id,
+        orderNumber: order.orderNumber || order.id.slice(0, 8),
+        productName,
+        message: `Order ${order.orderNumber || order.id.slice(0, 8)} has been shipped`,
+      });
+    }
+
+    // Delivered notification - order delivered, waiting for confirmation
+    if (order.status === 'delivered') {
+      const productName = typeof order.product === 'string' 
+        ? order.product 
+        : order.product?.name || 'Unknown Product';
+      
+      notifications.push({
+        id: `delivered-${order.id}`,
+        type: 'delivered',
+        orderId: order.id,
+        orderNumber: order.orderNumber || order.id.slice(0, 8),
+        productName,
+        message: `Order ${order.orderNumber || order.id.slice(0, 8)} has been delivered - Please confirm receipt`,
+      });
+    }
+  });
+
+  // Filter out dismissed notifications
+  const activeNotifications = notifications.filter(n => !dismissedNotifications.has(n.id));
+
+  // Limit notifications shown based on screen size
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const visibleNotifications = activeNotifications.slice(0, isMobile ? 2 : 5);
+
+  const handleDismissNotification = (notificationId: string) => {
+    setDismissedNotifications(prev => new Set([...prev, notificationId]));
+  };
+
+  const handleNotificationClick = (orderId: string) => {
+    setSelectedOrderId(orderId);
+  };
+
+  // Auto-scroll to selected order from notification
+  useEffect(() => {
+    if (selectedOrderId) {
+      setTimeout(() => {
+        const element = document.getElementById(`order-${selectedOrderId}`);
+        if (element) {
+          const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+          
+          if (isMobile) {
+            const yOffset = -100;
+            const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+            
+            window.scrollTo({
+              top: y,
+              behavior: 'smooth'
+            });
+          } else {
+            element.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start',
+              inline: 'nearest'
+            });
+          }
+          
+          // Add visual feedback
+          element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+          }, 2000);
+        }
+      }, 200);
+      
+      setSelectedOrderId(null);
+    }
+  }, [selectedOrderId]);
+
   // Show loading while checking session or fetching orders
   if (sessionQuery.isLoading || !sessionQuery.isFetched || isLoading) {
     return (
@@ -123,10 +238,53 @@ export function OrdersView() {
     )
   }
 
-  const orders = data?.orders || []
-
   return (
     <div className="space-y-4">
+      {/* Notifications Section */}
+      {visibleNotifications.length > 0 && (
+        <div className="space-y-1.5">
+          {visibleNotifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all hover:shadow-md",
+                notification.type === 'shipped' 
+                  ? "bg-blue-50 border border-blue-200 hover:bg-blue-100" 
+                  : "bg-amber-50 border border-amber-200 hover:bg-amber-100"
+              )}
+              onClick={() => handleNotificationClick(notification.orderId)}
+            >
+              {notification.type === 'shipped' ? (
+                <Package className="h-4 w-4 text-blue-600 flex-shrink-0" />
+              ) : (
+                <CheckCircle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+              )}
+              <span className={cn(
+                "flex-1 text-sm font-medium truncate",
+                notification.type === 'shipped' ? "text-blue-800" : "text-amber-800"
+              )}>
+                {notification.message}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDismissNotification(notification.id);
+                }}
+                className={cn(
+                  "p-1 rounded-full transition-colors flex-shrink-0",
+                  notification.type === 'shipped' 
+                    ? "hover:bg-blue-200 text-blue-600" 
+                    : "hover:bg-amber-200 text-amber-600"
+                )}
+                aria-label="Dismiss notification"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
         <h2 className="text-lg font-semibold text-green-900 mb-1">
           All Orders ({orders.length})
@@ -176,7 +334,8 @@ export function OrdersView() {
               <tbody className="divide-y divide-gray-200">
                 {orders.map((order: any, index: number) => (
                   <div 
-                    key={order.id} 
+                    key={order.id}
+                    id={`order-${order.id}`}
                     ref={index === 0 ? latestOrderRef : null}
                     className={cn(
                       "transition-all duration-300",
@@ -197,7 +356,8 @@ export function OrdersView() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
           {orders.map((order: any, index: number) => (
             <div 
-              key={order.id} 
+              key={order.id}
+              id={`order-${order.id}`}
               ref={index === 0 ? latestOrderRef : null}
               className={cn(
                 "transition-all duration-300",
