@@ -29,6 +29,24 @@ export default function VerifyPaymentsPage() {
   const [showAllNotifications, setShowAllNotifications] = useState(false);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
 
+  // Load dismissed notifications from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('dismissedTransactionNotifications');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setDismissedNotifications(new Set(parsed));
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+  }, []);
+
+  // Save dismissed notifications to localStorage
+  useEffect(() => {
+    localStorage.setItem('dismissedTransactionNotifications', JSON.stringify([...dismissedNotifications]));
+  }, [dismissedNotifications]);
+
   // Refetch on mount and window focus to catch logouts from other tabs
   const session = useQuery({
     ...trpc.auth.session.queryOptions(),
@@ -389,10 +407,10 @@ function UnifiedTransactionsView({
   return (
     <div className="space-y-2 md:space-y-4">
       {/* Filter Tabs - Simple Click Toggle */}
-      <div className="flex flex-wrap gap-1.5 sm:gap-2 pb-1 md:pb-2">
+      <div className="flex gap-1.5 sm:gap-2 pb-1 md:pb-2 overflow-x-auto scrollbar-hide">
         <button
           onClick={() => setFilterStatus('all')}
-          className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-all ${
+          className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-all whitespace-nowrap flex-shrink-0 ${
             filterStatus === 'all'
               ? 'bg-blue-600 text-white shadow-md'
               : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -402,7 +420,7 @@ function UnifiedTransactionsView({
         </button>
         <button
           onClick={() => setFilterStatus('unverified')}
-          className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-all ${
+          className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-all whitespace-nowrap flex-shrink-0 ${
             filterStatus === 'unverified'
               ? 'bg-red-500 text-white shadow-md'
               : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -412,7 +430,7 @@ function UnifiedTransactionsView({
         </button>
         <button
           onClick={() => setFilterStatus('delivered')}
-          className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-all ${
+          className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-all whitespace-nowrap flex-shrink-0 ${
             filterStatus === 'delivered'
               ? 'bg-green-600 text-white shadow-md'
               : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -422,7 +440,7 @@ function UnifiedTransactionsView({
         </button>
         <button
           onClick={() => setFilterStatus('undelivered')}
-          className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-all ${
+          className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-all whitespace-nowrap flex-shrink-0 ${
             filterStatus === 'undelivered'
               ? 'bg-orange-500 text-white shadow-md'
               : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'

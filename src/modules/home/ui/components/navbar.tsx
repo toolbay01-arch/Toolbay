@@ -59,7 +59,7 @@ const NavbarItemButton = ({
     >
       <OptimizedLink href={href}>
         {children}
-        {badgeCount && badgeCount > 0 && (
+        {badgeCount !== undefined && badgeCount !== null && badgeCount > 0 && (
           <Badge
             variant="destructive"
             className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
@@ -211,11 +211,19 @@ export const Navbar = () => {
 
   // Get unviewed transaction count for tenants
   const isTenant = session.data?.user?.roles?.includes('tenant');
-  const { data: unviewedTransactions } = useQuery({
-    ...trpc.transactions.getUnviewedCount.queryOptions(),
+  const { data: transactionNotifications } = useQuery({
+    ...trpc.transactions.getNotificationCount.queryOptions(),
     enabled: !!isTenant,
     refetchInterval: 30000, // Check every 30 seconds
     staleTime: 10000,
+  });
+
+  // Get product notification count for tenants
+  const { data: productNotifications } = useQuery({
+    ...trpc.products.getProductNotificationCount.queryOptions(),
+    enabled: !!isTenant,
+    refetchInterval: 60000, // Check every 60 seconds
+    staleTime: 30000,
   });
   
   const logout = useMutation(trpc.auth.logout.mutationOptions({
@@ -398,20 +406,28 @@ export const Navbar = () => {
 
       {/* Desktop Navigation - Hidden on mobile */}
       <div className="items-center gap-2 hidden lg:flex flex-1 justify-center overflow-x-auto px-2">
-        {navbarItems.map((item) => (
-          item.subItems ? (
+        {navbarItems.map((item) => {
+          // Determine badge count for specific items
+          let badgeCount: number | undefined;
+          if (item.href === "/verify-payments") {
+            badgeCount = transactionNotifications?.count;
+          } else if (item.href === "/my-store") {
+            badgeCount = productNotifications?.count;
+          }
+
+          return item.subItems ? (
             <NavbarDropdownItem key={item.href} item={item} pathname={pathname} accountHref={accountHref} />
           ) : (
             <NavbarItemButton
               key={item.href}
               href={item.href}
               isActive={pathname === item.href}
-              badgeCount={item.href === "/verify-payments" ? unviewedTransactions?.count : undefined}
+              badgeCount={badgeCount}
             >
               {item.children}
             </NavbarItemButton>
-          )
-        ))}
+          );
+        })}
       </div>
 
       {/* Desktop Auth Buttons - Hidden on mobile */}
@@ -489,6 +505,14 @@ export const Navbar = () => {
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
           >
             <Store className="h-5 w-5" />
+            {productNotifications?.count && productNotifications.count > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
+              >
+                {productNotifications.count > 99 ? "99+" : productNotifications.count}
+              </Badge>
+            )}
           </Link>
         )}
         <Link
@@ -498,12 +522,12 @@ export const Navbar = () => {
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         >
           <Wallet className="h-5 w-5" />
-          {isTenant && unviewedTransactions?.count && unviewedTransactions.count > 0 && (
+          {isTenant && transactionNotifications?.count && transactionNotifications.count > 0 && (
             <Badge
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
             >
-              {unviewedTransactions.count > 99 ? "99+" : unviewedTransactions.count}
+              {transactionNotifications.count > 99 ? "99+" : transactionNotifications.count}
             </Badge>
           )}
         </Link>

@@ -4,7 +4,7 @@ import { useTRPC } from '@/trpc/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, ShoppingBag, Package, TrendingUp, Loader2, Grid3x3, List } from 'lucide-react';
+import { User, ShoppingBag, Package, TrendingUp, Loader2, Grid3x3, List, Bell, X, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 
 import { OrderStats } from '@/components/dashboard/OrderStats';
 import { OrderCard } from '@/components/orders/OrderCard';
@@ -27,10 +27,104 @@ import { Suspense } from 'react';
 
 type TabType = 'account' | 'purchases' | 'products' | 'sales';
 
+// Notification type
+type ProductNotification = {
+  id: string;
+  type: 'out-of-stock' | 'low-stock';
+  productId: string;
+  productName: string;
+  quantity: number;
+  message: string;
+};
+
 export default function MyStorePage() {
   const router = useRouter();
   const trpc = useTRPC();
   const [activeTab, setActiveTab] = useState<TabType>('account');
+  const [productNotifications, setProductNotifications] = useState<ProductNotification[]>([]);
+  const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(new Set());
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
+
+  // Load dismissed notifications from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('dismissedProductNotifications');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setDismissedNotifications(new Set(parsed));
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+  }, []);
+
+  // Save dismissed notifications to localStorage
+  useEffect(() => {
+    localStorage.setItem('dismissedProductNotifications', JSON.stringify([...dismissedNotifications]));
+  }, [dismissedNotifications]);
+
+  // Fetch products to generate notifications
+  const { data: productsData } = useQuery({
+    ...trpc.products.getMyProducts.queryOptions({
+      limit: 1000,
+      includeArchived: false,
+    }),
+    enabled: activeTab === 'products',
+  });
+
+  // Generate notifications from products
+  useEffect(() => {
+    if (!productsData || activeTab !== 'products') return;
+
+    const newNotifications: ProductNotification[] = [];
+
+    productsData.docs.forEach((product: any) => {
+      const quantity = product.quantity ?? 0;
+      
+      // Out of stock notification
+      if (quantity === 0) {
+        const notifId = `out-of-stock-${product.id}`;
+        if (!dismissedNotifications.has(notifId)) {
+          newNotifications.push({
+            id: notifId,
+            type: 'out-of-stock',
+            productId: product.id,
+            productName: product.name,
+            quantity: 0,
+            message: `${product.name} - Out of stock - Update inventory`,
+          });
+        }
+      }
+      // Low stock notification (1-5 items)
+      else if (quantity > 0 && quantity <= 5) {
+        const notifId = `low-stock-${product.id}`;
+        if (!dismissedNotifications.has(notifId)) {
+          newNotifications.push({
+            id: notifId,
+            type: 'low-stock',
+            productId: product.id,
+            productName: product.name,
+            quantity,
+            message: `${product.name} - Only ${quantity} left - Restock soon`,
+          });
+        }
+      }
+    });
+
+    setProductNotifications(newNotifications);
+  }, [productsData, dismissedNotifications, activeTab]);
+
+  const handleDismissNotification = (notifId: string) => {
+    setDismissedNotifications(prev => new Set([...prev, notifId]));
+  };
+
+  // Determine how many notifications to show
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const visibleCount = isMobile ? 2 : 5;
+  const visibleNotifications = showAllNotifications 
+    ? productNotifications 
+    : productNotifications.slice(0, visibleCount);
+  const hasMoreNotifications = productNotifications.length > visibleCount;
 
   // Refetch on mount and window focus to catch logouts from other tabs
   const session = useQuery({
@@ -62,10 +156,10 @@ export default function MyStorePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 mt-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">My Store</h1>
-        <p className="text-gray-600">
+    <div className="container mx-auto px-4 py-4 md:py-8">
+      <div className="mb-4 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">My Store</h1>
+        <p className="text-sm md:text-base text-gray-600">
           Manage your account, purchases, products, and sales
         </p>
       </div>
@@ -122,7 +216,77 @@ export default function MyStorePage() {
       {/* Content */}
       {activeTab === 'account' && <AccountSection />}
       {activeTab === 'purchases' && <PurchasesSection />}
-      {activeTab === 'products' && <ProductsSection />}
+      {activeTab === 'products' && (
+        <>
+          {/* Product Notifications */}
+          {productNotifications.length > 0 && (
+            <div className="mb-3 md:mb-6 space-y-1.5 md:space-y-2">
+              {visibleNotifications.map((notification) => (
+                <div 
+                  key={notification.id}
+                  className={`${
+                    notification.type === 'out-of-stock' 
+                      ? 'bg-red-50 border-red-200' 
+                      : 'bg-yellow-50 border-yellow-200'
+                  } border rounded-lg px-3 py-2 flex items-center gap-2 hover:shadow-md transition-shadow`}
+                >
+                  <div className="flex-shrink-0">
+                    {notification.type === 'out-of-stock' ? (
+                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                    ) : (
+                      <Bell className="h-4 w-4 text-yellow-600" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-xs ${
+                      notification.type === 'out-of-stock' ? 'text-red-900' : 'text-yellow-900'
+                    } truncate`}>
+                      <span className="font-semibold">
+                        {notification.type === 'out-of-stock' ? '🚫 Out of Stock' : '⚠️ Low Stock'}
+                      </span>
+                      <span className="mx-1">-</span>
+                      <span>{notification.message}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDismissNotification(notification.id);
+                    }}
+                    className={`flex-shrink-0 p-1 rounded-full hover:bg-gray-200 transition-colors ${
+                      notification.type === 'out-of-stock' ? 'text-red-600' : 'text-yellow-600'
+                    }`}
+                    title="Dismiss"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Show More/Less Button */}
+              {hasMoreNotifications && (
+                <button
+                  onClick={() => setShowAllNotifications(!showAllNotifications)}
+                  className="w-full py-2 text-sm text-gray-600 hover:text-gray-900 font-medium border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  {showAllNotifications ? (
+                    <>
+                      <ChevronUp className="h-4 w-4" />
+                      Show Less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4" />
+                      Show {productNotifications.length - visibleCount} More Notifications
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
+          <ProductsSection />
+        </>
+      )}
       {activeTab === 'sales' && <SalesSection />}
     </div>
   );

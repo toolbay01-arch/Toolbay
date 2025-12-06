@@ -1021,4 +1021,60 @@ export const productsRouter = createTRPCRouter({
         }))
       };
     }),
+
+  // Get notification count for products (out-of-stock + low-stock)
+  getProductNotificationCount: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Get current user's tenant
+      const userData = await ctx.db.findByID({
+        collection: "users",
+        id: ctx.session.user.id,
+      });
+
+      if (!userData.tenants?.[0]) {
+        return { count: 0, outOfStock: 0, lowStock: 0 };
+      }
+
+      const tenantId = typeof userData.tenants[0].tenant === 'string' 
+        ? userData.tenants[0].tenant 
+        : userData.tenants[0].tenant.id;
+
+      // Get all products for this tenant (not archived)
+      const products = await ctx.db.find({
+        collection: "products",
+        where: {
+          and: [
+            {
+              tenant: {
+                equals: tenantId,
+              },
+            },
+            {
+              isArchived: {
+                not_equals: true,
+              },
+            },
+          ],
+        },
+        pagination: false,
+      });
+
+      let outOfStockCount = 0;
+      let lowStockCount = 0;
+
+      products.docs.forEach((product) => {
+        const quantity = product.quantity ?? 0;
+        if (quantity === 0) {
+          outOfStockCount++;
+        } else if (quantity > 0 && quantity <= 5) {
+          lowStockCount++;
+        }
+      });
+
+      return {
+        count: outOfStockCount + lowStockCount,
+        outOfStock: outOfStockCount,
+        lowStock: lowStockCount,
+      };
+    }),
 });

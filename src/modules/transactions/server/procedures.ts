@@ -574,4 +574,62 @@ export const transactionsRouter = createTRPCRouter({
 
       return { marked: unviewedTransactions.docs.length };
     }),
+
+  // Get actionable notification count (unverified + undelivered)
+  getNotificationCount: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Get current user's tenant
+      const userData = await ctx.db.findByID({
+        collection: "users",
+        id: ctx.session.user.id,
+        depth: 1,
+      });
+
+      if (!userData.tenants?.[0]) {
+        return { count: 0, unverified: 0, undelivered: 0 };
+      }
+
+      const tenantId = typeof userData.tenants[0].tenant === 'string' 
+        ? userData.tenants[0].tenant 
+        : userData.tenants[0].tenant.id;
+
+      // Get all transactions for this tenant
+      const transactions = await ctx.db.find({
+        collection: "transactions",
+        where: {
+          tenant: {
+            equals: tenantId,
+          },
+        },
+        depth: 2,
+        pagination: false,
+      });
+
+      let unverifiedCount = 0;
+      let undeliveredCount = 0;
+
+      transactions.docs.forEach((transaction: any) => {
+        // Count unverified transactions
+        if (transaction.status === 'awaiting_verification' || transaction.status === 'pending') {
+          unverifiedCount++;
+        }
+
+        // Count undelivered orders (delivery type only, not pickup)
+        if (transaction.orders && Array.isArray(transaction.orders)) {
+          transaction.orders.forEach((order: any) => {
+            const isDeliveryOrder = order.deliveryType === 'delivery';
+            const isUndelivered = order.status === 'pending' || order.status === 'shipped';
+            if (isDeliveryOrder && isUndelivered) {
+              undeliveredCount++;
+            }
+          });
+        }
+      });
+
+      return {
+        count: unverifiedCount + undeliveredCount,
+        unverified: unverifiedCount,
+        undelivered: undeliveredCount,
+      };
+    }),
 });
