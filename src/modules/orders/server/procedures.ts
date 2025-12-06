@@ -271,4 +271,46 @@ export const ordersRouter = createTRPCRouter({
       },
     }
   }),
+
+  /**
+   * Get order notification count for buyers (shipped + delivered orders)
+   */
+  getOrderNotificationCount: protectedProcedure
+    .query(async ({ ctx }) => {
+      const user = ctx.session.user
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const userId = typeof user.id === 'object' && 'toHexString' in (user.id as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ? (user.id as any).toHexString()
+        : String(user.id)
+
+      // Get all orders for the user
+      const { docs: allOrders } = await ctx.db.find({
+        collection: 'orders',
+        where: {
+          user: { equals: userId },
+        },
+        limit: 1000,
+        depth: 0,
+      })
+
+      let shippedCount = 0;
+      let deliveredCount = 0;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      allOrders.forEach((order: any) => {
+        if (order.status === 'shipped') {
+          shippedCount++;
+        } else if (order.status === 'delivered') {
+          deliveredCount++;
+        }
+      });
+
+      return {
+        count: shippedCount + deliveredCount,
+        shipped: shippedCount,
+        delivered: deliveredCount,
+      };
+    }),
 })
