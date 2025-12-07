@@ -416,14 +416,14 @@ export const Navbar = () => {
       {/* Desktop Navigation - Hidden on mobile */}
       <div className="items-center gap-2 hidden lg:flex flex-1 justify-center overflow-x-auto px-2">
         {navbarItems.map((item) => {
-          // Determine badge count for specific items
+          // Determine badge count for specific items (only pass if > 0)
           let badgeCount: number | undefined;
-          if (item.href === "/verify-payments") {
-            badgeCount = transactionNotifications?.count;
-          } else if (item.href === "/my-store") {
-            badgeCount = productNotifications?.count;
-          } else if (item.href === "/orders") {
-            badgeCount = orderNotifications?.count;
+          if (item.href === "/verify-payments" && transactionNotifications?.count && transactionNotifications.count > 0) {
+            badgeCount = transactionNotifications.count;
+          } else if (item.href === "/my-store" && productNotifications?.count && productNotifications.count > 0) {
+            badgeCount = productNotifications.count;
+          } else if (item.href === "/orders" && orderNotifications?.count && orderNotifications.count > 0) {
+            badgeCount = orderNotifications.count;
           }
 
           return item.subItems ? (
