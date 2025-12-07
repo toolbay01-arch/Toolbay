@@ -93,6 +93,7 @@ export const authRouter = createTRPCRouter({
           // TIN and storeManagerId removed - will be added by super admin during verification
           category: input.category,
           location: input.location,
+          currency: input.currency,
           paymentMethod: input.paymentMethod,
           ...(input.paymentMethod === "bank_transfer" && {
             bankName: input.bankName,

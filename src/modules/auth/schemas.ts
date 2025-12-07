@@ -15,6 +15,9 @@ export const registerSchema = z.object({
   // Rwanda-specific fields - TIN and Store Manager ID are now optional (added by super admin during verification)
   category: z.enum(["retailer", "wholesale", "industry", "renter", "logistics"]),
   location: z.string().min(5, "Location must be at least 5 characters"),
+  currency: z.enum(["USD", "RWF", "UGX", "TZS", "BIF", "KSH"], {
+    required_error: "Please select a currency",
+  }),
   paymentMethod: z.enum(["bank_transfer", "momo_pay"]),
   // Conditional fields based on payment method
   bankName: z.string().optional(),

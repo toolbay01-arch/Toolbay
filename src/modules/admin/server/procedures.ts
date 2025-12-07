@@ -23,26 +23,8 @@ export const adminRouter = createTRPCRouter({
 
       const tenantId = user.tenants?.[0]?.tenant as string;
 
-      // Check if tenant is verified (document_verified OR physically_verified)
-      if (!isSuperAdmin(ctx.session.user)) {
-        const tenant = await ctx.db.findByID({
-          collection: "tenants",
-          id: tenantId,
-          depth: 0,
-        });
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (!(tenant as any)?.isVerified || 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ((tenant as any).verificationStatus !== "document_verified" && 
-             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-             (tenant as any).verificationStatus !== "physically_verified")) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Tenant must be verified to access transactions. Please complete verification process."
-          });
-        }
-      }
+      // All tenants can access their transactions (verified or not)
+      // Super admins can access all transactions
 
       // Build query - super admins see all, tenants see only their transactions
       // Remove status filter to show all transactions (pending, verified, rejected, completed)

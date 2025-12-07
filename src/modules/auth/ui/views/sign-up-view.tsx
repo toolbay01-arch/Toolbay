@@ -127,6 +127,7 @@ export const SignUpView = () => {
       // TIN and Store Manager ID removed - will be added by super admin during verification
       category: "retailer" as const,
       location: "",
+      currency: "RWF" as const,
       paymentMethod: "bank_transfer" as const,
       bankName: "",
       bankAccountNumber: "",
@@ -634,6 +635,34 @@ export const SignUpView = () => {
                     </FormControl>
                     <FormDescription>
                       Enter your business address or location
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                name="currency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base">Currency *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value || "RWF"}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="USD">US Dollar (USD)</SelectItem>
+                        <SelectItem value="RWF">Rwandan Franc (RWF)</SelectItem>
+                        <SelectItem value="UGX">Ugandan Shilling (UGX)</SelectItem>
+                        <SelectItem value="TZS">Tanzanian Shilling (TZS)</SelectItem>
+                        <SelectItem value="BIF">Burundian Franc (BIF)</SelectItem>
+                        <SelectItem value="KSH">Kenyan Shilling (KSH)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      All prices in your store will be in this currency
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

@@ -154,6 +154,23 @@ export const Tenants: CollectionConfig = {
       },
     },
     {
+      name: "currency",
+      type: "select",
+      required: true,
+      options: [
+        { label: "US Dollar (USD)", value: "USD" },
+        { label: "Rwandan Franc (RWF)", value: "RWF" },
+        { label: "Ugandan Shilling (UGX)", value: "UGX" },
+        { label: "Tanzanian Shilling (TZS)", value: "TZS" },
+        { label: "Burundian Franc (BIF)", value: "BIF" },
+        { label: "Kenyan Shilling (KSH)", value: "KSH" },
+      ],
+      defaultValue: "RWF",
+      admin: {
+        description: "Currency for all transactions in your store",
+      },
+    },
+    {
       name: "rdbCertificate",
       type: "upload",
       relationTo: "media",
