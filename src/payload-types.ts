@@ -219,10 +219,6 @@ export interface Tenant {
    */
   bankAccountNumber?: string | null;
   /**
-   * Mobile Money (MOMO) Pay Code
-   */
-  momoPayCode?: string | null;
-  /**
    * ⚠️ REQUIRED: Mobile Money Code (integer) for receiving payments - Used in dial code *182*8*1*CODE*Amount#
    */
   momoCode?: number | null;
@@ -1101,7 +1097,6 @@ export interface TenantsSelect<T extends boolean = true> {
   paymentMethod?: T;
   bankName?: T;
   bankAccountNumber?: T;
-  momoPayCode?: T;
   momoCode?: T;
   momoAccountName?: T;
   totalRevenue?: T;

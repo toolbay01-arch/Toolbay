@@ -18,55 +18,79 @@ export const authRouter = createTRPCRouter({
   
   /**
    * Register a new tenant (seller) account
-   * Requires business information: TIN, payment method, etc.
+   * TIN and Store Manager ID are now optional - added by super admin during verification
+   * Slug is auto-generated from store name
    */
   register: baseProcedure
     .input(registerSchema)
     .mutation(async ({ input, ctx }) => {
-      const existingData = await ctx.db.find({
+      // Generate slug from store name: "My COMPANY LTD" -> "my-company-ltd"
+      const generateSlug = (name: string): string => {
+        return name
+          .toLowerCase()
+          .trim()
+          .replace(/[^\w\s-]/g, '') // Remove special characters
+          .replace(/\s+/g, '-') // Replace spaces with hyphens
+          .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+          .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+      };
+
+      let baseSlug = generateSlug(input.storeName);
+      let slug = baseSlug;
+
+      // Ensure slug uniqueness by appending a suffix if needed
+      let suffix = 1;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const existingTenant = await ctx.db.find({
+          collection: "tenants",
+          limit: 1,
+          where: { slug: { equals: slug } },
+        });
+
+        if (!existingTenant.docs[0]) break;
+
+        // Append numeric suffix and try again
+        suffix += 1;
+        slug = `${baseSlug}-${suffix}`;
+      }
+
+      // Generate username from email (before @ symbol) or use slug as fallback
+      let baseUsername = (input.email.split('@')[0] || baseSlug).toLowerCase().replace(/[^a-z0-9-]/g, '');
+      let username = baseUsername;
+
+      // Ensure username uniqueness
+      suffix = 1;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const existingUserCheck = await ctx.db.find({
+          collection: "users",
+          limit: 1,
+          where: { username: { equals: username } },
+        });
+        if (!existingUserCheck.docs[0]) break;
+        suffix += 1;
+        username = `${baseUsername}${suffix}`;
+      }
+
+      // Check if email is already registered
+      const existingEmail = await ctx.db.find({
         collection: "users",
         limit: 1,
-        where: {
-          username: {
-            equals: input.username,
-          },
-        },
+        where: { email: { equals: input.email } },
       });
-
-      const existingUser = existingData.docs[0];
-
-      if (existingUser) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Username already taken",
-        });
+      if (existingEmail.docs[0]) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Email already registered" });
       }
 
-      // Check if TIN number is already taken
-      const existingTinData = await ctx.db.find({
-        collection: "tenants",
-        limit: 1,
-        where: {
-          tinNumber: {
-            equals: input.tinNumber,
-          },
-        },
-      });
-
-      if (existingTinData.docs[0]) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "TIN Number already registered",
-        });
-      }
+      // TIN validation removed - TIN is now optional and added by super admin during verification
 
       const tenant = await ctx.db.create({
         collection: "tenants",
         data: {
-          name: input.username,
-          slug: input.username,
-          tinNumber: input.tinNumber,
-          storeManagerId: input.storeManagerId,
+          name: input.storeName,
+          slug: slug,
+          // TIN and storeManagerId removed - will be added by super admin during verification
           category: input.category,
           location: input.location,
           paymentMethod: input.paymentMethod,
@@ -75,10 +99,15 @@ export const authRouter = createTRPCRouter({
             bankAccountNumber: input.bankAccountNumber,
           }),
           ...(input.paymentMethod === "momo_pay" && {
-            momoPayCode: input.momoPayCode,
+            // Convert momoCode (string from form) to number for storage
+            momoCode: input.momoCode ? Number(input.momoCode) : undefined,
+            momoProviderName: input.momoProviderName,
+            momoAccountName: input.momoAccountName,
           }),
           isVerified: false,
           verificationStatus: "pending",
+          verificationRequested: true, // Auto-request verification for self-registered tenants
+          verificationRequestedAt: new Date().toISOString(),
           canAddMerchants: false,
         } as any
       })
@@ -87,7 +116,7 @@ export const authRouter = createTRPCRouter({
         collection: "users",
         data: {
           email: input.email,
-          username: input.username,
+          username: username,
           password: input.password, // This will be hashed
           tenants: [
             {

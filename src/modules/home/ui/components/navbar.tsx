@@ -418,11 +418,11 @@ export const Navbar = () => {
         {navbarItems.map((item) => {
           // Determine badge count for specific items (only pass if > 0)
           let badgeCount: number | undefined;
-          if (item.href === "/verify-payments" && transactionNotifications?.count && transactionNotifications.count > 0) {
+          if (item.href === "/verify-payments" && transactionNotifications?.count !== undefined && transactionNotifications.count > 0) {
             badgeCount = transactionNotifications.count;
-          } else if (item.href === "/my-store" && productNotifications?.count && productNotifications.count > 0) {
+          } else if (item.href === "/my-store" && productNotifications?.count !== undefined && productNotifications.count > 0) {
             badgeCount = productNotifications.count;
-          } else if (item.href === "/orders" && orderNotifications?.count && orderNotifications.count > 0) {
+          } else if (item.href === "/orders" && orderNotifications?.count !== undefined && orderNotifications.count > 0) {
             badgeCount = orderNotifications.count;
           }
 
@@ -516,7 +516,7 @@ export const Navbar = () => {
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
           >
             <Store className="h-5 w-5" />
-            {productNotifications?.count && productNotifications.count > 0 && (
+            {productNotifications?.count !== undefined && productNotifications.count > 0 && (
               <Badge
                 variant="destructive"
                 className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
@@ -531,9 +531,9 @@ export const Navbar = () => {
           prefetch={true}
           className="relative h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation transition-colors"
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-        >
+          >
           <Wallet className="h-5 w-5" />
-          {isTenant && transactionNotifications?.count && transactionNotifications.count > 0 && (
+          {isTenant && transactionNotifications?.count !== undefined && transactionNotifications.count > 0 && (
             <Badge
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
@@ -541,7 +541,7 @@ export const Navbar = () => {
               {transactionNotifications.count > 99 ? "99+" : transactionNotifications.count}
             </Badge>
           )}
-          {!isTenant && orderNotifications?.count && orderNotifications.count > 0 && (
+          {!isTenant && orderNotifications?.count !== undefined && orderNotifications.count > 0 && (
             <Badge
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"

@@ -108,19 +108,25 @@ export const Tenants: CollectionConfig = {
     {
       name: "tinNumber",
       type: "text",
-      required: true,
+      required: false, // Now optional - added by super admin during verification
       unique: true,
       index: true, // Add index for faster lookups
+      access: {
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
       admin: {
-        description: "Tax Identification Number (TIN) - Required for Rwandan businesses",
+        description: "Tax Identification Number (TIN) - Added by Super Admin during verification",
       },
     },
     {
       name: "storeManagerId",
       type: "text",
-      required: true,
+      required: false, // Now optional - added by super admin during verification
+      access: {
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
       admin: {
-        description: "Store Manager ID or Passport Number",
+        description: "Store Manager ID or Passport Number - Added by Super Admin during verification",
       },
     },
     {
@@ -185,22 +191,11 @@ export const Tenants: CollectionConfig = {
       },
     },
     {
-      name: "momoPayCode",
+      name: "momoProviderName",
       type: "text",
       admin: {
         condition: (data) => data.paymentMethod === 'momo_pay',
-        description: "Mobile Money (MOMO) Pay Code",
-      },
-    },
-    {
-      name: "momoCode",
-      type: "number",
-      unique: true,
-      index: true,
-      admin: {
-        condition: (data) => data.paymentMethod === 'momo_pay',
-        description: "⚠️ REQUIRED: Mobile Money Code (integer) for receiving payments - Used in dial code *182*8*1*CODE*Amount#",
-        placeholder: "e.g., 828822, 123456",
+        description: "Mobile Money provider (e.g., MTN Mobile Money, Airtel Money)",
       },
     },
     {
@@ -208,8 +203,15 @@ export const Tenants: CollectionConfig = {
       type: "text",
       admin: {
         condition: (data) => data.paymentMethod === 'momo_pay',
-        description: "Business name for MoMo account (shown to customers)",
-        placeholder: "Business Name",
+        description: "Name associated with the MoMo account",
+      },
+    },
+    {
+      name: "momoCode",
+      type: "number",
+      admin: {
+        condition: (data) => data.paymentMethod === 'momo_pay',
+        description: "⚠️ REQUIRED: Mobile Money Code (integer) for receiving payments - Used in dial code *182*8*1*CODE*Amount#",
       },
     },
     {

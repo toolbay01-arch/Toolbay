@@ -123,15 +123,16 @@ export const SignUpView = () => {
     defaultValues: {
       email: "",
       password: "",
-      username: "",
-      tinNumber: "",
-      storeManagerId: "",
+      storeName: "",
+      // TIN and Store Manager ID removed - will be added by super admin during verification
       category: "retailer" as const,
       location: "",
       paymentMethod: "bank_transfer" as const,
       bankName: "",
       bankAccountNumber: "",
-      momoPayCode: "",
+        momoCode: "",
+      momoProviderName: "",
+      momoAccountName: "",
     },
   });
 
@@ -484,9 +485,23 @@ export const SignUpView = () => {
   }
 
   // Tenant (Seller) Registration Form
-  const username = tenantForm.watch("username");
-  const usernameErrors = tenantForm.formState.errors.username;
-  const showPreview = username && !usernameErrors;
+  const storeName = tenantForm.watch("storeName");
+  const storeNameErrors = tenantForm.formState.errors.storeName;
+  
+  // Generate slug preview from store name
+  const generateSlugPreview = (name: string): string => {
+    if (!name) return "";
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+  
+  const slugPreview = generateSlugPreview(storeName || "");
+  const showPreview = storeName && !storeNameErrors && slugPreview;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5">
@@ -535,19 +550,18 @@ export const SignUpView = () => {
               </div>
             </div>
             <FormField
-              name="username"
+              name="storeName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base">Username</FormLabel>
+                  <FormLabel className="text-base">Store Name *</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} placeholder="e.g., My Company Ltd" />
                   </FormControl>
                   <FormDescription
                     className={cn("hidden", showPreview && "block")}
                   >
-                    Your store will be available at&nbsp;
-                    {/* TODO: Use proper method to generate preview url */}
-                    <strong>{username}</strong>.shop.com
+                    Your store will be available at:&nbsp;
+                    <strong>toolbay.rw/tenants/{slugPreview}</strong>
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -581,6 +595,9 @@ export const SignUpView = () => {
             {/* Rwanda-specific fields */}
             <div className="border-t pt-6">
               <h2 className="text-xl font-medium mb-4">Business Information</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Note: TIN Number and Store Manager ID will be added by our team during verification
+              </p>
               
               <FormField
                 name="category"
@@ -602,32 +619,6 @@ export const SignUpView = () => {
                         <SelectItem value="logistics">Logistics</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                name="tinNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base">TIN Number *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Tax Identification Number" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                name="storeManagerId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base">Store Manager ID/Passport *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="ID or Passport Number" />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -704,18 +695,62 @@ export const SignUpView = () => {
               )}
 
               {tenantForm.watch("paymentMethod") === "momo_pay" && (
-                <FormField
-                  name="momoPayCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-base">MOMO Pay Code *</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Your Mobile Money code" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <>
+                  <FormField
+                    name="momoProviderName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base">Mobile Money Provider *</FormLabel>
+                        <FormControl>
+                          <select
+                            {...field}
+                            className="w-full p-3 border border-gray-300 rounded-md"
+                          >
+                            <option value="">Select provider</option>
+                            <option value="MTN Mobile Money">MTN Mobile Money</option>
+                            <option value="Airtel Money">Airtel Money</option>
+                          </select>
+                        </FormControl>
+                        <FormDescription>
+                          Select your mobile money service provider
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    name="momoAccountName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base">Account Name *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Name registered with your MoMo account" />
+                        </FormControl>
+                        <FormDescription>
+                          The name associated with your mobile money account
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                    <FormField
+                      name="momoCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base">MOMO Code *</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., 828822" type="number" />
+                          </FormControl>
+                          <FormDescription>
+                            Your mobile money code (digits) for receiving payments
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </>
               )}
             </div>
 

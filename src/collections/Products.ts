@@ -9,9 +9,11 @@ export const Products: CollectionConfig = {
     create: ({ req }) => {
       if (isSuperAdmin(req.user)) return true;
 
+      // Allow all tenants to create products (verified or not)
+      // Products from unverified tenants will be listed without verification badge
       const tenant = req.user?.tenants?.[0]?.tenant as Tenant
 
-      return Boolean(tenant?.isVerified);
+      return Boolean(tenant);
     },
     read: ({ req }) => {
       if (isSuperAdmin(req.user)) return true;
@@ -47,7 +49,7 @@ export const Products: CollectionConfig = {
   },
   admin: {
     useAsTitle: "name",
-    description: "You must verify your account before creating products",
+    description: "All tenants can create products. Products from unverified tenants will be listed without verification badge.",
     defaultColumns: ["name", "description", "price", "category", "tenant"],
     listSearchableFields: ["name", "description"],
 

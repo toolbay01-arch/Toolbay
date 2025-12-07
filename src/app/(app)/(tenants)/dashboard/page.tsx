@@ -45,14 +45,18 @@ const TenantDashboardPage = async () => {
                   <label className="text-sm font-medium text-gray-500">Store Slug</label>
                   <p className="text-lg">{tenant.slug}</p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">TIN Number</label>
-                  <p className="text-lg">{tenant.tinNumber}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Manager ID</label>
-                  <p className="text-lg">{tenant.storeManagerId}</p>
-                </div>
+                {tenant.tinNumber && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">TIN Number</label>
+                    <p className="text-lg">{tenant.tinNumber}</p>
+                  </div>
+                )}
+                {tenant.storeManagerId && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Manager ID</label>
+                    <p className="text-lg">{tenant.storeManagerId}</p>
+                  </div>
+                )}
                 <div>
                   <label className="text-sm font-medium text-gray-500">Payment Method</label>
                   <p className="text-lg capitalize">{tenant.paymentMethod?.replace('_', ' ')}</p>
@@ -71,8 +75,8 @@ const TenantDashboardPage = async () => {
                 )}
                 {tenant.paymentMethod === 'momo_pay' && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500">MOMO Pay Code</label>
-                    <p className="text-lg">{tenant.momoPayCode}</p>
+                    <label className="text-sm font-medium text-gray-500">MOMO Code</label>
+                    <p className="text-lg">{tenant.momoCode}</p>
                   </div>
                 )}
               </div>
@@ -87,43 +91,49 @@ const TenantDashboardPage = async () => {
               }}
             />
 
-            {/* Store Management */}
-            {tenant.isVerified && (
-              <div className="bg-white rounded-lg border p-6">
-                <h2 className="text-xl font-semibold mb-4">Store Management</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex flex-col">
-                      <span className="font-medium">Manage Products</span>
-                      <span className="text-sm text-gray-600">Create, edit, and manage your product listings</span>
-                    </div>
-                    <Link 
-                      href="/admin"
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                    >
-                      Go to Admin
-                    </Link>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-                    <div className="flex flex-col">
-                      <span className="font-medium">View Store</span>
-                      <span className="text-sm text-gray-600">See how your store appears to customers</span>
-                    </div>
-                    <Link 
-                      href={`/tenants/${tenant.slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                    >
-                      View Store
-                    </Link>
-                  </div>
+            {/* Store Management - Now available for all tenants */}
+            <div className="bg-white rounded-lg border p-6">
+              <h2 className="text-xl font-semibold mb-4">Store Management</h2>
+              {!tenant.isVerified && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    Your account is pending verification. You can create products now, and they will be listed without the verified badge until verification is complete.
+                  </p>
                 </div>
-                
-                {/* Quick Actions */}
-                <div className="mt-6 pt-4 border-t">
-                  <h3 className="font-medium mb-3">Quick Actions</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              )}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex flex-col">
+                    <span className="font-medium">Manage Products</span>
+                    <span className="text-sm text-gray-600">Create, edit, and manage your product listings</span>
+                  </div>
+                  <Link 
+                    href="/admin"
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  >
+                    Go to Admin
+                  </Link>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex flex-col">
+                    <span className="font-medium">View Store</span>
+                    <span className="text-sm text-gray-600">See how your store appears to customers</span>
+                  </div>
+                  <Link 
+                    href={`/tenants/${tenant.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                  >
+                    View Store
+                  </Link>
+                </div>
+              </div>
+              
+              {/* Quick Actions */}
+              <div className="mt-6 pt-4 border-t">
+                <h3 className="font-medium mb-3">Quick Actions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Link 
                       href="/admin/collections/products/create"
                       className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -139,7 +149,6 @@ const TenantDashboardPage = async () => {
                   </div>
                 </div>
               </div>
-            )}
 
             {/* Capabilities */}
             <div className="bg-white rounded-lg border p-6">
@@ -148,12 +157,21 @@ const TenantDashboardPage = async () => {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <span>Can Add Products</span>
-                    <span className="text-xs text-gray-500">Requires document verification</span>
+                    <span className="text-xs text-gray-500">All tenants can create products</span>
+                  </div>
+                  <span className="px-2 py-1 rounded text-sm bg-green-100 text-green-800">
+                    Enabled
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span>Verified Badge</span>
+                    <span className="text-xs text-gray-500">Shown on products after verification</span>
                   </div>
                   <span className={`px-2 py-1 rounded text-sm ${
-                    tenant.isVerified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    tenant.isVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                   }`}>
-                    {tenant.isVerified ? 'Enabled' : 'Disabled'}
+                    {tenant.isVerified ? 'Verified' : 'Pending'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
