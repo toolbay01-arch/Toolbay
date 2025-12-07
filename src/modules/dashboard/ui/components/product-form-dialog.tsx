@@ -625,7 +625,7 @@ export const ProductFormDialog = ({
                 <Input
                   id="minOrderQuantity"
                   type="number"
-                  {...register("minOrderQuantity")}
+                  {...register("minOrderQuantity", { valueAsNumber: true })}
                   placeholder="1"
                   defaultValue={1}
                 />
@@ -639,7 +639,7 @@ export const ProductFormDialog = ({
                 <Input
                   id="maxOrderQuantity"
                   type="number"
-                  {...register("maxOrderQuantity")}
+                  {...register("maxOrderQuantity", { valueAsNumber: true })}
                   placeholder="No limit"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -658,7 +658,7 @@ export const ProductFormDialog = ({
                 <Input
                   id="lowStockThreshold"
                   type="number"
-                  {...register("lowStockThreshold")}
+                  {...register("lowStockThreshold", { valueAsNumber: true })}
                   placeholder="10"
                   defaultValue={10}
                 />
