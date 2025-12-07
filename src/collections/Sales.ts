@@ -23,19 +23,7 @@ export const Sales: CollectionConfig = {
 
       if (!tenantId) return false;
 
-      // Fetch full tenant details to check verification status
-      const tenant = await req.payload.findByID({
-        collection: 'tenants',
-        id: tenantId,
-        depth: 0,
-      }) as Tenant;
-
-      // Only verified tenants can see sales
-      if (!tenant.isVerified || 
-          (tenant.verificationStatus !== 'document_verified' && 
-           tenant.verificationStatus !== 'physically_verified')) {
-        return false;
-      }
+      // All tenants can see their sales (verified or not)
 
       // Return query to only show sales for this tenant
       return {

@@ -145,19 +145,7 @@ export const Orders: CollectionConfig = {
 
       if (!tenantId) return false;
 
-      // Fetch full tenant details to check verification status
-      const tenant = await req.payload.findByID({
-        collection: 'tenants',
-        id: tenantId,
-        depth: 0,
-      }) as Tenant;
-
-      // Only verified tenants (document_verified or physically_verified) can see orders
-      if (!tenant.isVerified || 
-          (tenant.verificationStatus !== 'document_verified' && 
-           tenant.verificationStatus !== 'physically_verified')) {
-        return false;
-      }
+      // All tenants can see their orders (verified or not)
 
       // Return query to only show orders for products belonging to this tenant
       // We need to fetch products first, then filter orders
@@ -202,18 +190,7 @@ export const Orders: CollectionConfig = {
 
       if (!tenantId) return false;
 
-      // Check if tenant is verified
-      const tenant = await req.payload.findByID({
-        collection: 'tenants',
-        id: tenantId,
-        depth: 0,
-      }) as Tenant;
-
-      if (!tenant.isVerified || 
-          (tenant.verificationStatus !== 'document_verified' && 
-           tenant.verificationStatus !== 'physically_verified')) {
-        return false;
-      }
+      // All tenants can update their orders (verified or not)
 
       // Get tenant's products
       const products = await req.payload.find({

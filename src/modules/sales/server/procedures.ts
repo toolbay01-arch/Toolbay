@@ -34,20 +34,7 @@ export const salesRouter = createTRPCRouter({
         ? userData.tenants[0].tenant 
         : userData.tenants[0].tenant.id;
 
-      // Check if tenant is verified
-      const tenant = await ctx.db.findByID({
-        collection: "tenants",
-        id: tenantId,
-      });
-
-      if (!tenant.isVerified || 
-          (tenant.verificationStatus !== 'document_verified' && 
-           tenant.verificationStatus !== 'physically_verified')) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Your account must be verified to view sales",
-        });
-      }
+      // All tenants can view sales (verified or not)
 
       const where: Where = {
         tenant: {

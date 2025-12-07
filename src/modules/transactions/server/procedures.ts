@@ -31,20 +31,7 @@ export const transactionsRouter = createTRPCRouter({
         ? userData.tenants[0].tenant 
         : userData.tenants[0].tenant.id;
 
-      // Check if tenant is verified
-      const tenant = await ctx.db.findByID({
-        collection: "tenants",
-        id: tenantId,
-      }) as Tenant;
-
-      if (!tenant.isVerified || 
-          (tenant.verificationStatus !== 'document_verified' && 
-           tenant.verificationStatus !== 'physically_verified')) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Your account must be verified to manage transactions",
-        });
-      }
+      // All tenants can manage transactions (verified or not)
 
       const transactions = await ctx.db.find({
         collection: "transactions",
