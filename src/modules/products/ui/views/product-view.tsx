@@ -95,6 +95,12 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
       return;
     }
     
+    // Make sure product data is loaded
+    if (!data) {
+      toast.error("Product data not loaded. Please try again.");
+      return;
+    }
+    
     // Use the tenantOwnerId from the product data
     const tenantOwnerId = (data as any)?.tenantOwnerId;
     
@@ -109,8 +115,12 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
       return;
     }
     
-    // Create simple initial message - productId will trigger the product preview box
-    const initialMessage = `Hello, I am interested in the following item.`;
+    // Build the product URL
+    const productUrl = `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/tenants/${tenantSlug}/products/${productId}`;
+    
+    // Create message with product name as markdown link
+    const productName = (data as any)?.name || 'this product';
+    const initialMessage = `Hello, I am interested in this item : [${productName}](${productUrl})`;
     
     startConversation.mutate({
       participantId: tenantOwnerId,

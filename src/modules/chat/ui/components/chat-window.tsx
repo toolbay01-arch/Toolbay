@@ -36,6 +36,46 @@ function parseProductLink(content: string): { text: string; productUrl: string |
   return { text: content, productUrl: null };
 }
 
+// Helper to render markdown links in message content
+function renderMessageContent(content: string) {
+  // Match markdown links: [text](url)
+  const markdownLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts: (string | React.ReactNode)[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = markdownLinkRegex.exec(content)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push(content.substring(lastIndex, match.index));
+    }
+
+    // Add the link
+    const linkText = match[1];
+    const linkUrl = match[2];
+    parts.push(
+      <Link
+        key={match.index}
+        href={linkUrl || '#'}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-500 hover:text-blue-600 underline"
+      >
+        {linkText}
+      </Link>
+    );
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : content;
+}
+
 export function ChatWindow({
   conversationId,
   currentUserId,
@@ -206,12 +246,8 @@ export function ChatWindow({
               // Parse product link from message content
               const { text, productUrl: messageProductUrl } = parseProductLink(message.content);
               
-              // Show "View Product" button if:
-              // 1. Message contains a product URL in content, OR
-              // 2. This is the first message AND conversation has a product
-              const isFirstMessage = index === sortedMessages.length - 1;
-              const displayProductUrl = messageProductUrl || (isFirstMessage && productUrl ? 
-                `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}${productUrl}` : null);
+              // Only show "View Product" button if the message actually contains a product URL
+              const displayProductUrl = messageProductUrl;
 
               return (
                 <div
@@ -237,7 +273,7 @@ export function ChatWindow({
                       style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                     >
                       <p className="text-sm whitespace-pre-wrap" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                        {message.content}
+                        {renderMessageContent(message.content)}
                       </p>
                       
                       {/* Product Link Preview - Only show if message contains a product URL */}
