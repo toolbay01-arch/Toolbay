@@ -19,19 +19,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface ProductPreviewDialogProps {
   productUrl: string;
   open: boolean;
-  onClose: () => void;
+  onCloseAction: () => void;
 }
 
 // Extract product ID from URL
 function extractProductId(url: string): string | null {
-  const match = url.match(/\/products\/([^\/\s?]+)/);
+  if (!url) return null;
+  // sanitize trailing punctuation
+  const sanitized = url.replace(/[)\]\.\,;:!?]+$/g, '');
+  const match = sanitized.match(/\/products\/([^\/\s?]+)/);
   return match?.[1] ?? null;
 }
 
 export function ProductPreviewDialog({
   productUrl,
   open,
-  onClose,
+  onCloseAction,
 }: ProductPreviewDialogProps) {
   const productId = extractProductId(productUrl);
   const trpc = useTRPC();
@@ -46,7 +49,7 @@ export function ProductPreviewDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCloseAction()}>
       <DialogContent className="max-w-[90vw] sm:max-w-md p-0 gap-0">
         <DialogHeader className="sr-only">
           <DialogTitle>Product Preview</DialogTitle>

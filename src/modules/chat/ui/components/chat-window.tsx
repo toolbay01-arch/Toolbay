@@ -23,16 +23,20 @@ interface ChatWindowProps {
 
 // Helper to detect and extract product URLs
 function parseProductLink(content: string): { text: string; productUrl: string | null } {
-  const urlRegex = /(https?:\/\/[^\s]+\/tenants\/[^\/]+\/products\/[^\s]+)/;
+  const urlRegex = /(https?:\/\/[^\s]+\/tenants\/[^\/]+\/products\/[^\s)\]]+)/;
   const match = content.match(urlRegex);
-  
+
   if (match) {
+    // sanitize URL: remove trailing punctuation that may be from markdown parentheses or punctuation
+    let raw = match[0];
+    // strip trailing characters like ')', ']', '.', ',' etc.
+    const sanitized = raw.replace(/[)\]\.\,;:!?]+$/g, '');
     return {
       text: content.replace(match[0], '').trim(),
-      productUrl: match[0],
+      productUrl: sanitized,
     };
   }
-  
+
   return { text: content, productUrl: null };
 }
 
@@ -330,7 +334,7 @@ export function ChatWindow({
         <ProductPreviewDialog
           productUrl={previewProductUrl}
           open={!!previewProductUrl}
-          onClose={() => setPreviewProductUrl(null)}
+          onCloseAction={() => setPreviewProductUrl(null)}
         />
       )}
     </div>
