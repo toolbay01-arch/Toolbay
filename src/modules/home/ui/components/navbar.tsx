@@ -398,10 +398,45 @@ export const Navbar = () => {
   return (
     <nav className="h-16 flex border-b justify-between font-medium bg-white w-full overflow-x-auto overflow-y-visible sticky top-0 z-50 lg:fixed">
       {/* Logo - Smaller, more compact */}
-      <Link href="/" className="pl-3 lg:pl-4 flex items-center flex-shrink-0">
-        <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
-          Toolbay
-        </span>
+      <Link href="/" className="pl-3 lg:pl-4 flex items-center flex-shrink-0 gap-3">
+        <div className="flex flex-col min-w-0">
+          <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
+            Toolbay
+          </span>
+          {/* Mobile: Username/Company below Toolbay */}
+          {session.data?.user && (() => {
+            const displayName = (session.data.user.username || 
+               (session.data.user.tenants?.[0] && 
+                typeof session.data.user.tenants[0].tenant === 'object' 
+                  ? (session.data.user.tenants[0].tenant as any).name 
+                  : null) || 
+               'User').trim();
+            
+            // Debug: Log the actual value
+            console.log('Mobile Display Name:', displayName, 'Length:', displayName.length);
+            
+            return (
+              <span className="text-xs lg:hidden text-gray-600 -mt-1 whitespace-nowrap">
+                {displayName}
+              </span>
+            );
+          })()}
+        </div>
+        {/* Desktop: Username/Company next to Toolbay */}
+        {session.data?.user && (() => {
+          const displayName = (session.data.user.username || 
+             (session.data.user.tenants?.[0] && 
+              typeof session.data.user.tenants[0].tenant === 'object' 
+                ? (session.data.user.tenants[0].tenant as any).name 
+                : null) || 
+             'User').trim();
+          
+          return (
+            <span className="hidden lg:block text-base text-gray-600 border-l pl-3 whitespace-nowrap">
+              {displayName}
+            </span>
+          );
+        })()}
       </Link>
 
       <NavbarSidebar

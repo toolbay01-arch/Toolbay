@@ -187,13 +187,13 @@ export interface Tenant {
   slug: string;
   image?: (string | null) | Media;
   /**
-   * Tax Identification Number (TIN) - Required for Rwandan businesses
+   * Tax Identification Number (TIN) - Added by Super Admin during verification. Should be unique when provided.
    */
-  tinNumber: string;
+  tinNumber?: string | null;
   /**
-   * Store Manager ID or Passport Number
+   * Store Manager ID or Passport Number - Added by Super Admin during verification
    */
-  storeManagerId: string;
+  storeManagerId?: string | null;
   /**
    * Business category - selected during registration
    */
@@ -202,6 +202,10 @@ export interface Tenant {
    * Business location/address - Required for seller registration
    */
   location: string;
+  /**
+   * Currency for all transactions in your store
+   */
+  currency: 'USD' | 'RWF' | 'UGX' | 'TZS' | 'BIF' | 'KSH';
   /**
    * Rwanda Development Board (RDB) Registration Certificate (required for verification)
    */
@@ -219,13 +223,17 @@ export interface Tenant {
    */
   bankAccountNumber?: string | null;
   /**
+   * Mobile Money provider (e.g., MTN Mobile Money, Airtel Money)
+   */
+  momoProviderName?: string | null;
+  /**
+   * Name associated with the MoMo account
+   */
+  momoAccountName?: string | null;
+  /**
    * ⚠️ REQUIRED: Mobile Money Code (integer) for receiving payments - Used in dial code *182*8*1*CODE*Amount#
    */
   momoCode?: number | null;
-  /**
-   * Business name for MoMo account (shown to customers)
-   */
-  momoAccountName?: string | null;
   /**
    * Total revenue after platform fees (RWF) - Updated automatically after payment verification
    */
@@ -331,7 +339,7 @@ export interface Category {
   createdAt: string;
 }
 /**
- * You must verify your account before creating products
+ * All tenants can create products. Products from unverified tenants will be listed without verification badge.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "products".
@@ -463,6 +471,14 @@ export interface Product {
    * If checked, this product will be archived
    */
   isArchived?: boolean | null;
+  /**
+   * Total number of times this product has been viewed
+   */
+  viewCount?: number | null;
+  /**
+   * Number of unique viewers who have viewed this product
+   */
+  uniqueViewCount?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1068,6 +1084,8 @@ export interface ProductsSelect<T extends boolean = true> {
   content?: T;
   isPrivate?: T;
   isArchived?: T;
+  viewCount?: T;
+  uniqueViewCount?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1093,12 +1111,14 @@ export interface TenantsSelect<T extends boolean = true> {
   storeManagerId?: T;
   category?: T;
   location?: T;
+  currency?: T;
   rdbCertificate?: T;
   paymentMethod?: T;
   bankName?: T;
   bankAccountNumber?: T;
-  momoCode?: T;
+  momoProviderName?: T;
   momoAccountName?: T;
+  momoCode?: T;
   totalRevenue?: T;
   isVerified?: T;
   verificationStatus?: T;

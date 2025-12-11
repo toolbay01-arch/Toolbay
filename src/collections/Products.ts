@@ -324,5 +324,29 @@ export const Products: CollectionConfig = {
         description: "If checked, this product will be archived"
       },
     },
+    {
+      name: "viewCount",
+      type: "number",
+      defaultValue: 0,
+      min: 0,
+      index: true, // Index for sorting by popularity
+      admin: {
+        description: "Total number of times this product has been viewed",
+        readOnly: true,
+        position: "sidebar",
+      }
+    },
+    {
+      name: "uniqueViewCount",
+      type: "number",
+      defaultValue: 0,
+      min: 0,
+      index: true, // Index for sorting by unique viewers
+      admin: {
+        description: "Number of unique viewers who have viewed this product",
+        readOnly: true,
+        position: "sidebar",
+      }
+    },
   ],
 };

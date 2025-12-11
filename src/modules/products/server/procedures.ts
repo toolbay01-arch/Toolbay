@@ -1067,4 +1067,42 @@ export const productsRouter = createTRPCRouter({
         lowStock: lowStockCount,
       };
     }),
+
+  // Track product view
+  trackView: baseProcedure
+    .input(
+      z.object({
+        productId: z.string(),
+        isUnique: z.boolean().default(false),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        // Fetch current product to get view counts
+        const product = await ctx.db.findByID({
+          collection: "products",
+          id: input.productId,
+        }) as any; // Use 'any' temporarily until types are regenerated
+
+        const updateData: any = {
+          viewCount: (product.viewCount || 0) + 1,
+        };
+        
+        if (input.isUnique) {
+          updateData.uniqueViewCount = (product.uniqueViewCount || 0) + 1;
+        }
+
+        await ctx.db.update({
+          collection: "products",
+          id: input.productId,
+          data: updateData,
+        });
+
+        return { success: true };
+      } catch (error) {
+        console.error('Error tracking product view:', error);
+        // Don't throw error - view tracking shouldn't break the app
+        return { success: false };
+      }
+    }),
 });
