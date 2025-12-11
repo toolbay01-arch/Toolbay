@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { InboxIcon } from "lucide-react";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 
@@ -20,6 +21,7 @@ interface Props {
 
 export const ProductList = ({ category, tenantSlug, narrowView, viewMode = "grid" }: Props) => {
   const [filters] = useProductFilters();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const trpc = useTRPC();
   const { 
@@ -40,6 +42,32 @@ export const ProductList = ({ category, tenantSlug, narrowView, viewMode = "grid
       },
     }
   ));
+
+  // Infinite scroll: Load more when the sentinel element is visible
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry && entry.isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (data.pages?.[0]?.docs.length === 0) {
     return (
@@ -103,7 +131,18 @@ export const ProductList = ({ category, tenantSlug, narrowView, viewMode = "grid
           );
         })}
       </div>
-      <div className="flex justify-center pt-8">
+      
+      {/* Infinite scroll sentinel - triggers loading when visible */}
+      {hasNextPage && (
+        <div ref={loadMoreRef} className="flex justify-center pt-8 pb-4">
+          {isFetchingNextPage && (
+            <div className="text-sm text-gray-500">Loading more products...</div>
+          )}
+        </div>
+      )}
+
+      {/* Manual Load More button (commented out for infinite scroll) */}
+      {/* <div className="flex justify-center pt-8">
         {hasNextPage && (
           <Button
             disabled={isFetchingNextPage}
@@ -114,7 +153,7 @@ export const ProductList = ({ category, tenantSlug, narrowView, viewMode = "grid
             Load more
           </Button>
         )}
-      </div>
+      </div> */}
     </>
   );
 };
