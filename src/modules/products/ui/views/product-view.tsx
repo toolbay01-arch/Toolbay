@@ -291,6 +291,69 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                 </div>
               </div>
 
+              {/* Action Buttons */}
+              <div className="px-4 lg:px-6 pb-4">
+                <div className="border-t border-gray-200 pt-4 space-y-3">
+                  <CartButton
+                    isPurchased={data.isPurchased}
+                    productId={productId}
+                    tenantSlug={tenantSlug}
+                    quantity={data.quantity || 0}
+                    minOrderQuantity={data.minOrderQuantity || 1}
+                    maxOrderQuantity={data.maxOrderQuantity || undefined}
+                    unit={data.unit || "unit"}
+                    stockStatus={data.stockStatus || "in_stock"}
+                    allowBackorder={data.allowBackorder || false}
+                  />
+                  <BuyNowButton
+                    isPurchased={data.isPurchased}
+                    productId={productId}
+                    productName={data.name}
+                    productPrice={data.price}
+                    tenantSlug={tenantSlug}
+                    quantity={data.quantity || 0}
+                    minOrderQuantity={data.minOrderQuantity || 1}
+                    maxOrderQuantity={data.maxOrderQuantity || undefined}
+                    unit={data.unit || "unit"}
+                    stockStatus={data.stockStatus || "in_stock"}
+                    allowBackorder={data.allowBackorder || false}
+                  />
+                  
+                  {/* Share Button */}
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => {
+                      setIsCopied(true);
+                      navigator.clipboard.writeText(window.location.href);
+                      toast.success("URL copied to clipboard")
+
+                      setTimeout(() => {
+                        setIsCopied(false);
+                      }, 1000);
+                    }}
+                    disabled={isCopied}
+                  >
+                    {isCopied ? (
+                      <>
+                        <CheckIcon className="mr-2 h-4 w-4" /> Copied
+                      </>
+                    ) : (
+                      <>
+                        <LinkIcon className="mr-2 h-4 w-4" /> Share Product
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="text-center text-sm font-medium text-gray-600 mt-2">
+                    {data.refundPolicy === "no-refunds"
+                      ? "⚠️ No refunds available"
+                      : `✓ ${data.refundPolicy} money back guarantee`
+                    }
+                  </p>
+                </div>
+              </div>
+
               {/* Description - Expandable */}
               {data.description && (
                 <div className="px-4 lg:px-6 pb-4">
@@ -375,69 +438,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                       </button>
                     </div>
                   )}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="px-4 lg:px-6 pb-4 lg:pb-6">
-                <div className="border-t border-gray-200 pt-4 space-y-3">
-                  <CartButton
-                    isPurchased={data.isPurchased}
-                    productId={productId}
-                    tenantSlug={tenantSlug}
-                    quantity={data.quantity || 0}
-                    minOrderQuantity={data.minOrderQuantity || 1}
-                    maxOrderQuantity={data.maxOrderQuantity || undefined}
-                    unit={data.unit || "unit"}
-                    stockStatus={data.stockStatus || "in_stock"}
-                    allowBackorder={data.allowBackorder || false}
-                  />
-                  <BuyNowButton
-                    isPurchased={data.isPurchased}
-                    productId={productId}
-                    productName={data.name}
-                    productPrice={data.price}
-                    tenantSlug={tenantSlug}
-                    quantity={data.quantity || 0}
-                    minOrderQuantity={data.minOrderQuantity || 1}
-                    maxOrderQuantity={data.maxOrderQuantity || undefined}
-                    unit={data.unit || "unit"}
-                    stockStatus={data.stockStatus || "in_stock"}
-                    allowBackorder={data.allowBackorder || false}
-                  />
-                  
-                  {/* Share Button */}
-                  <Button
-                    className="w-full"
-                    variant="outline"
-                    onClick={() => {
-                      setIsCopied(true);
-                      navigator.clipboard.writeText(window.location.href);
-                      toast.success("URL copied to clipboard")
-
-                      setTimeout(() => {
-                        setIsCopied(false);
-                      }, 1000);
-                    }}
-                    disabled={isCopied}
-                  >
-                    {isCopied ? (
-                      <>
-                        <CheckIcon className="mr-2 h-4 w-4" /> Copied
-                      </>
-                    ) : (
-                      <>
-                        <LinkIcon className="mr-2 h-4 w-4" /> Share Product
-                      </>
-                    )}
-                  </Button>
-
-                  <p className="text-center text-sm font-medium text-gray-600 mt-2">
-                    {data.refundPolicy === "no-refunds"
-                      ? "⚠️ No refunds available"
-                      : `✓ ${data.refundPolicy} money back guarantee`
-                    }
-                  </p>
                 </div>
               </div>
             </div>
