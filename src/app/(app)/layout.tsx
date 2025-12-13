@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app"
 
@@ -19,6 +19,11 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "Toolbay - Construction Materials Marketplace",
   description: "Rwanda's premier online marketplace for construction materials, tools, and engineering supplies",
+  manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2563eb",
 };
 
 export default function RootLayout({
@@ -28,6 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#2563eb" />
+      </head>
       <body
         className={`${dmSans.className} antialiased`}
       >
