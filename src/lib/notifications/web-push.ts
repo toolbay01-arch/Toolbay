@@ -15,6 +15,7 @@ export class WebPushService {
   private static instance: WebPushService;
   private registration: ServiceWorkerRegistration | null = null;
   private isInitializing: boolean = false;
+  private registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
   private constructor() {
     // Auto-register service worker when supported
@@ -34,7 +35,8 @@ export class WebPushService {
    * Initialize service worker registration
    */
   private async initializeServiceWorker(): Promise<void> {
-    if (this.isInitializing || this.registration) {
+    if (this.isInitializing || this.registration || this.registrationPromise) {
+      console.log('[WebPush] Registration already in progress or completed');
       return;
     }
 
@@ -42,9 +44,11 @@ export class WebPushService {
     console.log('[WebPush] Auto-initializing service worker...');
     
     try {
-      this.registration = await this.registerServiceWorker();
+      this.registrationPromise = this.registerServiceWorker();
+      this.registration = await this.registrationPromise;
     } catch (error) {
       console.error('[WebPush] Auto-initialization failed:', error);
+      this.registrationPromise = null;
     } finally {
       this.isInitializing = false;
     }
@@ -72,6 +76,28 @@ export class WebPushService {
     }
 
     try {
+      // Check if already registered
+      const existingRegistration = await navigator.serviceWorker.getRegistration('/');
+      if (existingRegistration) {
+        console.log('[WebPush] Service worker already registered, using existing:', {
+          scope: existingRegistration.scope,
+          active: existingRegistration.active?.state,
+          installing: existingRegistration.installing?.state,
+          waiting: existingRegistration.waiting?.state
+        });
+        this.registration = existingRegistration;
+        
+        // Wait for it to be ready if not already active
+        if (!existingRegistration.active) {
+          console.log('[WebPush] Waiting for existing service worker to activate...');
+          const readyRegistration = await navigator.serviceWorker.ready;
+          console.log('[WebPush] Service Worker now ready:', readyRegistration.active?.state);
+          return readyRegistration;
+        }
+        
+        return existingRegistration;
+      }
+      
       console.log('[WebPush] Attempting to register service worker...');
       
       // Register service worker
