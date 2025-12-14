@@ -36,13 +36,11 @@ This document explains how users will learn about and enable push notifications 
 
 **What it looks like:**
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│ 🔔 Stay updated with instant notifications!                     │
-│    Get notified about payments, orders, and messages even        │
-│    when the browser is closed                                    │
-│                                                                   │
-│    [Enable Notifications]  [✕ Dismiss]                           │
-└──────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│ 🔔 Stay updated with notifications!  │
+│                                       │
+│    [Enable Notifications]             │
+└──────────────────────────────────────┘
 ```
 
 **User actions:**
@@ -63,38 +61,32 @@ This document explains how users will learn about and enable push notifications 
 
 **Chrome/Android version:**
 ```
-┌─────────────────────────────────────┐
-│ 📥 Install ToolBoxx App        ✕  │
-│                                     │
-│ Get faster access, work offline,   │
-│ and receive instant notifications  │
-│ even when the browser is closed!   │
-│                                     │
-│ [Install App] [Not Now]             │
-└─────────────────────────────────────┘
+┌──────────────────────────────┐
+│ 📥 Install ToolBoxx     ✕   │
+│                              │
+│ Offline access & instant     │
+│ alerts!                      │
+│                              │
+│ [Install App]                │
+└──────────────────────────────┘
 ```
 
 **iOS Safari version:**
 ```
-┌─────────────────────────────────────┐
-│ 📱 Install ToolBoxx App        ✕  │
-│                                     │
-│ Add to your home screen for the    │
-│ best experience!                   │
-│                                     │
-│ How to install:                    │
-│ 1. Tap the Share button 📤         │
-│ 2. Tap "Add to Home Screen"        │
-│ 3. Tap "Add" in the top right      │
-│                                     │
-│ [Maybe Later]                       │
-└─────────────────────────────────────┘
+┌──────────────────────────────┐
+│ 📱 Install ToolBoxx     ✕   │
+│                              │
+│ Tap Share 📤 → Add to Home   │
+│ Screen                       │
+│                              │
+│ [Got it!]                    │
+└──────────────────────────────┘
 ```
 
 **User actions:**
 - Chrome/Android: Click "Install App" → Native install dialog
-- iOS: Follow manual steps to add to home screen
-- Click "Not Now" / "Maybe Later" → Dismissed (stored in localStorage)
+- iOS: Read the quick instruction, click "Got it!" to acknowledge
+- Click "✕" to dismiss (stored in localStorage)
 
 ---
 

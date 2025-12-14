@@ -53,36 +53,32 @@ export function NotificationBanner({
   return (
     <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg">
       <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 flex-1">
-            <Bell className="h-5 w-5 flex-shrink-0" />
-            <div className="flex-1">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Bell className="h-5 w-5 flex-shrink-0" />
               <p className="text-sm font-medium">
-                Stay updated with instant notifications!
-              </p>
-              <p className="text-xs opacity-90">
-                Get notified about payments, orders, and messages even when the browser is closed
+                🔔 Stay updated with notifications!
               </p>
             </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleEnable}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Enabling...' : 'Enable Notifications'}
-            </Button>
             <button
               onClick={handleDismiss}
-              className="p-1 hover:bg-white/20 rounded transition-colors"
+              className="p-1 hover:bg-white/20 rounded transition-colors flex-shrink-0"
               aria-label="Dismiss"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
+          
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleEnable}
+            disabled={isLoading}
+            className="w-full sm:w-auto"
+          >
+            {isLoading ? 'Enabling...' : 'Enable Notifications'}
+          </Button>
         </div>
       </div>
     </div>

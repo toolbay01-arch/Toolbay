@@ -24,7 +24,8 @@ export function PWAInstallPrompt() {
   useEffect(() => {
     // Check if already installed/standalone
     const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone;
+      (window.navigator as any).standalone ||
+      document.referrer.includes('android-app://');
     setIsStandalone(isStandaloneMode);
 
     // Check if iOS
@@ -34,9 +35,17 @@ export function PWAInstallPrompt() {
     // Check if user has dismissed the prompt before
     const dismissed = localStorage.getItem('pwa-install-dismissed');
     
+    console.log('PWA Install Check:', {
+      isStandalone: isStandaloneMode,
+      isIOS: iOS,
+      dismissed: !!dismissed,
+      userAgent: navigator.userAgent
+    });
+    
     if (!dismissed && !isStandaloneMode) {
-      // For iOS, show manual instructions
+      // For iOS, show manual instructions immediately
       if (iOS) {
+        console.log('iOS detected - will show install prompt in 3 seconds');
         setTimeout(() => setShowPrompt(true), 3000); // Show after 3 seconds
       }
     }
@@ -44,18 +53,30 @@ export function PWAInstallPrompt() {
     // Listen for the beforeinstallprompt event (Chrome/Edge/Android)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      console.log('beforeinstallprompt event received');
       const promptEvent = e as BeforeInstallPromptEvent;
       setDeferredPrompt(promptEvent);
       
       if (!dismissed) {
+        console.log('Will show install prompt in 3 seconds');
         setTimeout(() => setShowPrompt(true), 3000);
       }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
+    // Also check on app installed event to hide prompt
+    const handleAppInstalled = () => {
+      console.log('App installed event received');
+      setShowPrompt(false);
+      setIsStandalone(true);
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
@@ -86,13 +107,13 @@ export function PWAInstallPrompt() {
   // iOS install instructions
   if (isIOS && !deferredPrompt) {
     return (
-      <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-in slide-in-from-bottom duration-300">
+      <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-50 animate-in slide-in-from-bottom duration-300">
         <Card className="border-2 border-blue-500 shadow-xl">
           <CardContent className="p-4">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex items-center gap-2">
                 <Smartphone className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-sm">Install ToolBoxx App</h3>
+                <h3 className="font-semibold text-sm">Install ToolBoxx</h3>
               </div>
               <button
                 onClick={handleDismiss}
@@ -104,25 +125,15 @@ export function PWAInstallPrompt() {
             </div>
 
             <p className="text-xs text-muted-foreground mb-3">
-              Add to your home screen for the best experience and instant notifications!
+              Tap Share 📤 → Add to Home Screen
             </p>
 
-            <div className="bg-blue-50 p-3 rounded-lg text-xs space-y-2">
-              <p className="font-medium text-blue-900">How to install:</p>
-              <ol className="list-decimal list-inside space-y-1 text-blue-800">
-                <li>Tap the Share button <span className="inline-block">📤</span> in Safari</li>
-                <li>Scroll down and tap "Add to Home Screen"</li>
-                <li>Tap "Add" in the top right</li>
-              </ol>
-            </div>
-
             <Button
-              variant="ghost"
               size="sm"
               onClick={handleDismiss}
-              className="w-full mt-3"
+              className="w-full"
             >
-              Maybe Later
+              Got it!
             </Button>
           </CardContent>
         </Card>
@@ -133,13 +144,13 @@ export function PWAInstallPrompt() {
   // Chrome/Edge/Android install prompt
   if (deferredPrompt) {
     return (
-      <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-in slide-in-from-bottom duration-300">
+      <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-50 animate-in slide-in-from-bottom duration-300">
         <Card className="border-2 border-blue-500 shadow-xl">
           <CardContent className="p-4">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex items-center gap-2">
                 <Download className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-sm">Install ToolBoxx App</h3>
+                <h3 className="font-semibold text-sm">Install ToolBoxx</h3>
               </div>
               <button
                 onClick={handleDismiss}
@@ -150,27 +161,18 @@ export function PWAInstallPrompt() {
               </button>
             </div>
 
-            <p className="text-xs text-muted-foreground mb-4">
-              Get faster access, work offline, and receive instant notifications even when the browser is closed!
+            <p className="text-xs text-muted-foreground mb-3">
+              Offline access & instant alerts!
             </p>
 
-            <div className="flex gap-2">
-              <Button
-                onClick={handleInstallClick}
-                size="sm"
-                className="flex-1"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Install App
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDismiss}
-              >
-                Not Now
-              </Button>
-            </div>
+            <Button
+              onClick={handleInstallClick}
+              size="sm"
+              className="w-full"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Install App
+            </Button>
           </CardContent>
         </Card>
       </div>
