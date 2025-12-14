@@ -20,21 +20,46 @@ export function NotificationBanner({
   storageKey = 'notification-banner-dismissed'
 }: NotificationBannerProps) {
   const [isDismissed, setIsDismissed] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { isSupported, isSubscribed, subscribe, isLoading } = useWebPush({ userId });
 
   useEffect(() => {
-    // Check if user has dismissed the banner
-    const dismissed = localStorage.getItem(storageKey);
-    
-    // Show banner if:
-    // 1. Not dismissed
-    // 2. Browser supports notifications
-    // 3. User is logged in
-    // 4. Not already subscribed
-    if (!dismissed && isSupported && userId && !isSubscribed) {
-      setIsDismissed(false);
-    }
-  }, [isSupported, userId, isSubscribed, storageKey]);
+    // Small delay to ensure proper hydration in production
+    const timer = setTimeout(() => {
+      // Check if user has dismissed the banner
+      const dismissed = localStorage.getItem(storageKey);
+      
+      console.log('[NotificationBanner] Debug:', {
+        dismissed: !!dismissed,
+        isSupported,
+        userId: !!userId,
+        isSubscribed,
+        isLoading,
+        notificationPermission: typeof Notification !== 'undefined' ? Notification.permission : 'unknown'
+      });
+      
+      // Show banner if:
+      // 1. Not dismissed
+      // 2. Browser supports notifications
+      // 3. User is logged in
+      // 4. Not already subscribed OR permission is default (not asked yet)
+      const shouldShow = !dismissed && 
+                        isSupported && 
+                        userId && 
+                        !isSubscribed &&
+                        !isLoading &&
+                        (typeof Notification === 'undefined' || Notification.permission !== 'denied');
+      
+      if (shouldShow) {
+        console.log('[NotificationBanner] Showing banner');
+        setIsDismissed(false);
+      }
+      
+      setIsInitialized(true);
+    }, 100); // Small delay for hydration
+
+    return () => clearTimeout(timer);
+  }, [isSupported, userId, isSubscribed, storageKey, isLoading]);
 
   const handleDismiss = () => {
     localStorage.setItem(storageKey, 'true');
@@ -45,6 +70,11 @@ export function NotificationBanner({
     await subscribe();
     handleDismiss();
   };
+
+  // Don't render until initialized
+  if (!isInitialized || isLoading) {
+    return null;
+  }
 
   if (isDismissed || !isSupported || !userId || isSubscribed) {
     return null;
