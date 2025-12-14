@@ -8,6 +8,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/trpc/client';
 import { NotificationBanner } from './notification-banner';
+import { NotificationBlockedBanner } from './notification-blocked-banner';
 
 export function ClientNotificationWrapper() {
   const trpc = useTRPC();
@@ -21,6 +22,7 @@ export function ClientNotificationWrapper() {
 
   return (
     <>
+      <NotificationBlockedBanner userId={userId} />
       <NotificationBanner userId={userId} />
     </>
   );

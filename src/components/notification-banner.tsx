@@ -54,17 +54,20 @@ export function NotificationBanner({
       // 1. Not dismissed
       // 2. Browser supports notifications
       // 3. User is logged in
-      // 4. Not already subscribed OR permission is default (not asked yet)
+      // 4. Not already subscribed
+      // 5. Permission is NOT denied (we have a separate banner for that)
       const shouldShow = !dismissed && 
                         isSupported && 
                         userId && 
                         !isSubscribed &&
                         !isLoading &&
-                        (typeof Notification === 'undefined' || Notification.permission !== 'denied');
+                        (typeof Notification === 'undefined' || Notification.permission === 'default');
       
       if (shouldShow) {
         console.log('[NotificationBanner] Showing banner');
         setIsDismissed(false);
+      } else if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+        console.log('[NotificationBanner] Permission denied - showing blocked banner instead');
       }
       
       setIsInitialized(true);
