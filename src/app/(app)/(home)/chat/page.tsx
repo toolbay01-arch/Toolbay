@@ -15,16 +15,20 @@ export default async function ChatPage() {
   }
 
   return (
-    <div className="container max-w-7xl mx-auto p-4 h-[calc(100vh-4rem)]">
+    <div className="h-full max-w-7xl mx-auto p-4 overflow-hidden">
       <div className="border rounded-lg h-full flex flex-col md:flex-row overflow-hidden">
         {/* Conversation List */}
-        <div className="w-full md:w-80 border-r">
-          <div className="p-4 border-b">
+        <div className="w-full md:w-80 border-r flex flex-col overflow-hidden">
+          {/* Fixed Header */}
+          <div className="p-4 border-b flex-shrink-0">
             <h1 className="text-xl font-bold">Messages</h1>
           </div>
-          <Suspense fallback={<div className="p-4 text-muted-foreground text-sm">Loading conversations...</div>}>
-            <ChatList currentUserId={session.user.id} />
-          </Suspense>
+          {/* Scrollable List */}
+          <div className="flex-1 overflow-hidden">
+            <Suspense fallback={<div className="p-4 text-muted-foreground text-sm">Loading conversations...</div>}>
+              <ChatList currentUserId={session.user.id} />
+            </Suspense>
+          </div>
         </div>
 
         {/* Empty state */}

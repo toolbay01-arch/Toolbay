@@ -5,6 +5,8 @@ import { getQueryClient, trpc } from "@/trpc/server";
 
 import { Footer } from "@/modules/home/ui/components/footer";
 import { ConditionalSearchFilters } from "@/modules/home/ui/components/conditional-search-filters";
+import { ConditionalFooter } from "@/modules/home/ui/components/conditional-footer";
+import { ConditionalLayoutWrapper } from "@/modules/home/ui/components/conditional-layout-wrapper";
 
 interface Props {
   children: React.ReactNode;
@@ -26,15 +28,15 @@ const Layout = async ({ children }: Props) => {
   }
 
   return ( 
-    <div className="flex flex-col min-h-screen lg:pt-16">
+    <ConditionalLayoutWrapper>
       <HydrationBoundary state={dehydrate(queryClient)}>
         <ConditionalSearchFilters />
       </HydrationBoundary>
-      <div className="flex-1 bg-[#F4F4F0]">
+      <div className="flex-1 bg-[#F4F4F0] overflow-hidden">
          {children}
       </div>
-      <Footer />
-    </div>
+      <ConditionalFooter />
+    </ConditionalLayoutWrapper>
   );
 };
  

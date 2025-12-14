@@ -51,14 +51,14 @@ export function NotificationIndicator({ userId }: NotificationIndicatorProps) {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80" align="end">
-        <div className="space-y-3">
+      <PopoverContent className="w-72" align="end">
+        <div className="space-y-2.5">
           <div className="space-y-1">
-            <h4 className="font-medium text-sm">Push Notifications</h4>
+            <h4 className="font-medium text-sm">Notifications</h4>
             <p className="text-xs text-muted-foreground">
               {isSubscribed
-                ? 'You will receive instant notifications for payments, orders, and messages'
-                : 'Enable to get notified even when the browser is closed'}
+                ? 'Get alerts for payments, orders & messages'
+                : 'Enable for instant alerts'}
             </p>
           </div>
 
@@ -66,14 +66,14 @@ export function NotificationIndicator({ userId }: NotificationIndicatorProps) {
             <div className="flex items-center gap-2 p-2 bg-green-50 rounded-md">
               <Bell className="h-4 w-4 text-green-600" />
               <span className="text-xs text-green-900 font-medium">
-                Notifications enabled
+                Enabled
               </span>
             </div>
           ) : (
             <div className="flex items-center gap-2 p-2 bg-amber-50 rounded-md">
               <BellOff className="h-4 w-4 text-amber-600" />
               <span className="text-xs text-amber-900 font-medium">
-                Notifications disabled
+                Disabled
               </span>
             </div>
           )}
@@ -83,18 +83,18 @@ export function NotificationIndicator({ userId }: NotificationIndicatorProps) {
             disabled={isLoading}
             variant={isSubscribed ? 'outline' : 'default'}
             size="sm"
-            className="w-full"
+            className="w-full h-8 text-xs"
           >
             {isLoading
               ? 'Processing...'
               : isSubscribed
-                ? 'Disable Notifications'
-                : 'Enable Notifications'}
+                ? 'Disable'
+                : 'Enable'}
           </Button>
 
           {!isSubscribed && (
-            <p className="text-[10px] text-muted-foreground text-center">
-              💡 Mobile sellers: Get payment alerts instantly, even when browsing other apps!
+            <p className="text-[10px] text-muted-foreground text-center leading-tight">
+              💡 Get alerts even when browser is closed
             </p>
           )}
         </div>

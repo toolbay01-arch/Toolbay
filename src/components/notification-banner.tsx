@@ -52,33 +52,35 @@ export function NotificationBanner({
 
   return (
     <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5 flex-shrink-0" />
-              <p className="text-sm font-medium">
-                🔔 Stay updated with notifications!
-              </p>
-            </div>
-            <button
-              onClick={handleDismiss}
-              className="p-1 hover:bg-white/20 rounded transition-colors flex-shrink-0"
-              aria-label="Dismiss"
-            >
-              <X className="h-4 w-4" />
-            </button>
+      <div className="container mx-auto px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          {/* Message with icon */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Bell className="h-4 w-4 flex-shrink-0" />
+            <p className="text-xs sm:text-sm font-medium truncate">
+              Get instant alerts
+            </p>
           </div>
           
+          {/* Enable button */}
           <Button
             variant="secondary"
             size="sm"
             onClick={handleEnable}
             disabled={isLoading}
-            className="w-full sm:w-auto"
+            className="flex-shrink-0 h-7 px-3 text-xs font-medium"
           >
-            {isLoading ? 'Enabling...' : 'Enable Notifications'}
+            {isLoading ? 'Enabling...' : 'Enable'}
           </Button>
+          
+          {/* Dismiss button */}
+          <button
+            onClick={handleDismiss}
+            className="p-1 hover:bg-white/20 rounded transition-colors flex-shrink-0"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>

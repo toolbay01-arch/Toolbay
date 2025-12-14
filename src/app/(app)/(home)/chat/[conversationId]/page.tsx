@@ -21,17 +21,21 @@ export default async function ConversationPage({
   }
 
   return (
-    <div className="container max-w-7xl mx-auto p-1 sm:p-2 md:p-4 h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="h-full max-w-7xl mx-auto p-1 sm:p-2 md:p-4 overflow-hidden">
       <div className="border rounded-lg h-full flex overflow-hidden w-full max-w-full">
         {/* Conversation List - Hidden on mobile */}
-        <div className="hidden md:block w-80 border-r">
-          <div className="p-4 border-b">
+        <div className="hidden md:flex md:w-80 border-r flex-col overflow-hidden">
+          {/* Fixed Header */}
+          <div className="p-4 border-b flex-shrink-0">
             <h1 className="text-xl font-bold">Messages</h1>
           </div>
-          <ChatList
-            currentUserId={session.user.id}
-            selectedConversationId={conversationId}
-          />
+          {/* Scrollable List */}
+          <div className="flex-1 overflow-hidden">
+            <ChatList
+              currentUserId={session.user.id}
+              selectedConversationId={conversationId}
+            />
+          </div>
         </div>
 
         {/* Chat View */}
