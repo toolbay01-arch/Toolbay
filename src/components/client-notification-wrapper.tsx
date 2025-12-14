@@ -8,7 +8,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/trpc/client';
 import { NotificationBanner } from './notification-banner';
-import { PWAInstallPrompt } from './pwa-install-prompt';
 
 export function ClientNotificationWrapper() {
   const trpc = useTRPC();
@@ -23,7 +22,6 @@ export function ClientNotificationWrapper() {
   return (
     <>
       <NotificationBanner userId={userId} />
-      <PWAInstallPrompt />
     </>
   );
 }

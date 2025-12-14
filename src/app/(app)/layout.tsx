@@ -10,6 +10,7 @@ import { NavigationProgress } from "@/components/navigation-progress";
 import { Navbar } from "@/modules/home/ui/components/navbar";
 import { NotificationProvider } from "@/components/notification-provider";
 import { ClientNotificationWrapper } from "@/components/client-notification-wrapper";
+import { PWAInstallGlobal } from "@/components/pwa-install-global";
 
 import "./globals.css";
 
@@ -45,6 +46,7 @@ export default function RootLayout({
           <TRPCReactProvider>
             <NotificationProvider>
               <NavigationProgress />
+              <PWAInstallGlobal />
               <ClientNotificationWrapper />
               <Navbar />
               {children}
