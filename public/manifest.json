@@ -3,9 +3,10 @@
   "short_name": "ToolBay",
   "description": "Rwanda's premier online marketplace for construction materials, tools, and engineering supplies",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "theme_color": "#2563eb",
   "orientation": "portrait-primary",
   "icons": [
     {
