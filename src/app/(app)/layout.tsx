@@ -9,6 +9,7 @@ import { PerformanceMonitor } from "@/components/performance-monitor";
 import { NavigationProgress } from "@/components/navigation-progress";
 import { Navbar } from "@/modules/home/ui/components/navbar";
 import { NotificationProvider } from "@/components/notification-provider";
+import { ClientNotificationWrapper } from "@/components/client-notification-wrapper";
 
 import "./globals.css";
 
@@ -44,6 +45,7 @@ export default function RootLayout({
           <TRPCReactProvider>
             <NotificationProvider>
               <NavigationProgress />
+              <ClientNotificationWrapper />
               <Navbar />
               {children}
               <Toaster />

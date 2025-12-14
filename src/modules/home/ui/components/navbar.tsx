@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { NavbarSidebar } from "./navbar-sidebar";
 import { useCartStore } from "@/modules/checkout/store/use-cart-store";
+import { NotificationIndicator } from "@/components/notification-indicator";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -479,6 +480,11 @@ export const Navbar = () => {
       {/* Desktop Auth Buttons - Hidden on mobile */}
       {session.data?.user ? (
         <div className="hidden lg:flex items-center flex-shrink-0">
+          {/* Notification Indicator */}
+          <div className="border-l border-t-0 border-b-0 border-r-0 h-full flex items-center px-2">
+            <NotificationIndicator userId={session.data.user.id} />
+          </div>
+          
           {/* Chat Icon with Badge */}
           <OptimizedLink
             href="/chat"
