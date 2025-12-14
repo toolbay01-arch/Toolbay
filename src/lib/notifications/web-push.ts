@@ -14,14 +14,40 @@ export interface PushSubscriptionData {
 export class WebPushService {
   private static instance: WebPushService;
   private registration: ServiceWorkerRegistration | null = null;
+  private isInitializing: boolean = false;
 
-  private constructor() {}
+  private constructor() {
+    // Auto-register service worker when supported
+    if (typeof window !== 'undefined' && this.isSupported()) {
+      this.initializeServiceWorker();
+    }
+  }
 
   static getInstance(): WebPushService {
     if (!WebPushService.instance) {
       WebPushService.instance = new WebPushService();
     }
     return WebPushService.instance;
+  }
+
+  /**
+   * Initialize service worker registration
+   */
+  private async initializeServiceWorker(): Promise<void> {
+    if (this.isInitializing || this.registration) {
+      return;
+    }
+
+    this.isInitializing = true;
+    console.log('[WebPush] Auto-initializing service worker...');
+    
+    try {
+      this.registration = await this.registerServiceWorker();
+    } catch (error) {
+      console.error('[WebPush] Auto-initialization failed:', error);
+    } finally {
+      this.isInitializing = false;
+    }
   }
 
   /**
@@ -41,30 +67,38 @@ export class WebPushService {
    */
   async registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
     if (!this.isSupported()) {
-      console.warn('Service Workers or Push API not supported');
+      console.warn('[WebPush] Service Workers or Push API not supported');
       return null;
     }
 
     try {
+      console.log('[WebPush] Attempting to register service worker...');
+      
       // Register service worker
       this.registration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/',
         updateViaCache: 'none', // Don't cache the service worker file
       });
 
-      console.log('Service Worker registered:', this.registration);
+      console.log('[WebPush] Service Worker registered:', this.registration);
+      console.log('[WebPush] Registration state:', {
+        installing: this.registration.installing?.state,
+        waiting: this.registration.waiting?.state,
+        active: this.registration.active?.state,
+        scope: this.registration.scope
+      });
 
       // Handle updates - force activation of new service worker
       this.registration.addEventListener('updatefound', () => {
         const newWorker = this.registration?.installing;
-        console.log('Service Worker update found');
+        console.log('[WebPush] Service Worker update found');
         
         if (newWorker) {
           newWorker.addEventListener('statechange', () => {
-            console.log('Service Worker state:', newWorker.state);
+            console.log('[WebPush] Service Worker state:', newWorker.state);
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               // New service worker installed but old one still controlling
-              console.log('New service worker installed, will activate on next page load');
+              console.log('[WebPush] New service worker installed, will activate on next page load');
             }
           });
         }
@@ -72,17 +106,28 @@ export class WebPushService {
 
       // If there's a waiting service worker, skip waiting and activate immediately
       if (this.registration.waiting) {
-        console.log('Service Worker waiting, activating now...');
+        console.log('[WebPush] Service Worker waiting, activating now...');
         this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       }
 
       // Wait for service worker to be ready (active)
+      console.log('[WebPush] Waiting for service worker to be ready...');
       const readyRegistration = await navigator.serviceWorker.ready;
-      console.log('Service Worker ready and active:', readyRegistration.active?.state);
+      console.log('[WebPush] Service Worker ready and active:', {
+        state: readyRegistration.active?.state,
+        scriptURL: readyRegistration.active?.scriptURL
+      });
 
       return readyRegistration;
     } catch (error) {
-      console.error('Service Worker registration failed:', error);
+      console.error('[WebPush] Service Worker registration failed:', error);
+      // Log more details about the error
+      if (error instanceof Error) {
+        console.error('[WebPush] Error details:', {
+          message: error.message,
+          stack: error.stack
+        });
+      }
       return null;
     }
   }
