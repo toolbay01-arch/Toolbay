@@ -11,6 +11,7 @@ import { Navbar } from "@/modules/home/ui/components/navbar";
 import { NotificationProvider } from "@/components/notification-provider";
 import { ClientNotificationWrapper } from "@/components/client-notification-wrapper";
 import { PWAInstallGlobal } from "@/components/pwa-install-global";
+import { WebPushInitializer } from "@/components/web-push-initializer";
 
 import "./globals.css";
 
@@ -45,6 +46,7 @@ export default function RootLayout({
         <NuqsAdapter>
           <TRPCReactProvider>
             <NotificationProvider>
+              <WebPushInitializer />
               <NavigationProgress />
               <PWAInstallGlobal />
               <ClientNotificationWrapper />
