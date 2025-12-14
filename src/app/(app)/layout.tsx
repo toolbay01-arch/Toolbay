@@ -19,7 +19,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Toolbay - Construction Materials Marketplace",
+  title: "ToolBay - Construction Materials Marketplace",
   description: "Rwanda's premier online marketplace for construction materials, tools, and engineering supplies",
   manifest: "/manifest.json",
 };
