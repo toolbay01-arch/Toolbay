@@ -64,6 +64,10 @@ const config = withPWA({
   disable: process.env.NODE_ENV === 'development', // Disable in dev for easier debugging
   sw: 'sw.js',
   reloadOnOnline: true,
+  // Clean old precache entries on update
+  cleanupOutdatedCaches: true,
+  // Don't fail on missing precache files
+  cacheOnFrontEndNav: true,
 })(nextConfig);
 
 export default config;

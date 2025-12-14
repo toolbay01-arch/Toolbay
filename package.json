@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "next dev",
+    "prebuild": "rm -f public/sw.js public/workbox-*.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
