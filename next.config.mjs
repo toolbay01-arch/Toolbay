@@ -61,7 +61,8 @@ const config = withPWA({
   dest: 'public',
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development', // Disable in dev for easier debugging
+  // TEMPORARILY disable PWA until clean build completes
+  disable: true, // was: process.env.NODE_ENV === 'development'
   sw: 'sw.js',
   reloadOnOnline: true,
   // Clean old precache entries on update
