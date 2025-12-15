@@ -101,8 +101,11 @@ export class WebPushService {
         
         console.log('[WebPush] Service worker already registered, using existing:', state);
         
-        // Check if SW is in a bad state (redundant or no active worker)
-        if (existingRegistration.active?.state === 'redundant' || !existingRegistration.active) {
+        // Check if SW is in a bad state (redundant, no workers at all, or only installing/waiting)
+        const hasNoWorkers = !existingRegistration.active && !existingRegistration.installing && !existingRegistration.waiting;
+        const isRedundant = existingRegistration.active?.state === 'redundant';
+        
+        if (hasNoWorkers || isRedundant) {
           // Only attempt cleanup once to prevent infinite loops
           if (!this.hasAttemptedCleanup) {
             console.warn('[WebPush] Service worker in invalid state, cleaning up and reloading...');
@@ -122,34 +125,39 @@ export class WebPushService {
             
             return null;
           } else {
-            console.error('[WebPush] Service worker still in invalid state after cleanup. Manual intervention needed.');
-            console.error('[WebPush] Run this in console: navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()));location.reload();');
-            return null;
-          }
-        }
-        
-        this.registration = existingRegistration;
-        
-        // Wait for it to be ready if not already active
-        if (!existingRegistration.active || existingRegistration.active.state !== 'activated') {
-          console.log('[WebPush] Waiting for existing service worker to activate...');
-          try {
-            const readyRegistration = await Promise.race([
-              navigator.serviceWorker.ready,
-              new Promise<never>((_, reject) => 
-                setTimeout(() => reject(new Error('Service worker activation timeout')), 10000)
-              )
-            ]);
-            console.log('[WebPush] Service Worker now ready:', readyRegistration.active?.state);
-            return readyRegistration as ServiceWorkerRegistration;
-          } catch (timeoutError) {
-            console.error('[WebPush] Timeout waiting for SW, unregistering and retrying...');
+            // Second attempt - ghost registration persists, force unregister without reload
+            console.warn('[WebPush] Ghost service worker registration detected, force cleaning...');
             await existingRegistration.unregister();
-            return this.registerServiceWorker();
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+            console.log('[WebPush] Force unregistered ghost SW, proceeding with fresh registration...');
+            // Don't return null, fall through to register a fresh SW
           }
+        } else {
+          // SW exists and is in valid state, use it
+          this.registration = existingRegistration;
+          
+          // Wait for it to be ready if not already active
+          if (!existingRegistration.active || existingRegistration.active.state !== 'activated') {
+            console.log('[WebPush] Waiting for existing service worker to activate...');
+            try {
+              const readyRegistration = await Promise.race([
+                navigator.serviceWorker.ready,
+                new Promise<never>((_, reject) => 
+                  setTimeout(() => reject(new Error('Service worker activation timeout')), 10000)
+                )
+              ]);
+              console.log('[WebPush] Service Worker now ready:', readyRegistration.active?.state);
+              return readyRegistration as ServiceWorkerRegistration;
+            } catch (timeoutError) {
+              console.error('[WebPush] Timeout waiting for SW, unregistering and retrying...');
+              await existingRegistration.unregister();
+              return this.registerServiceWorker();
+            }
+          }
+          
+          return existingRegistration;
         }
-        
-        return existingRegistration;
       }
       
       console.log('[WebPush] Attempting to register service worker...');
