@@ -9,15 +9,18 @@
   "scripts": {
     "dev": "next dev",
     "clean:sw": "rm -f public/sw.js public/workbox-*.js",
+    "clean:cache": "rm -rf .next/cache",
+    "clean:all": "npm run clean:sw && npm run clean:cache",
     "prebuild": "npm run clean:sw",
     "build": "next build",
-    "postbuild": "echo 'Build complete. Service worker generated.'",
+    "postbuild": "echo 'Build complete. Service worker generated.' && echo 'Build ID:' && cat .next/BUILD_ID 2>/dev/null || echo 'N/A'",
     "start": "next start",
     "lint": "next lint",
     "generate:types": "PAYLOAD_DISABLE_TELEMETRY=true node ./node_modules/payload/bin.js --disable-transpile generate:types",
     "generate:importmap": "PAYLOAD_DISABLE_TELEMETRY=true node ./node_modules/payload/bin.js --disable-transpile generate:importmap",
     "db:fresh": "node scripts/reset-db.mjs",
-    "db:seed": "bun run src/seed.ts"
+    "db:seed": "bun run src/seed.ts",
+    "reset:sw": "bash scripts/reset-sw-cache.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",

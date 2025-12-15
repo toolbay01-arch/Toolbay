@@ -79,20 +79,49 @@ export class WebPushService {
       // Check if already registered
       const existingRegistration = await navigator.serviceWorker.getRegistration('/');
       if (existingRegistration) {
-        console.log('[WebPush] Service worker already registered, using existing:', {
+        const state = {
           scope: existingRegistration.scope,
           active: existingRegistration.active?.state,
           installing: existingRegistration.installing?.state,
           waiting: existingRegistration.waiting?.state
-        });
+        };
+        
+        console.log('[WebPush] Service worker already registered, using existing:', state);
+        
+        // Check if SW is in a bad state (redundant or no active worker)
+        if (existingRegistration.active?.state === 'redundant' || !existingRegistration.active) {
+          console.warn('[WebPush] Service worker in invalid state, unregistering...');
+          await existingRegistration.unregister();
+          
+          // Clear all caches to start fresh
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+          console.log('[WebPush] Cleared', cacheNames.length, 'cache(s)');
+          
+          // Re-register after cleanup
+          console.log('[WebPush] Re-registering service worker after cleanup...');
+          return this.registerServiceWorker();
+        }
+        
         this.registration = existingRegistration;
         
         // Wait for it to be ready if not already active
-        if (!existingRegistration.active) {
+        if (!existingRegistration.active || existingRegistration.active.state !== 'activated') {
           console.log('[WebPush] Waiting for existing service worker to activate...');
-          const readyRegistration = await navigator.serviceWorker.ready;
-          console.log('[WebPush] Service Worker now ready:', readyRegistration.active?.state);
-          return readyRegistration;
+          try {
+            const readyRegistration = await Promise.race([
+              navigator.serviceWorker.ready,
+              new Promise<never>((_, reject) => 
+                setTimeout(() => reject(new Error('Service worker activation timeout')), 10000)
+              )
+            ]);
+            console.log('[WebPush] Service Worker now ready:', readyRegistration.active?.state);
+            return readyRegistration as ServiceWorkerRegistration;
+          } catch (timeoutError) {
+            console.error('[WebPush] Timeout waiting for SW, unregistering and retrying...');
+            await existingRegistration.unregister();
+            return this.registerServiceWorker();
+          }
         }
         
         return existingRegistration;
@@ -122,6 +151,18 @@ export class WebPushService {
         if (newWorker) {
           newWorker.addEventListener('statechange', () => {
             console.log('[WebPush] Service Worker state:', newWorker.state);
+            
+            if (newWorker.state === 'redundant') {
+              console.error('[WebPush] Service Worker became redundant, likely due to precache errors');
+              console.log('[WebPush] Clearing caches and reloading...');
+              caches.keys().then(names => {
+                return Promise.all(names.map(name => caches.delete(name)));
+              }).then(() => {
+                console.log('[WebPush] Caches cleared, reloading page...');
+                window.location.reload();
+              });
+            }
+            
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               // New service worker installed but old one still controlling
               console.log('[WebPush] New service worker installed, will activate on next page load');
@@ -136,15 +177,25 @@ export class WebPushService {
         this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       }
 
-      // Wait for service worker to be ready (active)
+      // Wait for service worker to be ready (active) with timeout
       console.log('[WebPush] Waiting for service worker to be ready...');
-      const readyRegistration = await navigator.serviceWorker.ready;
-      console.log('[WebPush] Service Worker ready and active:', {
-        state: readyRegistration.active?.state,
-        scriptURL: readyRegistration.active?.scriptURL
-      });
+      try {
+        const readyRegistration = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Service worker ready timeout')), 15000)
+          )
+        ]);
+        console.log('[WebPush] Service Worker ready and active:', {
+          state: readyRegistration.active?.state,
+          scriptURL: readyRegistration.active?.scriptURL
+        });
 
-      return readyRegistration;
+        return readyRegistration as ServiceWorkerRegistration;
+      } catch (timeoutError) {
+        console.error('[WebPush] Service worker failed to become ready within timeout');
+        throw timeoutError;
+      }
     } catch (error) {
       console.error('[WebPush] Service Worker registration failed:', error);
       // Log more details about the error
@@ -153,6 +204,12 @@ export class WebPushService {
           message: error.message,
           stack: error.stack
         });
+        
+        // If it's an invalid state error, suggest clearing caches
+        if (error.message.includes('invalid state') || error.message.includes('InvalidStateError')) {
+          console.error('[WebPush] Service worker is in invalid state. Run this to reset:');
+          console.error('navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister())); caches.keys().then(names => Promise.all(names.map(n => caches.delete(n)))); location.reload();');
+        }
       }
       return null;
     }
