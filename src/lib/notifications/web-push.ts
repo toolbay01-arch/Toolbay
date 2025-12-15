@@ -76,6 +76,18 @@ export class WebPushService {
       return null;
     }
 
+    // Check if we just reloaded after cleanup - prevent infinite reload loops
+    const lastCleanup = sessionStorage.getItem('sw-cleanup-reload');
+    if (lastCleanup) {
+      const timeSinceCleanup = Date.now() - parseInt(lastCleanup);
+      // If cleanup was less than 5 seconds ago, don't try to cleanup again
+      if (timeSinceCleanup < 5000) {
+        console.log('[WebPush] Recently cleaned up SW, skipping auto-cleanup');
+        sessionStorage.removeItem('sw-cleanup-reload');
+        this.hasAttemptedCleanup = true; // Mark as attempted to prevent cleanup
+      }
+    }
+
     try {
       // Check if already registered
       const existingRegistration = await navigator.serviceWorker.getRegistration('/');
@@ -93,7 +105,7 @@ export class WebPushService {
         if (existingRegistration.active?.state === 'redundant' || !existingRegistration.active) {
           // Only attempt cleanup once to prevent infinite loops
           if (!this.hasAttemptedCleanup) {
-            console.warn('[WebPush] Service worker in invalid state, unregistering...');
+            console.warn('[WebPush] Service worker in invalid state, cleaning up and reloading...');
             this.hasAttemptedCleanup = true;
             
             await existingRegistration.unregister();
@@ -102,10 +114,12 @@ export class WebPushService {
             const cacheNames = await caches.keys();
             await Promise.all(cacheNames.map(name => caches.delete(name)));
             console.log('[WebPush] Cleared', cacheNames.length, 'cache(s)');
-            console.log('[WebPush] Please hard refresh the page (Ctrl+Shift+R) to complete the reset');
             
-            // Don't recursively call registerServiceWorker - just return null
-            // User needs to refresh the page for clean state
+            // Auto-reload to get fresh state - but use sessionStorage to prevent infinite loops
+            sessionStorage.setItem('sw-cleanup-reload', Date.now().toString());
+            console.log('[WebPush] Reloading page to complete cleanup...');
+            window.location.reload();
+            
             return null;
           } else {
             console.error('[WebPush] Service worker still in invalid state after cleanup. Manual intervention needed.');
