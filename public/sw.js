@@ -1,12 +1,17 @@
 /**
  * Custom Service Worker for Push Notifications
- * Version: 1.0.0
+ * Version: 1.1.0
  * 
  * Simple service worker that handles push notifications only.
  * No precaching, no complex workbox logic - just push notifications.
+ * 
+ * Changelog:
+ * - 1.1.0: Force PWA cache update, improved mobile support
+ * - 1.0.0: Initial release
  */
 
-const SW_VERSION = '1.0.0';
+const SW_VERSION = '1.1.0';
+const CACHE_NAME = `toolboxx-sw-${SW_VERSION}`;
 
 // Install event - just skip waiting to activate immediately
 self.addEventListener('install', (event) => {
@@ -22,11 +27,16 @@ self.addEventListener('activate', (event) => {
     Promise.all([
       // Claim all clients immediately
       self.clients.claim(),
-      // Clean up old caches if any (future-proofing)
+      // Clean up old caches - including old SW versions
       caches.keys().then(cacheNames => {
         return Promise.all(
           cacheNames
-            .filter(cacheName => cacheName.startsWith('workbox-') || cacheName.startsWith('next-pwa-'))
+            .filter(cacheName => 
+              cacheName !== CACHE_NAME && // Keep current cache
+              (cacheName.startsWith('workbox-') || 
+               cacheName.startsWith('next-pwa-') || 
+               cacheName.startsWith('toolboxx-sw-')) // Delete old versions
+            )
             .map(cacheName => {
               console.log(`[SW ${SW_VERSION}] Deleting old cache:`, cacheName);
               return caches.delete(cacheName);

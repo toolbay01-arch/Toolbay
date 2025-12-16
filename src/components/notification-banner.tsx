@@ -26,6 +26,14 @@ export function NotificationBanner({
   useEffect(() => {
     // Small delay to ensure proper hydration in production
     const timer = setTimeout(async () => {
+      // If user is subscribed, clear any previous dismissals so banner can show again if they unsubscribe
+      if (isSubscribed) {
+        localStorage.removeItem(storageKey);
+        setIsDismissed(true);
+        setIsInitialized(true);
+        return;
+      }
+
       // Check if user has dismissed the banner
       const dismissed = localStorage.getItem(storageKey);
       
@@ -55,18 +63,30 @@ export function NotificationBanner({
       // 2. Browser supports notifications
       // 3. User is logged in
       // 4. Not already subscribed
-      // 5. Permission is NOT denied (we have a separate banner for that)
+      // 5. Not currently loading
+      // 6. Permission is NOT denied (we have a separate banner for that)
       const shouldShow = !dismissed && 
                         isSupported && 
                         userId && 
                         !isSubscribed &&
                         !isLoading &&
-                        (typeof Notification === 'undefined' || Notification.permission === 'default');
+                        (typeof Notification === 'undefined' || Notification.permission !== 'denied');
       
       if (shouldShow) {
         console.log('[NotificationBanner] Showing banner');
         setIsDismissed(false);
-      } else if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+      } else {
+        console.log('[NotificationBanner] Not showing banner:', {
+          dismissed: !!dismissed,
+          isSupported,
+          userId: !!userId,
+          isSubscribed,
+          isLoading,
+          permission: typeof Notification !== 'undefined' ? Notification.permission : 'unknown'
+        });
+      }
+      
+      if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
         console.log('[NotificationBanner] Permission denied - showing blocked banner instead');
       }
       
@@ -103,7 +123,7 @@ export function NotificationBanner({
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <Bell className="h-4 w-4 flex-shrink-0" />
             <p className="text-xs sm:text-sm font-medium truncate">
-              Get instant alerts
+              Get instant alerts for orders, messages & updates
             </p>
           </div>
           

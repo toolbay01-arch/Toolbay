@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clear PWA Cache - Toolboxx</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      color: #1a202c;
+    }
+    
+    .subtitle {
+      color: #718096;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+    
+    .status {
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    
+    .status.info {
+      background: #ebf8ff;
+      color: #2c5282;
+      border: 1px solid #bee3f8;
+    }
+    
+    .status.success {
+      background: #f0fff4;
+      color: #22543d;
+      border: 1px solid #9ae6b4;
+    }
+    
+    .status.error {
+      background: #fff5f5;
+      color: #742a2a;
+      border: 1px solid #fc8181;
+    }
+    
+    button {
+      width: 100%;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 12px;
+    }
+    
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #2d3748;
+    }
+    
+    .btn-secondary:hover {
+      background: #cbd5e0;
+    }
+    
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    
+    .logs {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f7fafc;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+    
+    .logs.show {
+      display: block;
+    }
+    
+    .log-entry {
+      padding: 4px 0;
+      color: #2d3748;
+    }
+    
+    .log-entry.success {
+      color: #22543d;
+    }
+    
+    .log-entry.error {
+      color: #742a2a;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔄 Clear PWA Cache</h1>
+    <p class="subtitle">Force update to see latest changes</p>
+    
+    <div id="status" class="status info">
+      Ready to clear cache and service workers
+    </div>
+    
+    <button id="clearBtn" class="btn-primary" onclick="clearEverything()">
+      🗑️ Clear Cache & Reload
+    </button>
+    
+    <button class="btn-secondary" onclick="window.location.href='/'">
+      ← Back to Home
+    </button>
+    
+    <div id="logs" class="logs"></div>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const logsEl = document.getElementById('logs');
+    const clearBtn = document.getElementById('clearBtn');
+    
+    function log(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logsEl.appendChild(entry);
+      logsEl.classList.add('show');
+      logsEl.scrollTop = logsEl.scrollHeight;
+    }
+    
+    function updateStatus(message, type = 'info') {
+      statusEl.textContent = message;
+      statusEl.className = `status ${type}`;
+    }
+    
+    async function clearEverything() {
+      clearBtn.disabled = true;
+      updateStatus('Clearing...', 'info');
+      logsEl.innerHTML = '';
+      
+      try {
+        // 1. Unregister service workers
+        log('Unregistering service workers...');
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+          log(`✓ Unregistered: ${registration.scope}`, 'success');
+        }
+        
+        // 2. Clear all caches
+        log('Clearing caches...');
+        const cacheNames = await caches.keys();
+        for (const cacheName of cacheNames) {
+          await caches.delete(cacheName);
+          log(`✓ Deleted cache: ${cacheName}`, 'success');
+        }
+        
+        // 3. Clear storage
+        log('Clearing localStorage...');
+        localStorage.clear();
+        log('✓ localStorage cleared', 'success');
+        
+        log('Clearing sessionStorage...');
+        sessionStorage.clear();
+        log('✓ sessionStorage cleared', 'success');
+        
+        // 4. Clear IndexedDB (if any)
+        if (window.indexedDB) {
+          log('Clearing IndexedDB...');
+          const databases = await window.indexedDB.databases();
+          for (const db of databases) {
+            if (db.name) {
+              window.indexedDB.deleteDatabase(db.name);
+              log(`✓ Deleted database: ${db.name}`, 'success');
+            }
+          }
+        }
+        
+        updateStatus('✅ Cache cleared! Reloading in 2 seconds...', 'success');
+        log('Cache clear complete!', 'success');
+        
+        setTimeout(() => {
+          window.location.href = '/';
+          window.location.reload(true);
+        }, 2000);
+        
+      } catch (error) {
+        updateStatus(`❌ Error: ${error.message}`, 'error');
+        log(`Error: ${error.message}`, 'error');
+        clearBtn.disabled = false;
+      }
+    }
+    
+    // Show current status on load
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        if (regs.length > 0) {
+          log(`Found ${regs.length} service worker(s)`);
+          regs.forEach(reg => log(`- ${reg.scope}`));
+        } else {
+          log('No service workers registered');
+        }
+      });
+      
+      caches.keys().then(names => {
+        if (names.length > 0) {
+          log(`Found ${names.length} cache(s)`);
+          names.forEach(name => log(`- ${name}`));
+        } else {
+          log('No caches found');
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -38,7 +38,7 @@ export const NavbarSidebar = ({
   isLoggingOut,
 }: Props) => {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
-  const { isSupported, isSubscribed, subscribe, isLoading } = useWebPush({ userId });
+  const { isSupported, isSubscribed, subscribe, unsubscribe, isLoading } = useWebPush({ userId });
 
   const handleLogout = () => {
     onLogout();
@@ -125,24 +125,36 @@ export const NavbarSidebar = ({
             )
           ))}
           <div className="border-t">
-            {/* Notification Enable Button - Show for logged in users who aren't subscribed */}
-            {isLoggedIn && userId && (
+            {/* Notification Toggle Button - Show for logged in users */}
+            {isLoggedIn && userId && isSupported && !isLoading && (
               <>
-                {/* Show button if: supported and not subscribed, OR still loading (to avoid flash) */}
-                {(isSupported && !isSubscribed) || isLoading ? (
+                {!isSubscribed ? (
                   <Button
                     onClick={async () => {
                       console.log('[Sidebar] Enable notifications clicked');
                       await subscribe();
                     }}
-                    disabled={isLoading || !isSupported}
-                    className="w-full text-left p-4 active:bg-blue-600 bg-transparent active:text-white flex items-center text-base font-medium gap-2 rounded-none justify-start text-blue-600 touch-manipulation disabled:opacity-50"
+                    disabled={isLoading}
+                    className="w-full text-left p-4 active:bg-blue-600 bg-transparent active:text-white flex items-center text-base font-medium gap-2 rounded-none justify-start text-blue-600 touch-manipulation"
                     variant="ghost"
                   >
                     <Bell className="h-4 w-4" />
-                    {isLoading ? "Checking..." : isSupported ? "Enable Notifications" : "Not Supported"}
+                    Enable Notifications
                   </Button>
-                ) : null}
+                ) : (
+                  <Button
+                    onClick={async () => {
+                      console.log('[Sidebar] Disable notifications clicked');
+                      await unsubscribe();
+                    }}
+                    disabled={isLoading}
+                    className="w-full text-left p-4 active:bg-gray-600 bg-transparent active:text-white flex items-center text-base font-medium gap-2 rounded-none justify-start text-gray-600 touch-manipulation"
+                    variant="ghost"
+                  >
+                    <Bell className="h-4 w-4 fill-current" />
+                    Disable Notifications
+                  </Button>
+                )}
               </>
             )}
             
