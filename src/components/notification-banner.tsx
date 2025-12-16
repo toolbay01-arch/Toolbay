@@ -96,7 +96,7 @@ export function NotificationBanner({
   }
 
   return (
-    <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg">
+    <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg sticky top-0 z-50">
       <div className="container mx-auto px-3 py-2">
         <div className="flex items-center justify-between gap-2">
           {/* Message with icon */}

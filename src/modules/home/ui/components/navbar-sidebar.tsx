@@ -125,19 +125,25 @@ export const NavbarSidebar = ({
             )
           ))}
           <div className="border-t">
-            {/* Notification Enable Button - Only show if logged in and not subscribed */}
-            {isLoggedIn && userId && isSupported && !isSubscribed && (
-              <Button
-                onClick={async () => {
-                  await subscribe();
-                }}
-                disabled={isLoading}
-                className="w-full text-left p-4 active:bg-blue-600 bg-transparent active:text-white flex items-center text-base font-medium gap-2 rounded-none justify-start text-blue-600 touch-manipulation"
-                variant="ghost"
-              >
-                <Bell className="h-4 w-4" />
-                {isLoading ? "Enabling..." : "Enable Notifications"}
-              </Button>
+            {/* Notification Enable Button - Show for logged in users who aren't subscribed */}
+            {isLoggedIn && userId && (
+              <>
+                {/* Show button if: supported and not subscribed, OR still loading (to avoid flash) */}
+                {(isSupported && !isSubscribed) || isLoading ? (
+                  <Button
+                    onClick={async () => {
+                      console.log('[Sidebar] Enable notifications clicked');
+                      await subscribe();
+                    }}
+                    disabled={isLoading || !isSupported}
+                    className="w-full text-left p-4 active:bg-blue-600 bg-transparent active:text-white flex items-center text-base font-medium gap-2 rounded-none justify-start text-blue-600 touch-manipulation disabled:opacity-50"
+                    variant="ghost"
+                  >
+                    <Bell className="h-4 w-4" />
+                    {isLoading ? "Checking..." : isSupported ? "Enable Notifications" : "Not Supported"}
+                  </Button>
+                ) : null}
+              </>
             )}
             
             {isLoggedIn ? (
