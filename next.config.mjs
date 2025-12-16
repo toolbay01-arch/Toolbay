@@ -1,5 +1,3 @@
-import withPWA from 'next-pwa';
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Ensure proper output for Railway deployment
@@ -56,19 +54,4 @@ const nextConfig = {
   },
 };
 
-// Wrap with PWA configuration
-const config = withPWA({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  // TEMPORARILY disable PWA until clean build completes
-  disable: true, // was: process.env.NODE_ENV === 'development'
-  sw: 'sw.js',
-  reloadOnOnline: true,
-  // Clean old precache entries on update
-  cleanupOutdatedCaches: true,
-  // Don't fail on missing precache files
-  cacheOnFrontEndNav: true,
-})(nextConfig);
-
-export default config;
+export default nextConfig;
