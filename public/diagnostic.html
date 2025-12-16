@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notification Diagnostic - Toolboxx</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 600px;
+      margin: 0 auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      color: #1a202c;
+    }
+    
+    .subtitle {
+      color: #718096;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+    
+    .section {
+      margin-bottom: 24px;
+      padding: 16px;
+      background: #f7fafc;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    
+    .section h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #2d3748;
+    }
+    
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      padding: 8px;
+      background: white;
+      border-radius: 6px;
+    }
+    
+    .check-icon {
+      width: 24px;
+      height: 24px;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    
+    .check-text {
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    .check-status {
+      font-weight: 600;
+      margin-left: 8px;
+    }
+    
+    .status-pass {
+      color: #22543d;
+    }
+    
+    .status-fail {
+      color: #742a2a;
+    }
+    
+    .status-unknown {
+      color: #744210;
+    }
+    
+    button {
+      width: 100%;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 12px;
+    }
+    
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-success {
+      background: #48bb78;
+      color: white;
+    }
+    
+    .btn-success:hover {
+      background: #38a169;
+    }
+    
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    
+    .logs {
+      margin-top: 16px;
+      padding: 12px;
+      background: #2d3748;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      color: #e2e8f0;
+    }
+    
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #4a5568;
+    }
+    
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+    
+    .log-success {
+      color: #9ae6b4;
+    }
+    
+    .log-error {
+      color: #fc8181;
+    }
+    
+    .log-warning {
+      color: #fbd38d;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔔 Notification Diagnostic</h1>
+    <p class="subtitle">Check why notifications aren't appearing</p>
+    
+    <div id="checks"></div>
+    
+    <button id="runDiagnostic" class="btn-primary" onclick="runFullDiagnostic()">
+      🔍 Run Full Diagnostic
+    </button>
+    
+    <button id="testNotification" class="btn-success" onclick="testNotification()" style="display: none;">
+      🧪 Send Test Notification
+    </button>
+    
+    <button onclick="window.location.href='/'" style="background: #e2e8f0; color: #2d3748;">
+      ← Back to Home
+    </button>
+    
+    <div id="logs" class="logs" style="display: none;"></div>
+  </div>
+
+  <script>
+    const checksEl = document.getElementById('checks');
+    const logsEl = document.getElementById('logs');
+    const testBtn = document.getElementById('testNotification');
+    
+    function log(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logsEl.appendChild(entry);
+      logsEl.style.display = 'block';
+      logsEl.scrollTop = logsEl.scrollHeight;
+    }
+    
+    function addCheck(title, status, details) {
+      const section = document.createElement('div');
+      section.className = 'section';
+      
+      const checkItem = document.createElement('div');
+      checkItem.className = 'check-item';
+      
+      const icon = status === 'pass' ? '✅' : status === 'fail' ? '❌' : '⚠️';
+      const statusClass = status === 'pass' ? 'status-pass' : status === 'fail' ? 'status-fail' : 'status-unknown';
+      
+      checkItem.innerHTML = `
+        <span class="check-icon">${icon}</span>
+        <div class="check-text">
+          <strong>${title}</strong>
+          <span class="check-status ${statusClass}">${status.toUpperCase()}</span>
+          ${details ? `<div style="margin-top: 8px; color: #718096; font-size: 13px;">${details}</div>` : ''}
+        </div>
+      `;
+      
+      section.appendChild(checkItem);
+      checksEl.appendChild(section);
+    }
+    
+    async function runFullDiagnostic() {
+      checksEl.innerHTML = '';
+      logsEl.innerHTML = '';
+      log('Starting diagnostic...', 'info');
+      
+      // 1. Check if browser supports notifications
+      if (!('Notification' in window)) {
+        addCheck('Browser Support', 'fail', 'This browser does not support notifications');
+        log('Browser does not support notifications', 'error');
+        return;
+      }
+      addCheck('Browser Support', 'pass', 'Notifications API is available');
+      log('Browser supports notifications', 'success');
+      
+      // 2. Check notification permission
+      const permission = Notification.permission;
+      if (permission === 'denied') {
+        addCheck('Notification Permission', 'fail', 'Permission is DENIED. Go to browser settings → Site settings → Notifications and allow for this site.');
+        log('Permission is denied', 'error');
+        return;
+      } else if (permission === 'default') {
+        addCheck('Notification Permission', 'unknown', 'Permission not requested yet. Click "Send Test Notification" to request permission.');
+        log('Permission not requested', 'warning');
+      } else {
+        addCheck('Notification Permission', 'pass', 'Permission is GRANTED');
+        log('Permission is granted', 'success');
+      }
+      
+      // 3. Check service worker support
+      if (!('serviceWorker' in navigator)) {
+        addCheck('Service Worker Support', 'fail', 'Service Workers not supported in this browser');
+        log('Service Workers not supported', 'error');
+        return;
+      }
+      addCheck('Service Worker Support', 'pass', 'Service Worker API available');
+      log('Service Workers supported', 'success');
+      
+      // 4. Check service worker registration
+      let registration;
+      try {
+        registration = await navigator.serviceWorker.getRegistration();
+        if (!registration) {
+          addCheck('Service Worker Registration', 'fail', 'No service worker registered. Try refreshing the page.');
+          log('No service worker found', 'error');
+          return;
+        }
+        addCheck('Service Worker Registration', 'pass', `Registered at: ${registration.scope}`);
+        log(`Service worker found: ${registration.scope}`, 'success');
+      } catch (error) {
+        addCheck('Service Worker Registration', 'fail', error.message);
+        log(`Service worker check failed: ${error.message}`, 'error');
+        return;
+      }
+      
+      // 5. Check service worker state
+      const sw = registration.active || registration.installing || registration.waiting;
+      if (!sw) {
+        addCheck('Service Worker State', 'fail', 'No active service worker found');
+        log('No active service worker', 'error');
+        return;
+      }
+      
+      if (registration.active) {
+        addCheck('Service Worker State', 'pass', `State: ${registration.active.state}`);
+        log(`Service worker is active: ${registration.active.state}`, 'success');
+      } else if (registration.installing) {
+        addCheck('Service Worker State', 'unknown', 'Service worker is installing...');
+        log('Service worker is installing', 'warning');
+      } else if (registration.waiting) {
+        addCheck('Service Worker State', 'unknown', 'Service worker is waiting to activate. Try closing and reopening the app.');
+        log('Service worker is waiting', 'warning');
+      }
+      
+      // 6. Check push manager
+      if (!('pushManager' in registration)) {
+        addCheck('Push Manager', 'fail', 'Push notifications not supported');
+        log('Push Manager not available', 'error');
+        return;
+      }
+      addCheck('Push Manager', 'pass', 'Push Manager available');
+      log('Push Manager available', 'success');
+      
+      // 7. Check push subscription
+      try {
+        const subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+          addCheck('Push Subscription', 'unknown', 'Not subscribed to push notifications. Use the notification banner or sidebar to enable.');
+          log('No push subscription found', 'warning');
+        } else {
+          addCheck('Push Subscription', 'pass', `Subscribed: ${subscription.endpoint.substring(0, 50)}...`);
+          log(`Push subscription active: ${subscription.endpoint.substring(0, 50)}...`, 'success');
+          testBtn.style.display = 'block';
+        }
+      } catch (error) {
+        addCheck('Push Subscription', 'fail', error.message);
+        log(`Push subscription check failed: ${error.message}`, 'error');
+      }
+      
+      // 8. Check device settings hints
+      const isAndroid = /android/i.test(navigator.userAgent);
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      
+      if (isAndroid) {
+        addCheck('Device Settings', 'unknown', 
+          'Android: Check Settings → Apps → Chrome → Notifications is ON. Also check Do Not Disturb is OFF.');
+        log('Android device detected', 'info');
+      } else if (isIOS) {
+        addCheck('Device Settings', 'unknown', 
+          'iOS: Notifications only work if app is added to Home Screen (iOS 16.4+). Check Settings → Notifications → Chrome.');
+        log('iOS device detected', 'info');
+      } else {
+        addCheck('Device Settings', 'pass', 'Desktop device - no special settings needed');
+        log('Desktop device', 'info');
+      }
+      
+      log('Diagnostic complete', 'success');
+    }
+    
+    async function testNotification() {
+      if (Notification.permission === 'default') {
+        log('Requesting permission...', 'info');
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          log('Permission denied', 'error');
+          alert('Permission denied! Please allow notifications in your browser settings.');
+          return;
+        }
+        log('Permission granted', 'success');
+      }
+      
+      log('Checking service worker...', 'info');
+      const registration = await navigator.serviceWorker.ready;
+      
+      log('Showing test notification...', 'info');
+      await registration.showNotification('🧪 Test Notification', {
+        body: 'If you see this, notifications are working! 🎉',
+        icon: '/icon-192x192.png',
+        badge: '/badge-72x72.png',
+        tag: 'test',
+        requireInteraction: true,
+        vibrate: [200, 100, 200, 100, 200],
+        data: {
+          url: '/',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      
+      log('Test notification sent!', 'success');
+      alert('Test notification sent! Check your notification tray.');
+    }
+    
+    // Auto-run diagnostic on load
+    window.addEventListener('load', () => {
+      setTimeout(runFullDiagnostic, 500);
+    });
+  </script>
+</body>
+</html>
