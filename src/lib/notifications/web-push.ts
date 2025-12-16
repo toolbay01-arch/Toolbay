@@ -106,7 +106,24 @@ export class WebPushService {
       
       return readyRegistration;
     } catch (error) {
-      console.error('[WebPush] Service Worker registration failed:', error);
+      // InvalidStateError is expected when transitioning from old SW to new SW
+      if (error instanceof Error && error.name === 'InvalidStateError') {
+        console.log('[WebPush] Service Worker updating from old version (expected during migration)');
+        // Try to get the registration anyway - it might have succeeded
+        try {
+          const registration = await navigator.serviceWorker.getRegistration('/');
+          if (registration) {
+            this.registration = registration;
+            const readyRegistration = await navigator.serviceWorker.ready;
+            console.log('[WebPush] Service Worker ready after update');
+            return readyRegistration;
+          }
+        } catch (retryError) {
+          console.error('[WebPush] Failed to get registration after update:', retryError);
+        }
+      } else {
+        console.error('[WebPush] Service Worker registration failed:', error);
+      }
       return null;
     }
   }
