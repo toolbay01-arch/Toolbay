@@ -69,13 +69,28 @@ async function addDefaultContactPhone() {
           continue;
         }
 
-        // Update tenant with default phone
+        // Prepare update data - include default values for missing required fields
+        const updateData = {
+          contactPhone: DEFAULT_PHONE,
+        };
+
+        // If category is missing, add default
+        if (!tenant.category) {
+          updateData.category = 'retailer';
+          console.log(`   ℹ️  Adding default category 'retailer' to tenant "${tenant.name}"`);
+        }
+
+        // If location is missing, add default
+        if (!tenant.location) {
+          updateData.location = 'Kigali, Rwanda';
+          console.log(`   ℹ️  Adding default location 'Kigali, Rwanda' to tenant "${tenant.name}"`);
+        }
+
+        // Update tenant with default phone (and other missing fields if needed)
         await payload.update({
           collection: 'tenants',
           id: tenant.id,
-          data: {
-            contactPhone: DEFAULT_PHONE,
-          },
+          data: updateData,
         });
 
         console.log(`✅ Updated tenant "${tenant.name}" (${tenant.slug}) with default phone: ${DEFAULT_PHONE}`);

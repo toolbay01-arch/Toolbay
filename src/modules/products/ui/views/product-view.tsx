@@ -6,7 +6,7 @@ import { Fragment, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
-import { CheckIcon, LinkIcon, StarIcon, MessageCircle, ChevronDown, ChevronUp, Eye, Maximize2 } from "lucide-react";
+import { CheckIcon, LinkIcon, StarIcon, MessageCircle, ChevronDown, ChevronUp, Eye, Maximize2, Phone } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
@@ -224,7 +224,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                 {/* Price and Rating Row */}
                 <div className="flex flex-wrap items-center gap-4 mb-4">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">
+                    <span className="text-4xl lg:text-5xl font-bold text-gray-900">
                       {formatCurrency(data.price)}
                     </span>
                     <span className="text-sm text-gray-500">/ {data.unit || "unit"}</span>
@@ -259,7 +259,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
               {/* Seller Info Card */}
               <div className="px-4 lg:px-6 pb-4">
                 <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-3 border border-gray-200">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-3">
                     <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
                       {data.tenant.image?.url && (
                         <Image
@@ -275,12 +275,38 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                         <p className="text-base font-semibold text-gray-900">{data.tenant.name}</p>
                       </div>
                     </Link>
+                  </div>
+                  
+                  {/* Contact Phone Display */}
+                  {data.tenant.contactPhone && (
+                    <div className="mb-3 px-2 py-1.5 bg-white rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-500 mb-0.5">Contact</p>
+                      <p className="text-sm font-semibold text-gray-900">{data.tenant.contactPhone}</p>
+                    </div>
+                  )}
+                  
+                  {/* Contact Buttons */}
+                  <div className="flex gap-2">
+                    {/* Call Button */}
+                    {data.tenant.contactPhone && (
+                      <Button
+                        asChild
+                        variant="elevated"
+                        size="sm"
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <a href={`tel:${data.tenant.contactPhone}`}>
+                          <Phone className="mr-1.5 h-4 w-4" />
+                          Call
+                        </a>
+                      </Button>
+                    )}
                     
-                    {/* Contact Seller Button */}
+                    {/* Chat Button */}
                     <Button
                       variant="elevated"
                       size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      className={`${data.tenant.contactPhone ? 'flex-1' : 'w-full'} bg-blue-600 hover:bg-blue-700 text-white`}
                       onClick={handleContactSeller}
                       disabled={startConversation.isPending || !data?.tenant}
                     >

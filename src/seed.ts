@@ -126,6 +126,7 @@ async function seed() {
       storeManagerId: "ADMIN001",
       category: "retailer" as const,
       location: "Kigali, Rwanda",
+      contactPhone: "+250788888888",
       currency: "RWF" as const,
       paymentMethod: "bank_transfer" as const,
       bankName: "Bank of Kigali",
