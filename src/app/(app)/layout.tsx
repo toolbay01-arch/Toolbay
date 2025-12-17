@@ -12,6 +12,7 @@ import { NotificationProvider } from "@/components/notification-provider";
 import { ClientNotificationWrapper } from "@/components/client-notification-wrapper";
 import { PWAInstallGlobal } from "@/components/pwa-install-global";
 import { WebPushInitializer } from "@/components/web-push-initializer";
+import { ClientSubscriptionRefresh } from "@/components/client-subscription-refresh";
 
 import "./globals.css";
 
@@ -47,6 +48,7 @@ export default function RootLayout({
           <TRPCReactProvider>
             <NotificationProvider>
               <WebPushInitializer />
+              <ClientSubscriptionRefresh />
               <NavigationProgress />
               <PWAInstallGlobal />
               <ClientNotificationWrapper />
