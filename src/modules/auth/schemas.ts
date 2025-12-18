@@ -3,6 +3,7 @@ import { z } from "zod";
 export const loginSchema = z.object({
   email: z.string().min(1, "Email or company name is required"), // Can be email or slug
   password: z.string(),
+  rememberMe: z.boolean().optional().default(true), // Default to true for persistent sessions
 });
 
 export const registerSchema = z.object({

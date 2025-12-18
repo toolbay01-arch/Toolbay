@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -75,6 +76,7 @@ export const SignInView = () => {
     defaultValues: {
       email: "",
       password: "",
+      rememberMe: true, // Default to keeping users signed in
     },
   });
 
@@ -131,6 +133,24 @@ export const SignInView = () => {
                     <Input {...field} type="password" />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="rememberMe"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="text-base font-normal cursor-pointer">
+                      Keep me signed in
+                    </FormLabel>
+                  </div>
                 </FormItem>
               )}
             />

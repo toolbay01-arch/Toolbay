@@ -148,6 +148,7 @@ export const authRouter = createTRPCRouter({
       await generateAuthCookie({
         prefix: ctx.db.config.cookiePrefix,
         value: data.token,
+        rememberMe: true, // Default to persistent session for registrations
       });
       
       return data;
@@ -219,6 +220,7 @@ export const authRouter = createTRPCRouter({
       await generateAuthCookie({
         prefix: ctx.db.config.cookiePrefix,
         value: data.token,
+        rememberMe: true, // Default to persistent session for registrations
       });
       
       return data;
@@ -291,6 +293,7 @@ export const authRouter = createTRPCRouter({
       await generateAuthCookie({
         prefix: ctx.db.config.cookiePrefix,
         value: data.token,
+        rememberMe: input.rememberMe ?? true, // Use user preference or default to persistent session
       });
 
       return data;
