@@ -155,28 +155,15 @@ export const authRouter = createTRPCRouter({
         console.error("Failed to send verification email:", error);
       });
 
-      const data = await ctx.db.login({
-        collection: "users",
-        data: {
-          email: input.email,
-          password: input.password,
+      // Don't automatically log in - require email verification first
+      return {
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          username: username,
         },
-      });
-
-      if (!data.token) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Failed to login",
-        });
-      }
-
-      await generateAuthCookie({
-        prefix: ctx.db.config.cookiePrefix,
-        value: data.token,
-        rememberMe: true, // Default to persistent session for registrations
-      });
-      
-      return data;
+        message: "Account created successfully! Please check your email to verify your account before logging in.",
+      };
     }),
     
   /**
@@ -239,28 +226,15 @@ export const authRouter = createTRPCRouter({
         console.error("Failed to send verification email:", error);
       });
 
-      const data = await ctx.db.login({
-        collection: "users",
-        data: {
-          email: input.email,
-          password: input.password,
+      // Don't automatically log in - require email verification first
+      return {
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          username: input.username,
         },
-      });
-
-      if (!data.token) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Failed to login",
-        });
-      }
-
-      await generateAuthCookie({
-        prefix: ctx.db.config.cookiePrefix,
-        value: data.token,
-        rememberMe: true, // Default to persistent session for registrations
-      });
-      
-      return data;
+        message: "Account created successfully! Please check your email to verify your account before logging in.",
+      };
     }),
     
   login: baseProcedure
@@ -324,6 +298,31 @@ export const authRouter = createTRPCRouter({
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "Failed to login",
+        });
+      }
+
+      // Check if user's email is verified
+      // Get the user data to check verification status
+      const userData = await ctx.db.find({
+        collection: "users",
+        where: {
+          email: {
+            equals: loginEmail,
+          },
+        },
+        limit: 1,
+      });
+
+      const user = userData.docs[0];
+
+      // If emailVerified field exists and is false, prevent login
+      if (user && user.emailVerified === false) {
+        // Clear any generated cookie
+        await clearAuthCookie(ctx.db.config.cookiePrefix);
+        
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Please verify your email before logging in. Check your inbox for the verification link.",
         });
       }
 
