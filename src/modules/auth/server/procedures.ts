@@ -151,8 +151,20 @@ export const authRouter = createTRPCRouter({
       });
 
       // Send verification email (don't await to not slow down registration)
-      sendVerificationEmail(input.email, verificationToken, username).catch((error) => {
-        console.error("Failed to send verification email:", error);
+      // Add timeout and improved error handling
+      const emailPromise = sendVerificationEmail(input.email, verificationToken, username);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Email timeout')), 10000)
+      );
+      
+      Promise.race([emailPromise, timeoutPromise]).catch((error) => {
+        console.error("[register] Failed to send verification email:", error);
+        console.error("[register] SMTP Config check:", {
+          host: process.env.SMTP_HOST || 'NOT SET',
+          port: process.env.SMTP_PORT || 'NOT SET',
+          user: process.env.SMTP_USER || 'NOT SET',
+          pass: process.env.SMTP_PASS ? 'SET' : 'NOT SET',
+        });
       });
 
       // Don't automatically log in - require email verification first
@@ -222,8 +234,20 @@ export const authRouter = createTRPCRouter({
       });
 
       // Send verification email (don't await to not slow down registration)
-      sendVerificationEmail(input.email, verificationToken, input.username).catch((error) => {
-        console.error("Failed to send verification email:", error);
+      // Add timeout and improved error handling
+      const emailPromise = sendVerificationEmail(input.email, verificationToken, input.username);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Email timeout')), 10000)
+      );
+      
+      Promise.race([emailPromise, timeoutPromise]).catch((error) => {
+        console.error("[registerClient] Failed to send verification email:", error);
+        console.error("[registerClient] SMTP Config check:", {
+          host: process.env.SMTP_HOST || 'NOT SET',
+          port: process.env.SMTP_PORT || 'NOT SET',
+          user: process.env.SMTP_USER || 'NOT SET',
+          pass: process.env.SMTP_PASS ? 'SET' : 'NOT SET',
+        });
       });
 
       // Don't automatically log in - require email verification first
