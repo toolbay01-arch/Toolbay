@@ -431,10 +431,35 @@ export const authRouter = createTRPCRouter({
         } as any,
       });
 
-      // Send verification email
-      await sendVerificationEmail(user.email, token, user.username);
-
-      return { success: true, message: "Verification email sent!" };
+      // Send verification email with timeout and error handling
+      try {
+        const emailPromise = sendVerificationEmail(user.email, token, user.username);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Email timeout')), 10000)
+        );
+        
+        await Promise.race([emailPromise, timeoutPromise]);
+        
+        return { success: true, message: "Verification email sent!" };
+      } catch (error) {
+        console.error('[resendVerification] Email send error:', error);
+        
+        // Check if SMTP is configured
+        const smtpConfigured = process.env.SMTP_USER && process.env.SMTP_PASS;
+        
+        if (!smtpConfigured) {
+          console.error('[resendVerification] SMTP not configured. Please set SMTP_USER and SMTP_PASS environment variables.');
+          throw new TRPCError({ 
+            code: "INTERNAL_SERVER_ERROR", 
+            message: "Email service not configured. Please contact support." 
+          });
+        }
+        
+        throw new TRPCError({ 
+          code: "INTERNAL_SERVER_ERROR", 
+          message: "Failed to send verification email. Please try again later or contact support." 
+        });
+      }
     }),
 
   /**
@@ -473,10 +498,38 @@ export const authRouter = createTRPCRouter({
         } as any,
       });
 
-      // Send password reset email
-      await sendPasswordResetEmail(user.email, token, user.username);
-
-      return { success: true, message: "Password reset email sent!" };
+      // Send password reset email with timeout and error handling
+      try {
+        // Add timeout to prevent hanging
+        const emailPromise = sendPasswordResetEmail(user.email, token, user.username);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Email timeout')), 10000)
+        );
+        
+        await Promise.race([emailPromise, timeoutPromise]);
+        
+        return { success: true, message: "Password reset email sent!" };
+      } catch (error) {
+        // Log error but don't fail the request
+        console.error('[forgotPassword] Email send error:', error);
+        
+        // Check if SMTP is configured
+        const smtpConfigured = process.env.SMTP_USER && process.env.SMTP_PASS;
+        
+        if (!smtpConfigured) {
+          console.error('[forgotPassword] SMTP not configured. Please set SMTP_USER and SMTP_PASS environment variables.');
+          throw new TRPCError({ 
+            code: "INTERNAL_SERVER_ERROR", 
+            message: "Email service not configured. Please contact support." 
+          });
+        }
+        
+        // Return user-friendly error
+        throw new TRPCError({ 
+          code: "INTERNAL_SERVER_ERROR", 
+          message: "Failed to send password reset email. Please try again later or contact support." 
+        });
+      }
     }),
 
   /**
