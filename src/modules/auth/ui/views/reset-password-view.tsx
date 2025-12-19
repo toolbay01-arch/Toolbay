@@ -8,7 +8,8 @@ import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
@@ -36,6 +37,8 @@ function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "";
   const trpc = useTRPC();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const resetPassword = useMutation(trpc.auth.resetPassword.mutationOptions({
     onError: (error) => {
@@ -140,7 +143,16 @@ function ResetPasswordContent() {
                 <FormItem>
                   <FormLabel className="text-base">New Password</FormLabel>
                   <FormControl>
-                    <Input {...field} type="password" placeholder="••••••••" />
+                    <div className="relative">
+                      <Input {...field} type={showPassword ? "text" : "password"} placeholder="••••••••" />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormDescription>
                     Must be at least 6 characters
@@ -155,7 +167,16 @@ function ResetPasswordContent() {
                 <FormItem>
                   <FormLabel className="text-base">Confirm New Password</FormLabel>
                   <FormControl>
-                    <Input {...field} type="password" placeholder="••••••••" />
+                    <div className="relative">
+                      <Input {...field} type={showConfirmPassword ? "text" : "password"} placeholder="••••••••" />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormDescription>
                     Re-enter your new password

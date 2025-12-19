@@ -30,6 +30,7 @@ export const resendVerificationSchema = z.object({
 export const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(3),
+  confirmPassword: z.string().min(3),
   storeName: z
     .string()
     .min(3, "Store name must be at least 3 characters")
@@ -52,6 +53,9 @@ export const registerSchema = z.object({
   momoProviderName: z.string().optional(), // e.g., "MTN Mobile Money", "Airtel Money"
   momoAccountName: z.string().optional(), // Name associated with the MoMo code
   momoCode: z.string().optional(), // Will be converted to number on the server
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 }).refine((data) => {
   if (data.paymentMethod === "bank_transfer") {
     return data.bankName && data.bankAccountNumber;

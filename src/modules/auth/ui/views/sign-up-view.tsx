@@ -37,7 +37,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Store, ShoppingBag } from "lucide-react";
+import { Store, ShoppingBag, Eye, EyeOff } from "lucide-react";
 
 import { registerSchema } from "../../schemas";
 import { registerClientSchema } from "../../schemas-client";
@@ -54,6 +54,8 @@ export const SignUpView = () => {
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect");
   const [accountType, setAccountType] = useState<AccountType | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -123,6 +125,7 @@ export const SignUpView = () => {
     defaultValues: {
       email: "",
       password: "",
+      confirmPassword: "",
       storeName: "",
       // TIN and Store Manager ID removed - will be added by super admin during verification
       category: "retailer" as const,
@@ -145,6 +148,7 @@ export const SignUpView = () => {
     defaultValues: {
       email: "",
       password: "",
+      confirmPassword: "",
       username: "",
       firstName: "",
       lastName: "",
@@ -390,10 +394,45 @@ export const SignUpView = () => {
                   <FormItem>
                     <FormLabel className="text-base">Password</FormLabel>
                     <FormControl>
-                      <Input {...field} type="password" placeholder="••••••••" />
+                      <div className="relative">
+                        <Input {...field} type={showPassword ? "text" : "password"} placeholder="••••••••" />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </FormControl>
                     <FormDescription>
                       Must be at least 6 characters
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                name="confirmPassword"
+                control={clientForm.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base">Confirm Password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input {...field} type={showConfirmPassword ? "text" : "password"} placeholder="••••••••" />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Re-enter your password
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -587,7 +626,38 @@ export const SignUpView = () => {
                 <FormItem>
                   <FormLabel className="text-base">Password</FormLabel>
                   <FormControl>
-                    <Input {...field} type="password" />
+                    <div className="relative">
+                      <Input {...field} type={showPassword ? "text" : "password"} />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base">Confirm Password</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input {...field} type={showConfirmPassword ? "text" : "password"} />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -8,6 +8,8 @@ import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
@@ -34,6 +36,7 @@ export const SignInView = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect");
+  const [showPassword, setShowPassword] = useState(false);
 
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -138,7 +141,16 @@ export const SignInView = () => {
                     </Link>
                   </div>
                   <FormControl>
-                    <Input {...field} type="password" />
+                    <div className="relative">
+                      <Input {...field} type={showPassword ? "text" : "password"} />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
