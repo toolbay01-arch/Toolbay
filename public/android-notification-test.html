@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Android Notification Tester</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: white;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+    
+    h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    
+    .subtitle {
+      text-align: center;
+      opacity: 0.9;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    
+    .status {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-family: monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 5px 0;
+      padding: 5px;
+    }
+    
+    .status-item.error {
+      background: rgba(239, 68, 68, 0.3);
+      border-left: 3px solid #ef4444;
+      padding-left: 10px;
+    }
+    
+    .status-item.success {
+      background: rgba(34, 197, 94, 0.3);
+      border-left: 3px solid #22c55e;
+      padding-left: 10px;
+    }
+    
+    .status-item.warning {
+      background: rgba(251, 191, 36, 0.3);
+      border-left: 3px solid #fbbf24;
+      padding-left: 10px;
+    }
+    
+    button {
+      width: 100%;
+      padding: 15px;
+      margin: 10px 0;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: white;
+      color: #667eea;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button.secondary {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+    
+    button.danger {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .tips {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+    
+    .tips h3 {
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    
+    .tips ul {
+      margin-left: 20px;
+    }
+    
+    .tips li {
+      margin: 8px 0;
+    }
+    
+    #log {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      display: none;
+    }
+    
+    #log.visible {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔔 Android Notification Tester</h1>
+    <p class="subtitle">Test and fix notifications on your Samsung device</p>
+    
+    <div class="status" id="status">
+      <div class="status-item">
+        <span>Loading...</span>
+      </div>
+    </div>
+    
+    <button onclick="checkStatus()">🔍 Check Status</button>
+    <button onclick="requestPermission()">🔐 Request Permission</button>
+    <button onclick="testNotification()">🧪 Test Notification</button>
+    <button class="secondary" onclick="registerServiceWorker()">⚙️ Register Service Worker</button>
+    <button class="secondary" onclick="clearAll()">🗑️ Clear Cache & Reload</button>
+    <button class="secondary" onclick="toggleLog()">📋 Toggle Console Log</button>
+    
+    <div id="log"></div>
+    
+    <div class="tips">
+      <h3>💡 Android Tips:</h3>
+      <ul>
+        <li><strong>Permissions:</strong> Settings → Apps → Chrome → Notifications → Allow All</li>
+        <li><strong>Battery:</strong> Settings → Apps → Chrome → Battery → Unrestricted</li>
+        <li><strong>Do Not Disturb:</strong> Make sure it's OFF</li>
+        <li><strong>Samsung:</strong> Device Care → Battery → Background usage limits → OFF for Chrome</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Logging
+    const logDiv = document.getElementById('log');
+    const originalConsoleLog = console.log;
+    const originalConsoleError = console.error;
+    const originalConsoleWarn = console.warn;
+    
+    function log(message, type = 'log') {
+      const timestamp = new Date().toLocaleTimeString();
+      const color = type === 'error' ? '#ef4444' : type === 'warn' ? '#fbbf24' : '#22c55e';
+      logDiv.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+    
+    console.log = function(...args) {
+      originalConsoleLog.apply(console, args);
+      log(args.join(' '), 'log');
+    };
+    
+    console.error = function(...args) {
+      originalConsoleError.apply(console, args);
+      log(args.join(' '), 'error');
+    };
+    
+    console.warn = function(...args) {
+      originalConsoleWarn.apply(console, args);
+      log(args.join(' '), 'warn');
+    };
+    
+    function toggleLog() {
+      logDiv.classList.toggle('visible');
+    }
+    
+    // Status display
+    function updateStatus(items) {
+      const statusDiv = document.getElementById('status');
+      statusDiv.innerHTML = items.map(item => {
+        const className = item.type || '';
+        return `<div class="status-item ${className}">
+          <span>${item.label}:</span>
+          <strong>${item.value}</strong>
+        </div>`;
+      }).join('');
+    }
+    
+    // Check status
+    async function checkStatus() {
+      console.log('Checking notification status...');
+      const items = [];
+      
+      // Check notification support
+      if (!('Notification' in window)) {
+        items.push({
+          label: 'Notifications',
+          value: '❌ Not Supported',
+          type: 'error'
+        });
+        updateStatus(items);
+        return;
+      }
+      
+      items.push({
+        label: 'Notifications API',
+        value: '✅ Supported',
+        type: 'success'
+      });
+      
+      // Check permission
+      const permission = Notification.permission;
+      items.push({
+        label: 'Permission',
+        value: permission === 'granted' ? '✅ Granted' : 
+               permission === 'denied' ? '❌ Denied' : '⚠️ Not Set',
+        type: permission === 'granted' ? 'success' : 
+              permission === 'denied' ? 'error' : 'warning'
+      });
+      
+      // Check HTTPS
+      const isSecure = location.protocol === 'https:' || location.hostname === 'localhost';
+      items.push({
+        label: 'HTTPS',
+        value: isSecure ? '✅ Secure' : '❌ Not Secure',
+        type: isSecure ? 'success' : 'error'
+      });
+      
+      // Check Service Worker
+      if ('serviceWorker' in navigator) {
+        items.push({
+          label: 'Service Worker API',
+          value: '✅ Supported',
+          type: 'success'
+        });
+        
+        try {
+          const registration = await navigator.serviceWorker.getRegistration();
+          if (registration) {
+            const state = registration.active?.state || 'not active';
+            items.push({
+              label: 'Service Worker',
+              value: state === 'activated' ? '✅ Active' : `⚠️ ${state}`,
+              type: state === 'activated' ? 'success' : 'warning'
+            });
+          } else {
+            items.push({
+              label: 'Service Worker',
+              value: '❌ Not Registered',
+              type: 'error'
+            });
+          }
+        } catch (err) {
+          items.push({
+            label: 'Service Worker',
+            value: '❌ Error',
+            type: 'error'
+          });
+          console.error('SW error:', err);
+        }
+      } else {
+        items.push({
+          label: 'Service Worker',
+          value: '❌ Not Supported',
+          type: 'error'
+        });
+      }
+      
+      updateStatus(items);
+      console.log('Status check complete');
+    }
+    
+    // Request permission
+    async function requestPermission() {
+      console.log('Requesting notification permission...');
+      
+      if (!('Notification' in window)) {
+        alert('❌ Notifications not supported in this browser');
+        console.error('Notifications not supported');
+        return;
+      }
+      
+      if (Notification.permission === 'granted') {
+        alert('✅ Permission already granted!');
+        console.log('Permission already granted');
+        await checkStatus();
+        return;
+      }
+      
+      if (Notification.permission === 'denied') {
+        alert('❌ Permission DENIED. Go to Chrome Settings → Site Settings → Notifications and allow this site.');
+        console.error('Permission denied - must enable in Chrome settings');
+        return;
+      }
+      
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          alert('✅ Permission granted!');
+          console.log('Permission granted successfully');
+        } else {
+          alert('❌ Permission denied');
+          console.error('Permission denied by user');
+        }
+        await checkStatus();
+      } catch (err) {
+        alert('❌ Error: ' + err.message);
+        console.error('Permission request error:', err);
+      }
+    }
+    
+    // Register Service Worker
+    async function registerServiceWorker() {
+      console.log('Registering Service Worker...');
+      
+      if (!('serviceWorker' in navigator)) {
+        alert('❌ Service Workers not supported');
+        console.error('Service Workers not supported');
+        return;
+      }
+      
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        console.log('Service Worker registered:', registration.scope);
+        
+        await navigator.serviceWorker.ready;
+        console.log('Service Worker ready');
+        
+        alert('✅ Service Worker registered successfully!');
+        await checkStatus();
+      } catch (err) {
+        alert('❌ Error: ' + err.message);
+        console.error('Service Worker registration error:', err);
+      }
+    }
+    
+    // Test notification
+    async function testNotification() {
+      console.log('Testing notification...');
+      
+      if (!('Notification' in window)) {
+        alert('❌ Notifications not supported');
+        console.error('Notifications not supported');
+        return;
+      }
+      
+      if (Notification.permission !== 'granted') {
+        alert('⚠️ Permission not granted. Click "Request Permission" first.');
+        console.warn('Permission not granted');
+        return;
+      }
+      
+      try {
+        // Try Service Worker method first (Android compatible)
+        if ('serviceWorker' in navigator) {
+          const registration = await navigator.serviceWorker.getRegistration();
+          
+          if (registration) {
+            await registration.showNotification('🎉 Test Successful!', {
+              body: 'Notifications are working on your Android device!',
+              icon: '/icon-192x192.png',
+              badge: '/badge-72x72.png',
+              vibrate: [200, 100, 200, 100, 200],
+              tag: 'test-' + Date.now(),
+              requireInteraction: false,
+              silent: false,
+              data: {
+                url: '/',
+                test: true
+              }
+            });
+            
+            console.log('✅ Notification sent via Service Worker');
+            alert('✅ Test notification sent!\n\nMethod: Service Worker API (Android compatible)\n\nDid you see the notification on your screen?');
+            return;
+          } else {
+            console.warn('No Service Worker registered, falling back to Notification API');
+          }
+        }
+        
+        // Fallback to regular Notification API
+        const notification = new Notification('🎉 Test Successful!', {
+          body: 'Notifications are working!',
+          icon: '/icon-192x192.png',
+          tag: 'test-fallback-' + Date.now()
+        });
+        
+        console.log('✅ Notification sent via Notification API (fallback)');
+        alert('✅ Test notification sent!\n\nMethod: Notification API (fallback)\n\nNote: This might not work on all Android devices. Try registering Service Worker first.');
+        
+      } catch (err) {
+        alert('❌ Error: ' + err.message);
+        console.error('Notification error:', err);
+      }
+    }
+    
+    // Clear all and reload
+    async function clearAll() {
+      if (!confirm('This will clear all caches and Service Workers, then reload. Continue?')) {
+        return;
+      }
+      
+      console.log('Clearing everything...');
+      
+      try {
+        // Unregister service workers
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map(r => r.unregister()));
+          console.log('Service Workers unregistered');
+        }
+        
+        // Clear caches
+        const cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map(key => caches.delete(key)));
+        console.log('Caches cleared');
+        
+        // Clear storage (optional - commented out to avoid logging out)
+        // localStorage.clear();
+        // sessionStorage.clear();
+        
+        console.log('✅ Cleared successfully, reloading...');
+        setTimeout(() => location.reload(), 1000);
+      } catch (err) {
+        console.error('Clear error:', err);
+        alert('Error: ' + err.message);
+      }
+    }
+    
+    // Auto-check on load
+    window.addEventListener('load', () => {
+      console.log('Page loaded, checking status...');
+      checkStatus();
+    });
+  </script>
+</body>
+</html>
