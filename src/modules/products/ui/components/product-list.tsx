@@ -83,9 +83,9 @@ export const ProductList = ({ category, tenantSlug, narrowView, viewMode = "grid
     <>
       <div className={cn(
         viewMode === "grid"
-          ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4"
+          ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 gap-4"
           : "flex flex-col gap-2 md:gap-4",
-        viewMode === "grid" && narrowView && "lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3"
+        viewMode === "grid" && narrowView && "lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5"
       )}>
         {data?.pages.flatMap((page) => page.docs).map((product, index) => {
           // Build gallery array from product data
@@ -162,9 +162,9 @@ export const ProductListSkeleton = ({ narrowView, viewMode = "grid" }: Props) =>
   return (
     <div className={cn(
       viewMode === "grid"
-        ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4"
+        ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 gap-4"
         : "flex flex-col gap-2 md:gap-4",
-      viewMode === "grid" && narrowView && "lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3"
+      viewMode === "grid" && narrowView && "lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5"
     )}>
       {Array.from({ length: DEFAULT_LIMIT }).map((_, index) => (
         <ProductCardSkeleton key={index} />
