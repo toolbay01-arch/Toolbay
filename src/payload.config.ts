@@ -47,7 +47,7 @@ export default buildConfig({
     apiKey: process.env.RESEND_API_KEY || 're_B9Locd8M_ASuAoooS9D1RE8PTT89SYGqr',
     defaultFromAddress: 'onboarding@resend.dev',
     defaultFromName: 'Toolbay',
-  }) as any,
+  }),
   collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales, Conversations, Messages, PushSubscriptions],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

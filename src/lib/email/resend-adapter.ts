@@ -24,7 +24,9 @@ export const resendAdapter = ({
 }: ResendAdapterArgs) => {
   const resend = new Resend(apiKey);
 
-  return ({
+  // Return a function that returns the adapter object
+  return () => ({
+    name: 'resend',
     defaultFromAddress,
     defaultFromName,
     
