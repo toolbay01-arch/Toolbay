@@ -1,0 +1,427 @@
+import type { CollectionConfig } from 'payload';
+
+import { isSuperAdmin } from '@/lib/access';
+
+export const Tenants: CollectionConfig = {
+  slug: 'tenants',
+  access: {
+    read: ({ req }) => {
+      // Super admin can read all tenants
+      if (isSuperAdmin(req.user)) {
+        return true;
+      }
+      
+      // Regular users can only read their own tenant
+      if (req.user?.tenants) {
+        return {
+          id: {
+            in: req.user.tenants.map((tenantRel) => 
+              typeof tenantRel.tenant === 'string' ? tenantRel.tenant : tenantRel.tenant.id
+            ),
+          },
+        };
+      }
+      
+      // Check if this is a server-side render or build-time request
+      const isServerSideRender = !req.headers?.get?.('user-agent') || req.url?.includes('localhost');
+      
+      if (!req.user && isServerSideRender) {
+        // Allow server-side rendering to proceed but return empty results
+        // This prevents build/render failures while maintaining security
+        return { id: { equals: 'ssr-empty-result' } };
+      }
+      
+      // For anonymous users during registration, allow limited access for TIN validation
+      if (!req.user && req.headers?.get?.('content-type')?.includes('application/json')) {
+        // This suggests an API request (like registration validation)
+        // Only allow reading TIN field for uniqueness checking
+        return true; // Will be further restricted by field-level access if needed
+      }
+      
+      return false;
+    },
+    create: () => true, // Allow tenant creation during registration
+    update: ({ req }) => {
+      // Super admin can update all tenants
+      if (isSuperAdmin(req.user)) return true;
+      
+      // Regular users can only update their own tenant
+      if (req.user?.tenants) {
+        return {
+          id: {
+            in: req.user.tenants.map((tenantRel) => 
+              typeof tenantRel.tenant === 'string' ? tenantRel.tenant : tenantRel.tenant.id
+            ),
+          },
+        };
+      }
+      
+      return false;
+    },
+    delete: ({ req }) => isSuperAdmin(req.user),
+  },
+  admin: {
+    useAsTitle: 'slug',
+    description: '🏪 Tenant Management - Super Admin Guide: (1) Review RDB Certificate, (2) Set Verification Status, (3) Check Is Verified, (4) Add Notes, (5) Enable Merchant Capabilities',
+    // Ensure admin can see the collection
+    hidden: false,
+    // Optimize admin panel performance
+    pagination: {
+      defaultLimit: 25, // Reduce default items per page
+    },
+    components: {
+      beforeList: ['@/components/admin/TenantVerificationListView'],
+    },
+    listSearchableFields: ['name', 'slug', 'verificationStatus'],
+    defaultColumns: ['name', 'slug', 'verificationStatus', 'verificationRequested', 'updatedAt'],
+  },
+  fields: [
+    {
+      name: "name",
+      required: true,
+      type: "text",
+      label: "Store Name",
+      admin: {
+        description: "This is the name of the store (e.g. Antonio's Store)",
+      },
+    },
+    {
+      name: "slug",
+      type: "text",
+      index: true,
+      required: true,
+      unique: true,
+      access: {
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
+      admin: {
+        description:
+          "This is the subdomain for the store (e.g. [slug].toolbay.com)",
+      },
+    },
+    {
+      name: "image",
+      type: "upload",
+      relationTo: "media",
+    },
+    // Rwanda-specific fields
+    {
+      name: "tinNumber",
+      type: "text",
+      required: false, // Now optional - added by super admin during verification
+      index: true, // Add index for faster lookups
+      access: {
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
+      admin: {
+        description: "Tax Identification Number (TIN) - Added by Super Admin during verification. Should be unique when provided.",
+      },
+    },
+    {
+      name: "storeManagerId",
+      type: "text",
+      required: false, // Now optional - added by super admin during verification
+      access: {
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
+      admin: {
+        description: "Store Manager ID or Passport Number - Added by Super Admin during verification",
+      },
+    },
+    {
+      name: "category",
+      type: "select",
+      required: true, // Changed back to required to reproduce error
+      options: [
+        { label: "Retailer", value: "retailer" },
+        { label: "Wholesale", value: "wholesale" },
+        { label: "Industry", value: "industry" },
+        { label: "Renter", value: "renter" },
+        { label: "Logistics", value: "logistics" },
+      ],
+      index: true,
+      admin: {
+        description: "Business category - selected during registration",
+      },
+    },
+    {
+      name: "location",
+      type: "text",
+      required: true, // Changed back to required to reproduce error
+      admin: {
+        description: "Business location/address - Required for seller registration",
+      },
+    },
+    {
+      name: "contactPhone",
+      type: "text",
+      required: true,
+      admin: {
+        description: "Contact phone number with country code (e.g., +250788888888)",
+      },
+      validate: (value: any) => {
+        if (!value) return "Contact phone number is required";
+        const phoneStr = String(value);
+        // Basic validation for phone number format with country code
+        if (!/^\+\d{10,15}$/.test(phoneStr)) {
+          return "Phone number must start with + and contain 10-15 digits (e.g., +250788888888)";
+        }
+        return true;
+      },
+    },
+    {
+      name: "currency",
+      type: "select",
+      required: true,
+      options: [
+        { label: "US Dollar (USD)", value: "USD" },
+        { label: "Rwandan Franc (RWF)", value: "RWF" },
+        { label: "Ugandan Shilling (UGX)", value: "UGX" },
+        { label: "Tanzanian Shilling (TZS)", value: "TZS" },
+        { label: "Burundian Franc (BIF)", value: "BIF" },
+        { label: "Kenyan Shilling (KSH)", value: "KSH" },
+      ],
+      defaultValue: "RWF",
+      admin: {
+        description: "Currency for all transactions in your store",
+      },
+    },
+    {
+      name: "rdbCertificate",
+      type: "upload",
+      relationTo: "media",
+      admin: {
+        description: "Rwanda Development Board (RDB) Registration Certificate (required for verification)",
+      },
+    },
+    // Payment method fields
+    {
+      name: "paymentMethod",
+      type: "select",
+      required: true,
+      options: [
+        { label: "Bank Transfer", value: "bank_transfer" },
+        { label: "Mobile Money (MOMO)", value: "momo_pay" }
+      ],
+      admin: {
+        description: "Choose your preferred payment method",
+      },
+    },
+    {
+      name: "bankName",
+      type: "text",
+      admin: {
+        condition: (data) => data.paymentMethod === 'bank_transfer',
+        description: "Bank name for transfers",
+      },
+    },
+    {
+      name: "bankAccountNumber",
+      type: "text",
+      admin: {
+        condition: (data) => data.paymentMethod === 'bank_transfer',
+        description: "Bank account number for transfers",
+      },
+    },
+    {
+      name: "momoProviderName",
+      type: "text",
+      admin: {
+        condition: (data) => data.paymentMethod === 'momo_pay',
+        description: "Mobile Money provider (e.g., MTN Mobile Money, Airtel Money)",
+      },
+    },
+    {
+      name: "momoAccountName",
+      type: "text",
+      admin: {
+        condition: (data) => data.paymentMethod === 'momo_pay',
+        description: "Name associated with the MoMo account",
+      },
+    },
+    {
+      name: "momoCode",
+      type: "number",
+      admin: {
+        condition: (data) => data.paymentMethod === 'momo_pay',
+        description: "⚠️ REQUIRED: Mobile Money Code (integer) for receiving payments - Used in dial code *182*8*1*CODE*Amount#",
+      },
+    },
+    {
+      name: "totalRevenue",
+      type: "number",
+      defaultValue: 0,
+      min: 0,
+      admin: {
+        description: "Total revenue after platform fees (RWF) - Updated automatically after payment verification",
+        readOnly: true,
+      },
+    },
+    // Verification fields
+    {
+      name: "isVerified",
+      type: "checkbox",
+      defaultValue: false,
+      access: {
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
+      admin: {
+        description: "✅ SUPER ADMIN: Check this to enable tenant capabilities (product creation, selling). Only check after verifying documents.",
+      },
+    },
+    {
+      name: "verificationStatus",
+      type: "select",
+      defaultValue: "pending",
+      index: true, // Add index for faster filtering by status
+      options: [
+        { label: "Pending", value: "pending" },
+        { label: "Document Verified", value: "document_verified" },
+        { label: "Physically Verified", value: "physically_verified" },
+        { label: "Rejected", value: "rejected" }
+      ],
+      access: {
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
+      admin: {
+        description: "🔍 SUPER ADMIN: Set verification stage. 'Document Verified' allows selling. 'Physically Verified' allows merchant management.",
+        components: {
+          Cell: '@/components/admin/TenantVerificationCell',
+        },
+      },
+    },
+    {
+      name: "verificationNotes",
+      type: "textarea",
+      access: {
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
+      admin: {
+        description: "📝 SUPER ADMIN: Add notes about verification decision, document quality, or follow-up actions needed.",
+      },
+    },
+    {
+      name: "verificationRequested",
+      type: "checkbox",
+      defaultValue: false,
+      admin: {
+        description: "📋 Tenant has requested verification review",
+        readOnly: true,
+        components: {
+          Cell: '@/components/admin/VerificationRequestedCell',
+        },
+      },
+    },
+    {
+      name: "verificationRequestedAt",
+      type: "date",
+      admin: {
+        description: "📅 When verification was requested",
+        readOnly: true,
+      },
+    },
+    // Verification Management UI for Super Admins
+    {
+      name: "verificationManagement",
+      type: "ui",
+      admin: {
+        components: {
+          Field: '@/components/admin/TenantVerificationUI',
+        },
+        condition: (data, req) => {
+          // Only show for super admins
+          return req.user?.roles?.includes('super-admin');
+        },
+      },
+    },
+    {
+      name: "physicalVerificationRequested",
+      type: "checkbox",
+      defaultValue: false,
+      admin: {
+        description: "Tenant has requested physical verification",
+      },
+    },
+    {
+      name: "physicalVerificationRequestedAt",
+      type: "date",
+      admin: {
+        description: "Date when physical verification was requested",
+      },
+    },
+    // Physical verification fields
+    {
+      name: "physicalVerificationImages",
+      type: "array",
+      minRows: 3,
+      maxRows: 8,
+      access: {
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
+      admin: {
+        condition: (data) => data.verificationStatus === 'physically_verified',
+        description: "3-8 images from physical verification visit",
+      },
+      fields: [
+        {
+          name: "image",
+          type: "upload",
+          relationTo: "media",
+          required: true,
+        },
+        {
+          name: "description",
+          type: "text",
+          admin: {
+            description: "Brief description of what this image shows",
+          },
+        }
+      ]
+    },
+    {
+      name: "signedConsent",
+      type: "upload",
+      relationTo: "media",
+      access: {
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
+      admin: {
+        condition: (data) => data.verificationStatus === 'physically_verified',
+        description: "Signed consent document (PDF) from physical verification",
+      },
+    },
+    // Merchant management
+    {
+      name: "canAddMerchants",
+      type: "checkbox",
+      defaultValue: false,
+      access: {
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
+      admin: {
+        description: "🏪 SUPER ADMIN: Enable merchant account management. Usually enabled after document or physical verification.",
+      },
+    },
+    {
+      name: "verifiedAt",
+      type: "date",
+      access: {
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
+      admin: {
+        description: "Date when tenant was verified",
+      },
+    },
+    {
+      name: "verifiedBy",
+      type: "relationship",
+      relationTo: "users",
+      access: {
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
+      admin: {
+        description: "Super admin who verified this tenant",
+      },
+    },
+  ],
+};

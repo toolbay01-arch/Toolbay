@@ -42,9 +42,12 @@ export const resendAdapter = ({
           cc: message.cc as string | string[] | undefined,
           bcc: message.bcc as string | string[] | undefined,
         });
+
+        console.log('[Resend] Email sent successfully:', result.data?.id);
         
         return result;
       } catch (error: any) {
+        console.error('[Resend] Email send failed:', error);
         throw new Error(`Failed to send email: ${error.message}`);
       }
     },
