@@ -50,6 +50,29 @@ export default async function middleware(req: NextRequest) {
 
   if (hostname.endsWith(`.${rootDomain}`)) {
     const tenantSlug = hostname.replace(`.${rootDomain}`, "");
+    
+    // Routes that should NOT be rewritten to tenant paths
+    // These are global routes that exist outside the tenant context
+    const globalRoutes = [
+      '/sign-in',
+      '/sign-up',
+      '/forgot-password',
+      '/reset-password',
+      '/verify-email',
+      '/admin',
+      '/dashboard',
+    ];
+    
+    // Check if the current path starts with any global route
+    const isGlobalRoute = globalRoutes.some(route => 
+      url.pathname === route || url.pathname.startsWith(`${route}/`)
+    );
+    
+    // Don't rewrite global routes - let them go to their normal paths
+    if (isGlobalRoute) {
+      return NextResponse.next();
+    }
+    
     const response = NextResponse.rewrite(
       new URL(`/tenants/${tenantSlug}${url.pathname}`, req.url)
     );
