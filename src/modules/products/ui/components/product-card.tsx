@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { StarIcon, ShieldCheck, Package, TrendingUp, MapPin, Eye, Loader2 } from "lucide-react";
@@ -56,6 +56,7 @@ export const ProductCard = ({
 }: ProductCardProps) => {
   const router = useRouter();
   const [isNavigatingToStore, setIsNavigatingToStore] = useState(false);
+  const [isAlreadyOnTenantSubdomain, setIsAlreadyOnTenantSubdomain] = useState(false);
   
   // Generate URLs consistently for server/client
   const productUrl = `/tenants/${tenantSlug}/products/${id}`;
@@ -68,6 +69,15 @@ export const ProductCard = ({
   const tenantUrl = isSubdomainRoutingEnabled && rootDomain
     ? `https://${tenantSlug}.${rootDomain}`
     : `/tenants/${tenantSlug}`;
+
+  // Check if user is already on this tenant's subdomain
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isSubdomainRoutingEnabled && rootDomain) {
+      const currentHostname = window.location.hostname;
+      const expectedSubdomain = `${tenantSlug}.${rootDomain.split(':')[0]}`; // Remove port if present
+      setIsAlreadyOnTenantSubdomain(currentHostname === expectedSubdomain);
+    }
+  }, [tenantSlug, isSubdomainRoutingEnabled, rootDomain]);
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Only navigate if not clicking on interactive elements
@@ -87,6 +97,11 @@ export const ProductCard = ({
     e.stopPropagation(); // Prevent card click
     e.preventDefault(); // Prevent default link behavior for controlled navigation
     
+    // Don't navigate if already on this tenant's subdomain
+    if (isAlreadyOnTenantSubdomain) {
+      return;
+    }
+    
     // Show loading state immediately for visual feedback
     setIsNavigatingToStore(true);
     
@@ -99,7 +114,7 @@ export const ProductCard = ({
     } else {
       router.push(tenantUrl);
     }
-  }, [isSubdomainRoutingEnabled, rootDomain, tenantUrl, router]);
+  }, [isSubdomainRoutingEnabled, rootDomain, tenantUrl, router, isAlreadyOnTenantSubdomain]);
   
   // Prefetch on hover for instant navigation
   const handleMouseEnter = () => {
@@ -224,29 +239,50 @@ export const ProductCard = ({
           
           {/* Seller Info */}
           <div className="flex flex-col gap-1">
-            <a 
-              href={tenantUrl}
-              className="flex items-center gap-1.5 sm:gap-2 hover:opacity-70 w-fit cursor-pointer z-10 transition-opacity"
-              onClick={handleTenantClick}
-              onMouseEnter={handleTenantMouseEnter}
-            >
-              {isNavigatingToStore ? (
-                <Loader2 className="size-[18px] sm:size-[20px] animate-spin text-pink-500" />
-              ) : tenantImageUrl ? (
-                <Image
-                  alt={tenantSlug}
-                  src={tenantImageUrl}
-                  width={20}
-                  height={20}
-                  className="rounded-full ring-2 ring-gray-100 shrink-0 size-[18px] sm:size-[20px]"
-                  loading="lazy"
-                  quality={75}
-                />
-              ) : null}
-              <span className={`text-xs sm:text-sm font-medium truncate ${isNavigatingToStore ? 'text-pink-500' : 'text-gray-700'}`}>
-                {isNavigatingToStore ? 'Opening store...' : (tenantName || tenantSlug)}
-              </span>
-            </a>
+            {isAlreadyOnTenantSubdomain ? (
+              // Non-clickable display when already on this tenant's subdomain
+              <div className="flex items-center gap-1.5 sm:gap-2 w-fit">
+                {tenantImageUrl ? (
+                  <Image
+                    alt={tenantSlug}
+                    src={tenantImageUrl}
+                    width={20}
+                    height={20}
+                    className="rounded-full ring-2 ring-gray-100 shrink-0 size-[18px] sm:size-[20px]"
+                    loading="lazy"
+                    quality={75}
+                  />
+                ) : null}
+                <span className="text-xs sm:text-sm font-medium truncate text-gray-700">
+                  {tenantName || tenantSlug}
+                </span>
+              </div>
+            ) : (
+              // Clickable link when NOT on this tenant's subdomain
+              <a 
+                href={tenantUrl}
+                className="flex items-center gap-1.5 sm:gap-2 hover:opacity-70 w-fit cursor-pointer z-10 transition-opacity"
+                onClick={handleTenantClick}
+                onMouseEnter={handleTenantMouseEnter}
+              >
+                {isNavigatingToStore ? (
+                  <Loader2 className="size-[18px] sm:size-[20px] animate-spin text-pink-500" />
+                ) : tenantImageUrl ? (
+                  <Image
+                    alt={tenantSlug}
+                    src={tenantImageUrl}
+                    width={20}
+                    height={20}
+                    className="rounded-full ring-2 ring-gray-100 shrink-0 size-[18px] sm:size-[20px]"
+                    loading="lazy"
+                    quality={75}
+                  />
+                ) : null}
+                <span className={`text-xs sm:text-sm font-medium truncate ${isNavigatingToStore ? 'text-pink-500' : 'text-gray-700 hover:text-pink-600'}`}>
+                  {isNavigatingToStore ? 'Opening store...' : (tenantName || tenantSlug)}
+                </span>
+              </a>
+            )}
             
             {/* Badges Row */}
             <div className="flex flex-wrap items-center gap-1.5">
@@ -372,29 +408,50 @@ export const ProductCard = ({
         
         {/* Seller Info */}
         <div className="flex flex-col gap-1 mt-auto">
-          <a 
-            href={tenantUrl}
-            className="flex items-center gap-1.5 hover:opacity-70 w-fit cursor-pointer z-10 transition-opacity"
-            onClick={handleTenantClick}
-            onMouseEnter={handleTenantMouseEnter}
-          >
-            {isNavigatingToStore ? (
-              <Loader2 className="size-5 animate-spin text-pink-500" />
-            ) : tenantImageUrl ? (
-              <Image
-                alt={tenantSlug}
-                src={tenantImageUrl}
-                width={20}
-                height={20}
-                className="rounded-full ring-2 ring-gray-100 shrink-0"
-                loading="lazy"
-                quality={75}
-              />
-            ) : null}
-            <span className={`text-xs font-medium ${isNavigatingToStore ? 'text-pink-500' : 'text-gray-700'}`}>
-              {isNavigatingToStore ? 'Opening store...' : (tenantName || tenantSlug)}
-            </span>
-          </a>
+          {isAlreadyOnTenantSubdomain ? (
+            // Non-clickable display when already on this tenant's subdomain
+            <div className="flex items-center gap-1.5 w-fit">
+              {tenantImageUrl ? (
+                <Image
+                  alt={tenantSlug}
+                  src={tenantImageUrl}
+                  width={20}
+                  height={20}
+                  className="rounded-full ring-2 ring-gray-100 shrink-0"
+                  loading="lazy"
+                  quality={75}
+                />
+              ) : null}
+              <span className="text-xs font-medium text-gray-700">
+                {tenantName || tenantSlug}
+              </span>
+            </div>
+          ) : (
+            // Clickable link when NOT on this tenant's subdomain
+            <a 
+              href={tenantUrl}
+              className="flex items-center gap-1.5 hover:opacity-70 w-fit cursor-pointer z-10 transition-opacity"
+              onClick={handleTenantClick}
+              onMouseEnter={handleTenantMouseEnter}
+            >
+              {isNavigatingToStore ? (
+                <Loader2 className="size-5 animate-spin text-pink-500" />
+              ) : tenantImageUrl ? (
+                <Image
+                  alt={tenantSlug}
+                  src={tenantImageUrl}
+                  width={20}
+                  height={20}
+                  className="rounded-full ring-2 ring-gray-100 shrink-0"
+                  loading="lazy"
+                  quality={75}
+                />
+              ) : null}
+              <span className={`text-xs font-medium ${isNavigatingToStore ? 'text-pink-500' : 'text-gray-700 hover:text-pink-600'}`}>
+                {isNavigatingToStore ? 'Opening store...' : (tenantName || tenantSlug)}
+              </span>
+            </a>
+          )}
           
           {/* Badges Row */}
           <div className="flex flex-wrap items-center gap-1">
