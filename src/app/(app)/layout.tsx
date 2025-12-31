@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2563eb",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
@@ -39,7 +39,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#2563eb" />
+        <meta name="theme-color" content="#ffffff" />
       </head>
       <body
         className={`${dmSans.className} antialiased`}
