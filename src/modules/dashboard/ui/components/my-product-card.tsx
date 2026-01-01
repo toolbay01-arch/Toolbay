@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { StarIcon, EyeOffIcon, ArchiveIcon, Edit2Icon, Trash2Icon, PackageXIcon } from "lucide-react";
 
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, generateTenantPath } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ImageCarousel } from "./image-carousel";
 
@@ -45,8 +45,8 @@ export const MyProductCard = ({
   onDelete,
 }: MyProductCardProps) => {
   const isOutOfStock = stockStatus === "out_of_stock";
-  // Generate URLs consistently for server/client
-  const productUrl = `/tenants/${tenantSlug}/products/${id}`;
+  // Generate URLs using the utility function
+  const productUrl = generateTenantPath(tenantSlug, `/products/${id}`);
 
   // Prepare images for carousel
   const images = gallery && gallery.length > 0

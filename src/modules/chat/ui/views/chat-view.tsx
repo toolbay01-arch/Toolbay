@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useTRPC } from "@/trpc/client";
 import type { User as UserType } from "@/payload-types";
+import { generateTenantPath } from "@/lib/utils";
 
 import { ChatWindow } from "../components/chat-window";
 import { MessageInput } from "../components/message-input";
@@ -126,7 +127,7 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
     const tenant = product.tenant;
     const tenantSlug = typeof tenant === "object" ? tenant.slug : tenant;
     if (tenantSlug && product.id) {
-      productUrl = `/tenants/${tenantSlug}/products/${product.id}`;
+      productUrl = generateTenantPath(tenantSlug, `/products/${product.id}`);
     }
   }
 

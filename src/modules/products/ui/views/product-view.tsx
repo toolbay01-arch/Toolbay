@@ -14,7 +14,7 @@ import { useTRPC } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { StarRating } from "@/components/star-rating";
-import { formatCurrency, generateTenantURL } from "@/lib/utils";
+import { formatCurrency, generateTenantURL, generateTenantResourceURL } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
 import { StockStatusBadge } from "@/components/quantity-selector";
 import { SuggestedProductCard, SuggestedProductCardSkeleton } from "../components/suggested-product-card";
@@ -124,8 +124,8 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
       return;
     }
     
-    // Build the product URL
-    const productUrl = `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/tenants/${tenantSlug}/products/${productId}`;
+    // Build the product URL using the utility function
+    const productUrl = generateTenantResourceURL(tenantSlug, `/products/${productId}`);
     
     // Create message with product name as markdown link
     const productName = (data as any)?.name || 'this product';

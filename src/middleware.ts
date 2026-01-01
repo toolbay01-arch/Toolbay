@@ -73,8 +73,20 @@ export default async function middleware(req: NextRequest) {
       return NextResponse.next();
     }
     
+    // Handle paths that already include /tenants/[slug]
+    // This can happen if URLs are hardcoded or links are generated incorrectly
+    let targetPath = url.pathname;
+    const tenantPathPattern = new RegExp(`^/tenants/[^/]+`);
+    
+    if (tenantPathPattern.test(url.pathname)) {
+      // If the path already includes /tenants/[slug], just use it as-is
+      // This allows backward compatibility with non-subdomain URLs
+      return NextResponse.rewrite(new URL(url.pathname + url.search, req.url));
+    }
+    
+    // Otherwise, add the tenant prefix
     const response = NextResponse.rewrite(
-      new URL(`/tenants/${tenantSlug}${url.pathname}`, req.url)
+      new URL(`/tenants/${tenantSlug}${targetPath}${url.search}`, req.url)
     );
     // Add tenant slug to response headers for potential caching/debugging
     response.headers.set('x-tenant-slug', tenantSlug);

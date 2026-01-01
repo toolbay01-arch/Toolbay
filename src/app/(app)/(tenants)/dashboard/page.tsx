@@ -4,6 +4,7 @@ import Link from "next/link";
 import { caller } from "@/trpc/server";
 import { isSuperAdmin } from "@/lib/access";
 import { DocumentUpload } from "@/modules/tenants/ui/document-upload";
+import { generateTenantURL } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -120,7 +121,7 @@ const TenantDashboardPage = async () => {
                     <span className="text-sm text-gray-600">See how your store appears to customers</span>
                   </div>
                   <Link 
-                    href={`/tenants/${tenant.slug}`}
+                    href={generateTenantURL(tenant.slug)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"

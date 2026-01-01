@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, generateTenantPath } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
 
 interface SuggestedProductCardProps {
@@ -28,8 +28,8 @@ export const SuggestedProductCard = ({
 }: SuggestedProductCardProps) => {
   const router = useRouter();
   
-  // Generate URL for the product
-  const productUrl = `/tenants/${tenantSlug}/products/${id}`;
+  // Generate URL for the product using the utility function
+  const productUrl = generateTenantPath(tenantSlug, `/products/${id}`);
 
   const handleCardClick = (e: React.MouseEvent) => {
     router.push(productUrl);

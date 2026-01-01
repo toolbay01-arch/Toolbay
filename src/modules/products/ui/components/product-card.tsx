@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { StarIcon, ShieldCheck, Package, TrendingUp, MapPin, Eye, Loader2 } from "lucide-react";
 
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, generateTenantPath, generateTenantURL } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
 import { StockStatusBadge } from "@/components/quantity-selector";
 
@@ -58,17 +58,15 @@ export const ProductCard = ({
   const [isNavigatingToStore, setIsNavigatingToStore] = useState(false);
   const [isAlreadyOnTenantSubdomain, setIsAlreadyOnTenantSubdomain] = useState(false);
   
-  // Generate URLs consistently for server/client
-  const productUrl = `/tenants/${tenantSlug}/products/${id}`;
+  // Generate URLs using the utility function
+  const productUrl = generateTenantPath(tenantSlug, `/products/${id}`);
   
   // Check if subdomain routing is enabled
   const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
   
-  // Generate tenant URL - use subdomain if enabled, otherwise use path-based routing
-  const tenantUrl = isSubdomainRoutingEnabled && rootDomain
-    ? `https://${tenantSlug}.${rootDomain}`
-    : `/tenants/${tenantSlug}`;
+  // Generate tenant URL using the utility function
+  const tenantUrl = generateTenantURL(tenantSlug);
 
   // Check if user is already on this tenant's subdomain
   useEffect(() => {
