@@ -1,5 +1,6 @@
 ## Dockerfile for Next.js standalone + Payload CMS
 # Uses Bun for faster builds, and runs the standalone server with Node
+# Updated: 2026-01-02 - Using Bun with bun.lock
 FROM oven/bun:1 AS deps
 WORKDIR /app
 
