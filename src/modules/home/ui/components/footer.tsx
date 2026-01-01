@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { InstallAppLink } from "@/components/install-app-link";
 
 export const Footer = () => {
@@ -8,7 +9,17 @@ export const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div className="space-y-3">
-            <h3 className="text-xl font-bold">Toolbay</h3>
+            <div className="flex items-center gap-2">
+              <Image
+                src="/logo.jpeg"
+                alt="Toolbay Logo"
+                width={32}
+                height={32}
+                className="rounded"
+                priority
+              />
+              <h3 className="text-xl font-bold">Toolbay</h3>
+            </div>
             <p className="text-sm text-muted-foreground">
               Marketplace for construction materials, tools, and engineering supplies.
             </p>

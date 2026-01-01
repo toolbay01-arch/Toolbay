@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-import { formatCurrency, generateTenantPath } from "@/lib/utils";
+import { formatCurrency, generateTenantURL } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
 
 interface SuggestedProductCardProps {
@@ -27,11 +27,33 @@ export const SuggestedProductCard = ({
   priority = false,
 }: SuggestedProductCardProps) => {
   const router = useRouter();
+  const [isAlreadyOnTenantSubdomain, setIsAlreadyOnTenantSubdomain] = useState(false);
   
-  // Generate URL for the product using the utility function
-  const productUrl = generateTenantPath(tenantSlug, `/products/${id}`);
+  const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
+  const tenantUrl = generateTenantURL(tenantSlug);
+  
+  // Check if user is already on this tenant's subdomain
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isSubdomainRoutingEnabled && rootDomain) {
+      const currentHostname = window.location.hostname;
+      const expectedSubdomain = `${tenantSlug}.${rootDomain.split(':')[0]}`;
+      setIsAlreadyOnTenantSubdomain(currentHostname === expectedSubdomain);
+    }
+  }, [tenantSlug, isSubdomainRoutingEnabled, rootDomain]);
+  
+  // Generate URL for the product - use short path only if on tenant's subdomain
+  const productUrl = isAlreadyOnTenantSubdomain 
+    ? `/products/${id}` 
+    : `/tenants/${tenantSlug}/products/${id}`;
 
   const handleCardClick = (e: React.MouseEvent) => {
+    // If subdomain routing enabled and not on the tenant's subdomain, navigate to full subdomain URL
+    if (isSubdomainRoutingEnabled && rootDomain && !isAlreadyOnTenantSubdomain) {
+      window.location.href = `${tenantUrl}/products/${id}`;
+      return;
+    }
+    
     router.push(productUrl);
   };
   

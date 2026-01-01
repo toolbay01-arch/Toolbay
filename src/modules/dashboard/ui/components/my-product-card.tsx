@@ -1,9 +1,11 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { StarIcon, EyeOffIcon, ArchiveIcon, Edit2Icon, Trash2Icon, PackageXIcon } from "lucide-react";
 
-import { formatCurrency, generateTenantPath } from "@/lib/utils";
+import { formatCurrency, generateTenantURL } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ImageCarousel } from "./image-carousel";
 
@@ -45,8 +47,27 @@ export const MyProductCard = ({
   onDelete,
 }: MyProductCardProps) => {
   const isOutOfStock = stockStatus === "out_of_stock";
-  // Generate URLs using the utility function
-  const productUrl = generateTenantPath(tenantSlug, `/products/${id}`);
+  const [isAlreadyOnTenantSubdomain, setIsAlreadyOnTenantSubdomain] = useState(false);
+  
+  const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
+  const tenantUrl = generateTenantURL(tenantSlug);
+  
+  // Check if user is already on this tenant's subdomain
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isSubdomainRoutingEnabled && rootDomain) {
+      const currentHostname = window.location.hostname;
+      const expectedSubdomain = `${tenantSlug}.${rootDomain.split(':')[0]}`;
+      setIsAlreadyOnTenantSubdomain(currentHostname === expectedSubdomain);
+    }
+  }, [tenantSlug, isSubdomainRoutingEnabled, rootDomain]);
+  
+  // Generate URL for the product - use short path only if on tenant's subdomain
+  const productUrl = isAlreadyOnTenantSubdomain 
+    ? `/products/${id}` 
+    : isSubdomainRoutingEnabled && rootDomain
+    ? `${tenantUrl}/products/${id}`
+    : `/tenants/${tenantSlug}/products/${id}`;
 
   // Prepare images for carousel
   const images = gallery && gallery.length > 0

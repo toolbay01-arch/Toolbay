@@ -58,9 +58,6 @@ export const ProductCard = ({
   const [isNavigatingToStore, setIsNavigatingToStore] = useState(false);
   const [isAlreadyOnTenantSubdomain, setIsAlreadyOnTenantSubdomain] = useState(false);
   
-  // Generate URLs using the utility function
-  const productUrl = generateTenantPath(tenantSlug, `/products/${id}`);
-  
   // Check if subdomain routing is enabled
   const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
@@ -76,6 +73,11 @@ export const ProductCard = ({
       setIsAlreadyOnTenantSubdomain(currentHostname === expectedSubdomain);
     }
   }, [tenantSlug, isSubdomainRoutingEnabled, rootDomain]);
+  
+  // Generate product URL - use short path only if already on the tenant's subdomain
+  const productUrl = isAlreadyOnTenantSubdomain 
+    ? `/products/${id}` 
+    : `/tenants/${tenantSlug}/products/${id}`;
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Only navigate if not clicking on interactive elements
@@ -87,7 +89,13 @@ export const ProductCard = ({
       return; // Let button/link handle its own click
     }
     
-    // Navigate immediately - router.push is synchronous
+    // If subdomain routing enabled and not on the tenant's subdomain, navigate to full subdomain URL
+    if (isSubdomainRoutingEnabled && rootDomain && !isAlreadyOnTenantSubdomain) {
+      window.location.href = `${tenantUrl}/products/${id}`;
+      return;
+    }
+    
+    // Otherwise use client-side navigation
     router.push(productUrl);
   };
 

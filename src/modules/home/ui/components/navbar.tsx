@@ -6,6 +6,7 @@ import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, Mess
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
@@ -283,6 +284,20 @@ export const Navbar = () => {
       // Remove query from cache to force fresh fetch on next login
       queryClient.removeQueries(trpc.auth.session.queryFilter());
       
+      // Check if on subdomain and redirect to root domain
+      const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
+      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
+      
+      if (typeof window !== 'undefined' && isSubdomainRoutingEnabled && rootDomain) {
+        const hostname = window.location.hostname;
+        // Check if we're on a subdomain
+        if (hostname.endsWith(`.${rootDomain}`) && hostname !== rootDomain) {
+          // Redirect to main domain
+          window.location.href = `${window.location.protocol}//${rootDomain}`;
+          return;
+        }
+      }
+      
       // Navigate to home and refresh any server-side data
       router.push("/");
       router.refresh();
@@ -429,11 +444,22 @@ export const Navbar = () => {
     <nav className="h-16 flex border-b justify-between font-medium bg-white w-full overflow-x-auto overflow-y-visible sticky top-0 z-50 lg:fixed">
       {/* Logo - Smaller, more compact */}
       <Link href={getHomeUrl()} className="pl-3 lg:pl-4 flex items-center flex-shrink-0 gap-3">
+        {/* Logo Image */}
+        <div className="relative w-10 h-10 lg:w-12 lg:h-12 flex-shrink-0">
+          <Image
+            src="/logo.jpeg"
+            alt="Toolbay Logo"
+            fill
+            className="object-contain"
+            priority
+          />
+        </div>
         <div className="flex flex-col min-w-0">
+          {/* Toolbay Brand Name */}
           <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
             Toolbay
           </span>
-          {/* Mobile: Username/Company below Toolbay */}
+          {/* Mobile: Username/Company below Logo */}
           {session.data?.user && (() => {
             const displayName = (session.data.user.username || 
                (session.data.user.tenants?.[0] && 
