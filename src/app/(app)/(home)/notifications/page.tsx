@@ -18,10 +18,6 @@ import { formatDistanceToNow } from "date-fns";
 import { useState, useEffect } from "react";
 import type { Notification } from "@/payload-types";
 
-// Force dynamic rendering to avoid build-time tRPC context errors
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 export default function NotificationsPage() {
   const router = useRouter();
   const trpc = useTRPC();

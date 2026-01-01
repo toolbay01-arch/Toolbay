@@ -303,6 +303,25 @@ export const Navbar = () => {
     logout.mutate();
   };
   
+  // Detect if on subdomain and generate correct home URL
+  const getHomeUrl = () => {
+    if (typeof window === 'undefined') return '/';
+    
+    const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
+    
+    if (isSubdomainRoutingEnabled && rootDomain) {
+      const hostname = window.location.hostname;
+      // Check if we're on a subdomain
+      if (hostname.endsWith(`.${rootDomain}`) && hostname !== rootDomain) {
+        // Return main domain URL
+        return `${window.location.protocol}//${rootDomain}`;
+      }
+    }
+    
+    return '/';
+  };
+  
   // Show tenant items if user is a tenant, customer items if logged in, otherwise show public items
   // While loading, use the cached data to prevent flash
   const navbarItems = session.data?.user
@@ -320,7 +339,7 @@ export const Navbar = () => {
   if (!isLoggedIn) {
     return (
       <nav className="h-16 flex border-b justify-between font-medium bg-white w-full overflow-x-auto overflow-y-visible sticky top-0 z-50 lg:fixed">
-        <Link href="/" className="pl-3 lg:pl-4 flex items-center flex-shrink-0">
+        <Link href={getHomeUrl()} className="pl-3 lg:pl-4 flex items-center flex-shrink-0">
           <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
             Toolbay
           </span>
@@ -409,7 +428,7 @@ export const Navbar = () => {
   return (
     <nav className="h-16 flex border-b justify-between font-medium bg-white w-full overflow-x-auto overflow-y-visible sticky top-0 z-50 lg:fixed">
       {/* Logo - Smaller, more compact */}
-      <Link href="/" className="pl-3 lg:pl-4 flex items-center flex-shrink-0 gap-3">
+      <Link href={getHomeUrl()} className="pl-3 lg:pl-4 flex items-center flex-shrink-0 gap-3">
         <div className="flex flex-col min-w-0">
           <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
             Toolbay

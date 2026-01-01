@@ -61,6 +61,20 @@ export default async function middleware(req: NextRequest) {
       '/verify-email',
       '/admin',
       '/dashboard',
+      '/verify-payments',
+      '/verify-tenants',
+      '/my-store',
+      '/my-account',
+      '/my-products',
+      '/my-sales',
+      '/orders',
+      '/transactions',
+      '/users',
+      '/all-tenants',
+      '/notifications',
+      '/messages',
+      '/chat',
+      '/library',
     ];
     
     // Check if the current path starts with any global route
