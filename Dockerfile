@@ -1,18 +1,18 @@
 ## Dockerfile for Next.js standalone + Payload CMS
-# Uses Node 20 Alpine, builds with npm, and runs the standalone server
-FROM node:20-alpine AS deps
+# Uses Bun for faster builds, and runs the standalone server with Node
+FROM oven/bun:1 AS deps
 WORKDIR /app
 
 # Install dependencies
-COPY package.json package-lock.json ./
-RUN npm ci --production=false
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
-FROM node:20-alpine AS builder
+FROM oven/bun:1 AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Build Next.js (output: 'standalone' expected in next.config.mjs)
-RUN npm run build
+RUN bun run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
