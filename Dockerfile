@@ -22,11 +22,19 @@ RUN ls -la .next/standalone && \
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+# Install production dependencies that may be missing from standalone
+# ws is required by web-push but not always included in standalone
+RUN apk add --no-cache libc6-compat
+
 # Copy standalone output and static assets
 COPY --from=builder /app/.next/standalone .
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
+
+# Copy node_modules for packages not included in standalone
+# This ensures ws and other native modules are available
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy startup script
 COPY start-server.sh ./start-server.sh

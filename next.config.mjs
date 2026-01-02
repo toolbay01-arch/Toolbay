@@ -8,6 +8,10 @@ const __dirname = path.dirname(__filename);
 const nextConfig = {
   // Ensure proper output for Railway deployment
   output: 'standalone',
+  
+  // Ensure external packages are included in standalone
+  serverExternalPackages: ['ws', 'web-push', 'mongodb'],
+  
   // Ensure client components are properly bundled
   experimental: {
     serverActions: {
