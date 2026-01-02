@@ -1,5 +1,10 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { 
+  getCrossDomainItem, 
+  setCrossDomainItem, 
+  removeCrossDomainItem 
+} from "@/lib/cross-domain-storage";
 
 interface CartItem {
   productId: string;
@@ -20,6 +25,19 @@ interface CartState {
   getProductQuantity: (tenantSlug: string, productId: string) => number;
   clearCart: (tenantSlug: string) => void;
   clearAllCarts: () => void;
+};
+
+// Custom storage that uses cross-domain cookies
+const crossDomainStorage = {
+  getItem: (name: string): string | null => {
+    return getCrossDomainItem(name);
+  },
+  setItem: (name: string, value: string): void => {
+    setCrossDomainItem(name, value);
+  },
+  removeItem: (name: string): void => {
+    removeCrossDomainItem(name);
+  },
 };
 
 export const useCartStore = create<CartState>()(
@@ -191,7 +209,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "toolbay-cart",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => crossDomainStorage),
     },
   ),
 );

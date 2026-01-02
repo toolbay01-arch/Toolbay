@@ -13,6 +13,7 @@ import { ClientNotificationWrapper } from "@/components/client-notification-wrap
 import { PWAInstallGlobal } from "@/components/pwa-install-global";
 import { WebPushInitializer } from "@/components/web-push-initializer";
 import { ClientSubscriptionRefresh } from "@/components/client-subscription-refresh";
+import { CartMigration } from "@/components/cart-migration";
 
 import "./globals.css";
 
@@ -57,6 +58,7 @@ export default function RootLayout({
         <NuqsAdapter>
           <TRPCReactProvider>
             <NotificationProvider>
+              <CartMigration />
               <WebPushInitializer />
               <ClientSubscriptionRefresh />
               <NavigationProgress />
