@@ -56,6 +56,7 @@ export const ProductCard = ({
 }: ProductCardProps) => {
   const router = useRouter();
   const [isNavigatingToStore, setIsNavigatingToStore] = useState(false);
+  const [isNavigatingToProduct, setIsNavigatingToProduct] = useState(false);
   const [isAlreadyOnTenantSubdomain, setIsAlreadyOnTenantSubdomain] = useState(false);
   
   // Check if subdomain routing is enabled
@@ -89,13 +90,16 @@ export const ProductCard = ({
       return; // Let button/link handle its own click
     }
     
+    // Show loading state immediately for visual feedback
+    setIsNavigatingToProduct(true);
+    
     // If subdomain routing enabled and not on the tenant's subdomain, navigate to full subdomain URL
     if (isSubdomainRoutingEnabled && rootDomain && !isAlreadyOnTenantSubdomain) {
       window.location.href = `${tenantUrl}/products/${id}`;
       return;
     }
     
-    // Otherwise use client-side navigation
+    // Otherwise use client-side navigation with startTransition for smoother UX
     router.push(productUrl);
   };
 
@@ -158,8 +162,15 @@ export const ProductCard = ({
       <div 
         onClick={handleCardClick}
         onMouseEnter={handleMouseEnter}
-        className="group hover:shadow-xl transition-all duration-300 border border-gray-200 rounded-2xl bg-white overflow-hidden flex flex-row cursor-pointer max-w-full hover:-translate-y-1"
+        className="group hover:shadow-xl transition-all duration-300 border border-gray-200 rounded-2xl bg-white overflow-hidden flex flex-row cursor-pointer max-w-full hover:-translate-y-1 relative"
       >
+        {/* Loading Overlay */}
+        {isNavigatingToProduct && (
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
+            <Loader2 className="size-8 animate-spin text-pink-500" />
+          </div>
+        )}
+        
         {/* Image on the left - takes full height of card */}
         <div className="relative w-40 xs:w-48 sm:w-56 md:w-64 lg:w-72 shrink-0 overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
           {images.length > 1 ? (
@@ -327,8 +338,15 @@ export const ProductCard = ({
     <div 
       onClick={handleCardClick}
       onMouseEnter={handleMouseEnter}
-      className="group hover:shadow-xl transition-all duration-300 border border-gray-200 rounded-2xl bg-white overflow-hidden h-full flex flex-col cursor-pointer hover:-translate-y-1"
+      className="group hover:shadow-xl transition-all duration-300 border border-gray-200 rounded-2xl bg-white overflow-hidden h-full flex flex-col cursor-pointer hover:-translate-y-1 relative"
     >
+      {/* Loading Overlay */}
+      {isNavigatingToProduct && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-2xl">
+          <Loader2 className="size-8 animate-spin text-pink-500" />
+        </div>
+      )}
+      
       {/* Product Image */}
       <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
         {images.length > 1 ? (

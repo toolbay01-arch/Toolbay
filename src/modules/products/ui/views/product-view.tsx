@@ -79,9 +79,17 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
   // Start conversation mutation
   const startConversation = useMutation(trpc.chat.startConversation.mutationOptions({
     onSuccess: (data) => {
-      // Just navigate immediately - the page will fetch fresh data with messages included
-      router.push(`/chat/${data.id}`);
-      toast.success("Chat started with seller");
+      // Show loading toast while navigating
+      toast.loading("Opening chat...", { id: "chat-loading" });
+      
+      // Prefetch the chat page before navigating
+      router.prefetch(`/chat/${data.id}`);
+      
+      // Small delay to ensure prefetch starts
+      setTimeout(() => {
+        router.push(`/chat/${data.id}`);
+        // Toast will be dismissed by the chat page on load
+      }, 100);
     },
     onError: (error) => {
       if (error.data?.code === "UNAUTHORIZED") {
