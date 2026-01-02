@@ -4,6 +4,12 @@ import { useEffect, useState } from 'react';
 import { Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { 
+  getCrossDomainItem, 
+  setCrossDomainItem, 
+  removeCrossDomainItem,
+  migrateLocalStorageToCookies 
+} from '@/lib/cross-domain-storage';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -17,6 +23,9 @@ export function PWAInstallGlobal() {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    // Migrate existing localStorage to cookies for cross-domain support
+    migrateLocalStorageToCookies(['pwa-install-dismissed', 'pwa-install-dismissed-time']);
+
     // Check if device is mobile
     const checkMobile = () => {
       return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
@@ -34,15 +43,15 @@ export function PWAInstallGlobal() {
     
     setIsStandalone(isStandaloneMode);
 
-    // Check if user has dismissed the prompt before
-    const dismissed = localStorage.getItem('pwa-install-dismissed');
-    const dismissedTime = localStorage.getItem('pwa-install-dismissed-time');
+    // Check if user has dismissed the prompt before (using cross-domain storage)
+    const dismissed = getCrossDomainItem('pwa-install-dismissed');
+    const dismissedTime = getCrossDomainItem('pwa-install-dismissed-time');
     
     // Reset dismissal after 7 days to remind users
     const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
     if (dismissed && dismissedTime && parseInt(dismissedTime) < sevenDaysAgo) {
-      localStorage.removeItem('pwa-install-dismissed');
-      localStorage.removeItem('pwa-install-dismissed-time');
+      removeCrossDomainItem('pwa-install-dismissed');
+      removeCrossDomainItem('pwa-install-dismissed-time');
     }
 
     // Force service worker update to get latest code
@@ -71,8 +80,8 @@ export function PWAInstallGlobal() {
     const handleAppInstalled = () => {
       setShowPrompt(false);
       setIsStandalone(true);
-      localStorage.removeItem('pwa-install-dismissed');
-      localStorage.removeItem('pwa-install-dismissed-time');
+      removeCrossDomainItem('pwa-install-dismissed');
+      removeCrossDomainItem('pwa-install-dismissed-time');
     };
 
     window.addEventListener('appinstalled', handleAppInstalled);
@@ -127,8 +136,8 @@ export function PWAInstallGlobal() {
   };
 
   const handleDismiss = () => {
-    localStorage.setItem('pwa-install-dismissed', 'true');
-    localStorage.setItem('pwa-install-dismissed-time', Date.now().toString());
+    setCrossDomainItem('pwa-install-dismissed', 'true');
+    setCrossDomainItem('pwa-install-dismissed-time', Date.now().toString());
     setShowPrompt(false);
   };
 

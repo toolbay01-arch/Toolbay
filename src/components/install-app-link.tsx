@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { Smartphone } from 'lucide-react';
+import { getCrossDomainItem } from '@/lib/cross-domain-storage';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -25,6 +26,13 @@ export function InstallAppLink() {
     
     if (isStandaloneMode) {
       setIsInstalled(true);
+      return;
+    }
+
+    // Check if dismissed via cross-domain storage
+    const dismissed = getCrossDomainItem('pwa-install-dismissed');
+    if (dismissed) {
+      setIsInstalled(true); // Hide the link if dismissed
       return;
     }
 
