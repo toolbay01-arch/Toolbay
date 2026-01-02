@@ -15,6 +15,10 @@ COPY . .
 # Build Next.js (output: 'standalone' expected in next.config.mjs)
 RUN bun run build
 
+# Verify standalone build was created
+RUN ls -la .next/standalone && \
+    test -f .next/standalone/server.js || (echo "ERROR: server.js not found in standalone build!" && exit 1)
+
 FROM node:20-alpine AS runner
 WORKDIR /app
 

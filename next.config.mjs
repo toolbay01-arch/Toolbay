@@ -8,8 +8,6 @@ const __dirname = path.dirname(__filename);
 const nextConfig = {
   // Ensure proper output for Railway deployment
   output: 'standalone',
-  // Set the correct workspace root to silence lockfile warning
-  outputFileTracingRoot: path.join(__dirname, '../../'),
   // Ensure client components are properly bundled
   experimental: {
     serverActions: {
