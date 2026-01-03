@@ -50,18 +50,18 @@ export const SuggestedProductCard = ({
     : `/tenants/${tenantSlug}/products/${id}`;
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Prevent default
-    e.preventDefault();
-    
-    // Show loading state
+    // Show loading state immediately
     setIsNavigating(true);
     
     // If subdomain routing enabled and not on the tenant's subdomain, navigate to full subdomain URL
     if (isSubdomainRoutingEnabled && rootDomain && !isAlreadyOnTenantSubdomain) {
+      // Use window.location for cross-origin navigation (no preventDefault needed)
       window.location.href = `${tenantUrl}/products/${id}`;
       return;
     }
     
+    // For same-origin navigation, prevent default and use router
+    e.preventDefault();
     router.push(productUrl);
   };
   

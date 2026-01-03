@@ -91,43 +91,44 @@ export const ProductCard = ({
       return; // Let button/link handle its own click
     }
     
-    // Prevent default to avoid any double-click issues
-    e.preventDefault();
-    
     // Show loading state immediately for visual feedback
     setIsNavigatingToProduct(true);
     
     // If subdomain routing enabled and not on the tenant's subdomain, navigate to full subdomain URL
     if (isSubdomainRoutingEnabled && rootDomain && !isAlreadyOnTenantSubdomain) {
+      // Use window.location for cross-origin navigation (no preventDefault needed)
       window.location.href = `${tenantUrl}/products/${id}`;
       return;
     }
     
-    // Otherwise use client-side navigation with startTransition for smoother UX
+    // For same-origin navigation, prevent default and use router
+    e.preventDefault();
+    
+    // Navigate immediately without any delays
     router.push(productUrl);
   };
 
   const handleTenantClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
-    e.preventDefault(); // Prevent default link behavior for controlled navigation
     
     // Don't navigate if already on this tenant's subdomain
     if (isAlreadyOnTenantSubdomain) {
+      e.preventDefault();
       return;
     }
     
     // Show loading state immediately for visual feedback
     setIsNavigatingToStore(true);
     
-    // Use window.location for subdomain navigation
+    // Use window.location for subdomain navigation (no preventDefault needed)
     if (isSubdomainRoutingEnabled && rootDomain) {
-      // Small delay to show the loading state before navigation
-      requestAnimationFrame(() => {
-        window.location.href = tenantUrl;
-      });
-    } else {
-      router.push(tenantUrl);
+      window.location.href = tenantUrl;
+      return;
     }
+    
+    // For same-origin, prevent default and use router
+    e.preventDefault();
+    router.push(tenantUrl);
   }, [isSubdomainRoutingEnabled, rootDomain, tenantUrl, router, isAlreadyOnTenantSubdomain]);
   
   // Prefetch on hover for instant navigation
