@@ -1,24 +1,30 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app"
+import dynamic from "next/dynamic";
 
 import { TRPCReactProvider } from "@/trpc/client";
 import { Toaster } from "@/components/ui/sonner";
 
-import { PerformanceMonitor } from "@/components/performance-monitor";
 import { NavigationProgress } from "@/components/navigation-progress";
 import { Navbar } from "@/modules/home/ui/components/navbar";
 import { NotificationProvider } from "@/components/notification-provider";
-import { ClientNotificationWrapper } from "@/components/client-notification-wrapper";
-import { PWAInstallGlobal } from "@/components/pwa-install-global";
-import { WebPushInitializer } from "@/components/web-push-initializer";
-import { ClientSubscriptionRefresh } from "@/components/client-subscription-refresh";
-import { CartMigration } from "@/components/cart-migration";
+
+// Lazy load non-critical components to improve initial load performance
+const PerformanceMonitor = dynamic(() => import("@/components/performance-monitor").then(mod => ({ default: mod.PerformanceMonitor })), { ssr: false });
+const ClientNotificationWrapper = dynamic(() => import("@/components/client-notification-wrapper").then(mod => ({ default: mod.ClientNotificationWrapper })), { ssr: false });
+const PWAInstallGlobal = dynamic(() => import("@/components/pwa-install-global").then(mod => ({ default: mod.PWAInstallGlobal })), { ssr: false });
+const WebPushInitializer = dynamic(() => import("@/components/web-push-initializer").then(mod => ({ default: mod.WebPushInitializer })), { ssr: false });
+const ClientSubscriptionRefresh = dynamic(() => import("@/components/client-subscription-refresh").then(mod => ({ default: mod.ClientSubscriptionRefresh })), { ssr: false });
+const CartMigration = dynamic(() => import("@/components/cart-migration").then(mod => ({ default: mod.CartMigration })), { ssr: false });
 
 import "./globals.css";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
+  display: "swap", // Use font-display: swap for better performance
+  preload: true,
+  adjustFontFallback: true,
 });
 
 export const metadata: Metadata = {

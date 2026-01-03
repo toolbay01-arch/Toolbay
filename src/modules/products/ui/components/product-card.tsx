@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { StarIcon, ShieldCheck, Package, TrendingUp, MapPin, Eye, Loader2 } from "lucide-react";
 
@@ -57,7 +58,6 @@ export const ProductCard = ({
   const router = useRouter();
   const [isNavigatingToStore, setIsNavigatingToStore] = useState(false);
   const [isNavigatingToProduct, setIsNavigatingToProduct] = useState(false);
-  const [isAlreadyOnTenantSubdomain, setIsAlreadyOnTenantSubdomain] = useState(false);
   
   // Check if subdomain routing is enabled
   const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
@@ -66,13 +66,14 @@ export const ProductCard = ({
   // Generate tenant URL using the utility function
   const tenantUrl = generateTenantURL(tenantSlug);
 
-  // Check if user is already on this tenant's subdomain
-  useEffect(() => {
-    if (typeof window !== 'undefined' && isSubdomainRoutingEnabled && rootDomain) {
-      const currentHostname = window.location.hostname;
-      const expectedSubdomain = `${tenantSlug}.${rootDomain.split(':')[0]}`; // Remove port if present
-      setIsAlreadyOnTenantSubdomain(currentHostname === expectedSubdomain);
+  // Check if user is already on this tenant's subdomain - use useMemo for synchronous check
+  const isAlreadyOnTenantSubdomain = useMemo(() => {
+    if (typeof window === 'undefined' || !isSubdomainRoutingEnabled || !rootDomain) {
+      return false;
     }
+    const currentHostname = window.location.hostname;
+    const expectedSubdomain = `${tenantSlug}.${rootDomain.split(':')[0]}`; // Remove port if present
+    return currentHostname === expectedSubdomain;
   }, [tenantSlug, isSubdomainRoutingEnabled, rootDomain]);
   
   // Generate product URL - use short path only if already on the tenant's subdomain
@@ -89,6 +90,9 @@ export const ProductCard = ({
     if (closestButton || closestLink) {
       return; // Let button/link handle its own click
     }
+    
+    // Prevent default to avoid any double-click issues
+    e.preventDefault();
     
     // Show loading state immediately for visual feedback
     setIsNavigatingToProduct(true);

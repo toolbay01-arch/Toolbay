@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -29,19 +29,19 @@ export const SuggestedProductCard = ({
 }: SuggestedProductCardProps) => {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
-  const [isAlreadyOnTenantSubdomain, setIsAlreadyOnTenantSubdomain] = useState(false);
   
   const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
   const tenantUrl = generateTenantURL(tenantSlug);
   
-  // Check if user is already on this tenant's subdomain
-  useEffect(() => {
-    if (typeof window !== 'undefined' && isSubdomainRoutingEnabled && rootDomain) {
-      const currentHostname = window.location.hostname;
-      const expectedSubdomain = `${tenantSlug}.${rootDomain.split(':')[0]}`;
-      setIsAlreadyOnTenantSubdomain(currentHostname === expectedSubdomain);
+  // Check if user is already on this tenant's subdomain - use useMemo for synchronous check
+  const isAlreadyOnTenantSubdomain = useMemo(() => {
+    if (typeof window === 'undefined' || !isSubdomainRoutingEnabled || !rootDomain) {
+      return false;
     }
+    const currentHostname = window.location.hostname;
+    const expectedSubdomain = `${tenantSlug}.${rootDomain.split(':')[0]}`;
+    return currentHostname === expectedSubdomain;
   }, [tenantSlug, isSubdomainRoutingEnabled, rootDomain]);
   
   // Generate URL for the product - use short path only if on tenant's subdomain
@@ -50,6 +50,9 @@ export const SuggestedProductCard = ({
     : `/tenants/${tenantSlug}/products/${id}`;
 
   const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent default
+    e.preventDefault();
+    
     // Show loading state
     setIsNavigating(true);
     
