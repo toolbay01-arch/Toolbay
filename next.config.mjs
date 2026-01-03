@@ -12,9 +12,6 @@ const nextConfig = {
   // Ensure external packages are included in standalone
   serverExternalPackages: ['ws', 'web-push', 'mongodb'],
   
-  // Optimize font loading
-  optimizeFonts: true,
-  
   // Ensure client components are properly bundled
   experimental: {
     serverActions: {
