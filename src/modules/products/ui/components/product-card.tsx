@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { StarIcon, ShieldCheck, Package, TrendingUp, MapPin, Eye, Loader2 } from "lucide-react";
+import { StarIcon, ShieldCheck, Package, TrendingUp, MapPin, Eye } from "lucide-react";
 
 import { formatCurrency, generateTenantPath, generateTenantURL } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
@@ -56,8 +56,6 @@ export const ProductCard = ({
   viewCount = 0,
 }: ProductCardProps) => {
   const router = useRouter();
-  const [isNavigatingToStore, setIsNavigatingToStore] = useState(false);
-  const [isNavigatingToProduct, setIsNavigatingToProduct] = useState(false);
   
   // Check if subdomain routing is enabled
   const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
@@ -82,54 +80,48 @@ export const ProductCard = ({
     : `/tenants/${tenantSlug}/products/${id}`;
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Only navigate if not clicking on interactive elements
+    // Check if clicking on tenant link area
     const target = e.target as HTMLElement;
-    const closestButton = target.closest('button');
-    const closestLink = target.closest('a');
+    const tenantLink = target.closest('[data-tenant-link]');
     
-    if (closestButton || closestLink) {
-      return; // Let button/link handle its own click
+    if (tenantLink && !isAlreadyOnTenantSubdomain) {
+      // Handle tenant navigation
+      e.preventDefault();
+      e.stopPropagation();
+      
+      if (isSubdomainRoutingEnabled && rootDomain) {
+        window.location.href = tenantUrl;
+        return;
+      }
+      
+      router.push(tenantUrl);
+      return;
     }
     
-    // Show loading state immediately for visual feedback
-    setIsNavigatingToProduct(true);
+    // Check for other interactive elements (buttons)
+    const closestButton = target.closest('button');
+    if (closestButton) {
+      return; // Let button handle its own click
+    }
+    
+    // Handle product navigation - no loading state, just navigate
+    e.preventDefault();
     
     // If subdomain routing enabled and not on the tenant's subdomain, navigate to full subdomain URL
     if (isSubdomainRoutingEnabled && rootDomain && !isAlreadyOnTenantSubdomain) {
-      // Use window.location for cross-origin navigation (no preventDefault needed)
       window.location.href = `${tenantUrl}/products/${id}`;
       return;
     }
     
-    // For same-origin navigation, prevent default and use router
-    e.preventDefault();
-    
-    // Navigate immediately without any delays
+    // Navigate to product
     router.push(productUrl);
   };
 
   const handleTenantClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click
-    
-    // Don't navigate if already on this tenant's subdomain
-    if (isAlreadyOnTenantSubdomain) {
-      e.preventDefault();
-      return;
-    }
-    
-    // Show loading state immediately for visual feedback
-    setIsNavigatingToStore(true);
-    
-    // Use window.location for subdomain navigation (no preventDefault needed)
-    if (isSubdomainRoutingEnabled && rootDomain) {
-      window.location.href = tenantUrl;
-      return;
-    }
-    
-    // For same-origin, prevent default and use router
+    // This is now just for accessibility - actual click is handled by card
     e.preventDefault();
-    router.push(tenantUrl);
-  }, [isSubdomainRoutingEnabled, rootDomain, tenantUrl, router, isAlreadyOnTenantSubdomain]);
+    e.stopPropagation();
+  }, []);
   
   // Prefetch on hover for instant navigation
   const handleMouseEnter = () => {
@@ -169,13 +161,6 @@ export const ProductCard = ({
         onMouseEnter={handleMouseEnter}
         className="group hover:shadow-xl transition-all duration-300 border border-gray-200 rounded-2xl bg-white overflow-hidden flex flex-row cursor-pointer max-w-full hover:-translate-y-1 relative"
       >
-        {/* Loading Overlay */}
-        {isNavigatingToProduct && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
-            <Loader2 className="size-8 animate-spin text-pink-500" />
-          </div>
-        )}
-        
         {/* Image on the left - takes full height of card */}
         <div className="relative w-40 xs:w-48 sm:w-56 md:w-64 lg:w-72 shrink-0 overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
           {images.length > 1 ? (
@@ -283,13 +268,12 @@ export const ProductCard = ({
               // Clickable link when NOT on this tenant's subdomain
               <a 
                 href={tenantUrl}
+                data-tenant-link
                 className="flex items-center gap-1.5 sm:gap-2 hover:opacity-70 w-fit cursor-pointer z-10 transition-opacity"
                 onClick={handleTenantClick}
                 onMouseEnter={handleTenantMouseEnter}
               >
-                {isNavigatingToStore ? (
-                  <Loader2 className="size-[18px] sm:size-[20px] animate-spin text-pink-500" />
-                ) : tenantImageUrl ? (
+                {tenantImageUrl ? (
                   <Image
                     alt={tenantSlug}
                     src={tenantImageUrl}
@@ -300,8 +284,8 @@ export const ProductCard = ({
                     quality={75}
                   />
                 ) : null}
-                <span className={`text-xs sm:text-sm font-medium truncate ${isNavigatingToStore ? 'text-pink-500' : 'text-gray-700 hover:text-pink-600'}`}>
-                  {isNavigatingToStore ? 'Opening store...' : (tenantName || tenantSlug)}
+                <span className="text-xs sm:text-sm font-medium truncate text-gray-700 hover:text-pink-600">
+                  {tenantName || tenantSlug}
                 </span>
               </a>
             )}
@@ -345,13 +329,6 @@ export const ProductCard = ({
       onMouseEnter={handleMouseEnter}
       className="group hover:shadow-xl transition-all duration-300 border border-gray-200 rounded-2xl bg-white overflow-hidden h-full flex flex-col cursor-pointer hover:-translate-y-1 relative"
     >
-      {/* Loading Overlay */}
-      {isNavigatingToProduct && (
-        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-2xl">
-          <Loader2 className="size-8 animate-spin text-pink-500" />
-        </div>
-      )}
-      
       {/* Product Image */}
       <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
         {images.length > 1 ? (
@@ -459,13 +436,12 @@ export const ProductCard = ({
             // Clickable link when NOT on this tenant's subdomain
             <a 
               href={tenantUrl}
+              data-tenant-link
               className="flex items-center gap-1.5 hover:opacity-70 w-fit cursor-pointer z-10 transition-opacity"
               onClick={handleTenantClick}
               onMouseEnter={handleTenantMouseEnter}
             >
-              {isNavigatingToStore ? (
-                <Loader2 className="size-5 animate-spin text-pink-500" />
-              ) : tenantImageUrl ? (
+              {tenantImageUrl ? (
                 <Image
                   alt={tenantSlug}
                   src={tenantImageUrl}
@@ -476,8 +452,8 @@ export const ProductCard = ({
                   quality={75}
                 />
               ) : null}
-              <span className={`text-xs font-medium ${isNavigatingToStore ? 'text-pink-500' : 'text-gray-700 hover:text-pink-600'}`}>
-                {isNavigatingToStore ? 'Opening store...' : (tenantName || tenantSlug)}
+              <span className="text-xs font-medium text-gray-700 hover:text-pink-600">
+                {tenantName || tenantSlug}
               </span>
             </a>
           )}

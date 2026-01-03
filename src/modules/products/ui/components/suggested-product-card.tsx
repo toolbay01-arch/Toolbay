@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
 
 import { formatCurrency, generateTenantURL } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
@@ -28,7 +27,6 @@ export const SuggestedProductCard = ({
   priority = false,
 }: SuggestedProductCardProps) => {
   const router = useRouter();
-  const [isNavigating, setIsNavigating] = useState(false);
   
   const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
@@ -50,9 +48,6 @@ export const SuggestedProductCard = ({
     : `/tenants/${tenantSlug}/products/${id}`;
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Show loading state immediately
-    setIsNavigating(true);
-    
     // If subdomain routing enabled and not on the tenant's subdomain, navigate to full subdomain URL
     if (isSubdomainRoutingEnabled && rootDomain && !isAlreadyOnTenantSubdomain) {
       // Use window.location for cross-origin navigation (no preventDefault needed)
@@ -83,13 +78,6 @@ export const SuggestedProductCard = ({
       onMouseEnter={handleMouseEnter}
       className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-2 border-black rounded-lg bg-white overflow-hidden flex flex-col cursor-pointer h-full relative"
     >
-      {/* Loading Overlay */}
-      {isNavigating && (
-        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
-          <Loader2 className="size-8 animate-spin text-pink-500" />
-        </div>
-      )}
-      
       {/* Product Image */}
       <div className="relative aspect-square border-b-2 border-black">
         {images.length > 1 ? (
