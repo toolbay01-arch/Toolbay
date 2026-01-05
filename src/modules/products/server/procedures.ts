@@ -111,8 +111,10 @@ export const productsRouter = createTRPCRouter({
 
       let isPurchased = false;
 
-      if (session.user) {
-        const ordersData = await ctx.db.find({
+      // Parallel execution for better performance
+      const [ordersData, reviews, salesData] = await Promise.all([
+        // Check if user purchased (only if logged in)
+        session.user ? ctx.db.find({
           collection: "orders",
           pagination: false,
           limit: 1,
@@ -130,20 +132,47 @@ export const productsRouter = createTRPCRouter({
               },
             ],
           },
-        });
+          depth: 0, // No need to populate relationships
+        }) : Promise.resolve({ docs: [] }),
 
-        isPurchased = !!ordersData.docs[0];
-      }
-
-      const reviews = await ctx.db.find({
-        collection: "reviews",
-        pagination: false,
-        where: {
-          product: {
-            equals: input.id,
+        // Fetch reviews (limited fields for performance)
+        ctx.db.find({
+          collection: "reviews",
+          pagination: false,
+          limit: 1000, // Reasonable limit for reviews
+          where: {
+            product: {
+              equals: input.id,
+            },
           },
-        },
-      });
+          depth: 0, // No need to populate relationships for aggregation
+          select: {
+            rating: true,
+            id: true,
+          },
+        }),
+
+        // Calculate total sold
+        ctx.db.find({
+          collection: "sales",
+          pagination: false,
+          limit: 10000, // Reasonable limit
+          where: {
+            product: {
+              equals: input.id,
+            },
+            status: {
+              not_in: ["cancelled", "refunded"],
+            },
+          },
+          depth: 0,
+          select: {
+            quantity: true,
+          },
+        }),
+      ]);
+
+      isPurchased = !!ordersData.docs[0];
 
       const reviewRating =
         reviews.docs.length > 0
@@ -214,20 +243,6 @@ export const productsRouter = createTRPCRouter({
         console.error('Error finding tenant owner for product:', product.id, error);
         tenantOwnerId = null;
       }
-
-      // Calculate total sold for this product
-      const salesData = await ctx.db.find({
-        collection: "sales",
-        pagination: false,
-        where: {
-          product: {
-            equals: input.id,
-          },
-          status: {
-            not_in: ["cancelled", "refunded"],
-          },
-        },
-      });
 
       const totalSold = salesData.docs.reduce((acc, sale) => acc + (sale.quantity || 0), 0);
 
